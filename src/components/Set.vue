@@ -1,5 +1,5 @@
 <script setup>
-import { ref } from 'vue';
+import { ref, nextTick } from 'vue';
 import Sortable from 'sortablejs';
 import { onMounted, onUnmounted } from 'vue';
 import SongItem from './SongItem.vue';
@@ -15,12 +15,13 @@ const props = defineProps({
 const emit = defineEmits(['remove-set']);
 
 const songListRef = ref(null);
+const titleInputRef = ref(null);
 let sortableInstance = null;
 
 const newSongTitle = ref('');
 const newSongKey = ref('');
 
-function addSong() {
+async function addSong() {
   if (!newSongTitle.value.trim()) return;
   
   addSongToSet(props.set.id, {
@@ -30,6 +31,11 @@ function addSong() {
   
   newSongTitle.value = '';
   newSongKey.value = '';
+  
+  await nextTick();
+  if (titleInputRef.value) {
+    titleInputRef.value.focus();
+  }
 }
 
 onMounted(() => {
@@ -76,6 +82,7 @@ onUnmounted(() => {
     
     <div class="add-song no-print">
       <input 
+        ref="titleInputRef"
         v-model="newSongTitle" 
         placeholder="Add new song..." 
         @keyup.enter="addSong"

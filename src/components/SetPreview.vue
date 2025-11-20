@@ -1,15 +1,42 @@
 <script setup>
+import { computed } from 'vue';
+import { store } from '../store';
+
 defineProps({
   set: {
     type: Object,
     required: true
   }
 });
+
+const hasMetadata = computed(() => {
+  const m = store.metadata;
+  return m.setListName || m.venue || m.date || m.actName;
+});
+
+function formatDate(dateStr) {
+  if (!dateStr) return '';
+  return new Date(dateStr).toLocaleDateString(undefined, { 
+    weekday: 'long', 
+    year: 'numeric', 
+    month: 'long', 
+    day: 'numeric' 
+  });
+}
 </script>
 
 <template>
   <div class="preview-set">
     <div class="set-content">
+      <div v-if="hasMetadata" class="metadata-header">
+        <h1 v-if="store.metadata.setListName" class="meta-title">{{ store.metadata.setListName }}</h1>
+        <div class="meta-details">
+          <span v-if="store.metadata.actName" class="meta-item">{{ store.metadata.actName }}</span>
+          <span v-if="store.metadata.venue" class="meta-item">{{ store.metadata.venue }}</span>
+          <span v-if="store.metadata.date" class="meta-item">{{ formatDate(store.metadata.date) }}</span>
+        </div>
+      </div>
+
       <h2 class="set-title">{{ set.name }}</h2>
       
       <div class="song-list">
@@ -44,11 +71,38 @@ defineProps({
   /* justify-content: center; REMOVED */
 }
 
+.metadata-header {
+  text-align: center;
+  margin-bottom: 2rem;
+  border-bottom: 2px solid #000;
+  padding-bottom: 1rem;
+}
+
+.meta-title {
+  font-size: 24px;
+  margin: 0 0 0.5rem 0;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+}
+
+.meta-details {
+  display: flex;
+  justify-content: center;
+  gap: 2rem;
+  font-size: 14px;
+  color: #444;
+}
+
+.meta-item {
+  font-weight: 500;
+}
+
 .set-title {
   font-size: 18px;
   line-height: 1.2;
   margin: 0 0 0.5em 0;
   text-align: center;
+  text-decoration: underline;
 }
 
 .set-content {

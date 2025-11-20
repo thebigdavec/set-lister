@@ -1,12 +1,13 @@
 <script setup>
 import { ref, nextTick, computed } from 'vue';
-import { store, addSet, removeSet } from './store';
+import { store, addSet, removeSet, updateMetadata, resetStore, loadStore } from './store';
 import Set from './components/Set.vue';
 import SetPreview from './components/SetPreview.vue';
 import { autoScaleText } from './utils/autoScale';
 
 const showPreview = ref(false);
 const previewRef = ref(null);
+const fileInput = ref(null);
 
 const previewSets = computed(() => store.sets.filter(set => set.songs && set.songs.length > 0));
 
@@ -54,15 +55,103 @@ function closePreview() {
 function printSets() {
   window.print();
 }
+
+const showNewDialog = ref(false);
+
+function startNew() {
+  showNewDialog.value = true;
+}
+
+function confirmNew() {
+  resetStore();
+  showNewDialog.value = false;
+}
+
+function cancelNew() {
+  showNewDialog.value = false;
+}
+
+function saveToDisk() {
+  const data = {
+    metadata: store.metadata,
+    sets: store.sets
+  };
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `${store.metadata.setListName || 'set-list'}.json`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+function triggerFileInput() {
+  fileInput.value.click();
+}
+
+function loadFromDisk(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    try {
+      const data = JSON.parse(e.target.result);
+      if (loadStore(data)) {
+        // Success
+        event.target.value = ''; // Reset input
+      } else {
+        alert("Invalid set list file.");
+      }
+    } catch (err) {
+      console.error(err);
+      alert("Error reading file.");
+    }
+  };
+  reader.readAsText(file);
+}
 </script>
 
 <template>
   <div v-if="!showPreview" class="app-container">
     <header class="no-print">
-      <h1>Set Lister</h1>
-      <div class="controls">
-        <button @click="addSet">Add Set</button>
-        <button @click="togglePreview" class="primary">Print / Export PDF</button>
+      <div class="header-top">
+        <h1>Set Lister</h1>
+        <div class="controls">
+          <input 
+            type="file" 
+            ref="fileInput" 
+            @change="loadFromDisk" 
+            accept=".json" 
+            style="display: none" 
+          />
+          <button type="button" @click="startNew" class="secondary">New</button>
+          <button type="button" @click="saveToDisk" class="secondary">Save</button>
+          <button type="button" @click="triggerFileInput" class="secondary">Load</button>
+          <button type="button" @click="addSet">Add Set</button>
+          <button type="button" @click="togglePreview" class="primary">Print / Export PDF</button>
+        </div>
+      </div>
+      
+      <div class="metadata-grid">
+        <div class="input-group">
+          <label>Set List Name</label>
+          <input v-model="store.metadata.setListName" placeholder="e.g. Summer Tour 2024" />
+        </div>
+        <div class="input-group">
+          <label>Venue</label>
+          <input v-model="store.metadata.venue" placeholder="e.g. The O2 Arena" />
+        </div>
+        <div class="input-group">
+          <label>Date</label>
+          <input v-model="store.metadata.date" type="date" />
+        </div>
+        <div class="input-group">
+          <label>Act Name</label>
+          <input v-model="store.metadata.actName" placeholder="e.g. The Beatles" />
+        </div>
       </div>
     </header>
 
@@ -98,17 +187,65 @@ function printSets() {
       </div>
     </div>
   </div>
+  <div v-if="showNewDialog" class="modal-overlay">
+    <div class="modal">
+      <h3>Start New Set List?</h3>
+      <p>Are you sure you want to start a new set list? All current changes will be lost if not saved.</p>
+      <div class="modal-actions">
+        <button @click="cancelNew">Cancel</button>
+        <button @click="confirmNew" class="danger">Start New</button>
+      </div>
+    </div>
+  </div>
 </template>
 
 <style scoped>
 /* ... existing styles ... */
 header {
   display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  margin-bottom: 2rem;
+  padding-bottom: 1.5rem;
+  border-bottom: 1px solid #333;
+}
+
+.header-top {
+  display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 2rem;
-  padding-bottom: 1rem;
-  border-bottom: 1px solid #333;
+}
+
+.metadata-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1rem;
+}
+
+.input-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.input-group label {
+  font-size: 0.8rem;
+  color: #888;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.input-group input {
+  padding: 0.5rem;
+  border-radius: 4px;
+  border: 1px solid #444;
+  background: #222;
+  color: white;
+}
+
+.input-group input:focus {
+  border-color: var(--accent-color);
+  outline: none;
 }
 
 h1 {
@@ -205,5 +342,54 @@ footer {
   .app-container {
     display: none;
   }
+}
+/* Modal Styles */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.7);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 2000;
+}
+
+.modal {
+  background: #333;
+  padding: 2rem;
+  border-radius: 8px;
+  max-width: 400px;
+  width: 90%;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+}
+
+.modal h3 {
+  margin-top: 0;
+  color: white;
+}
+
+.modal p {
+  color: #ccc;
+  margin-bottom: 2rem;
+}
+
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 1rem;
+}
+
+.danger {
+  background-color: #ff4444;
+  color: white;
+  border-color: #ff4444;
+}
+
+.danger:hover {
+  background-color: #cc0000;
+  border-color: #cc0000;
 }
 </style>

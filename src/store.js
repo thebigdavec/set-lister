@@ -3,6 +3,12 @@ import { reactive, watch } from "vue";
 const STORAGE_KEY = "set-lister-data";
 
 const defaultData = {
+  metadata: {
+    setListName: "",
+    venue: "",
+    date: "",
+    actName: "",
+  },
   sets: [
     {
       id: crypto.randomUUID(),
@@ -13,7 +19,12 @@ const defaultData = {
 };
 
 const savedData = localStorage.getItem(STORAGE_KEY);
-const initialState = savedData ? JSON.parse(savedData) : defaultData;
+const initialState = savedData ? { ...defaultData, ...JSON.parse(savedData) } : defaultData;
+
+// Ensure metadata exists if loading from legacy data
+if (!initialState.metadata) {
+  initialState.metadata = { ...defaultData.metadata };
+}
 
 export const store = reactive(initialState);
 
@@ -61,7 +72,7 @@ export function removeSongFromSet(setId, songId) {
 }
 
 export function reorderSong(setId, fromIndex, toIndex) {
-  const set = store.sets.find(s => s.id === setId);
+  const set = store.sets.find((s) => s.id === setId);
   if (set) {
     const [movedSong] = set.songs.splice(fromIndex, 1);
     set.songs.splice(toIndex, 0, movedSong);
@@ -69,9 +80,9 @@ export function reorderSong(setId, fromIndex, toIndex) {
 }
 
 export function moveSong(fromSetId, toSetId, fromIndex, toIndex) {
-  const fromSet = store.sets.find(s => s.id === fromSetId);
-  const toSet = store.sets.find(s => s.id === toSetId);
-  
+  const fromSet = store.sets.find((s) => s.id === fromSetId);
+  const toSet = store.sets.find((s) => s.id === toSetId);
+
   if (fromSet && toSet) {
     const [movedSong] = fromSet.songs.splice(fromIndex, 1);
     toSet.songs.splice(toIndex, 0, movedSong);
@@ -86,4 +97,48 @@ export function updateSong(setId, songId, updates) {
       Object.assign(song, updates);
     }
   }
+}
+
+export function updateMetadata(updates) {
+  Object.assign(store.metadata, updates);
+}
+
+export function resetStore() {
+  // Reset to default data
+  // We need to clone defaultData to avoid reference issues
+  const newData = JSON.parse(JSON.stringify(defaultData));
+
+  // Update store properties
+  store.sets = newData.sets;
+  // Ensure metadata is reset too
+  if (newData.metadata) {
+    store.metadata = newData.metadata;
+  } else {
+    // Fallback if defaultData doesn't have metadata yet (though it should)
+    store.metadata = {
+      setListName: "",
+      venue: "",
+      date: "",
+      actName: "",
+    };
+  }
+  // Re-generate IDs for the default set to ensure uniqueness
+  store.sets[0].id = crypto.randomUUID();
+}
+
+export function loadStore(data) {
+  // Basic validation
+  if (!data || !Array.isArray(data.sets)) {
+    console.error("Invalid data format");
+    return false;
+  }
+
+  store.sets = data.sets;
+  store.metadata = data.metadata || {
+    setListName: "",
+    venue: "",
+    date: "",
+    actName: "",
+  };
+  return true;
 }
