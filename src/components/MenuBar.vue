@@ -11,6 +11,10 @@ import {
 } from 'lucide-vue-next';
 
 const props = defineProps({
+  hasSets: {
+    type: Boolean,
+    default: false
+  },
   isDirty: {
     type: Boolean,
     default: false
@@ -86,7 +90,7 @@ onUnmounted(() => {
           <PlusCircle :size="16" /> Add Set
         </button>
         <div class="divider"></div>
-        <button @click="handleAction('export')" class="dropdown-item">
+        <button @click="handleAction('export')" class="dropdown-item" :disabled="!hasSets">
           <FileDown :size="16" /> Export PDF
         </button>
       </div>
@@ -166,6 +170,11 @@ onUnmounted(() => {
 .dropdown-item:hover {
   background: #444;
   color: white;
+}
+
+.dropdown-item:disabled {
+  color: #666;
+  cursor: not-allowed;
 }
 
 .divider {

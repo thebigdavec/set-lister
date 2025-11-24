@@ -210,6 +210,7 @@ onUnmounted(() => {
   <div v-if="!showPreview" class="app-container">
     <header class="no-print">
       <MenuBar 
+      :has-sets="previewSets.length > 0"
         :is-dirty="store.isDirty"
         @new="startNew"
         @load="loadFromDisk"
@@ -293,6 +294,7 @@ onUnmounted(() => {
       <button @click="closePreview">Edit</button>
     </div>
     
+
     <div ref="previewRef" class="preview-content">
       <div class="sets-wrapper">
         <SetPreview 
