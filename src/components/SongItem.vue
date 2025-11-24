@@ -52,6 +52,7 @@ function cancel() {
         v-model="editTitle" 
         placeholder="Song Title"
         @keyup.enter="save"
+        @blur="save"
         ref="titleInput"
       >
       <input 
@@ -59,6 +60,7 @@ function cancel() {
         placeholder="Key" 
         class="key-input"
         @keyup.enter="save"
+        @blur="save"
       >
       <button @click="save">Save</button>
       <button @click="cancel">Cancel</button>

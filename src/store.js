@@ -3,6 +3,7 @@ import { reactive, watch } from "vue";
 const STORAGE_KEY = "set-lister-data";
 
 const defaultData = {
+  isDirty: false,
   metadata: {
     setListName: "",
     venue: "",
@@ -25,6 +26,10 @@ const initialState = savedData ? { ...defaultData, ...JSON.parse(savedData) } : 
 if (!initialState.metadata) {
   initialState.metadata = { ...defaultData.metadata };
 }
+// Ensure isDirty exists if loading from legacy data
+if (typeof initialState.isDirty === 'undefined') {
+  initialState.isDirty = false;
+}
 
 export const store = reactive(initialState);
 
@@ -42,12 +47,22 @@ export function addSet() {
     name: `Set ${store.sets.length + 1}`,
     songs: [],
   });
+  store.isDirty = true;
 }
 
 export function removeSet(setId) {
   const index = store.sets.findIndex((s) => s.id === setId);
   if (index !== -1) {
     store.sets.splice(index, 1);
+    store.isDirty = true;
+  }
+}
+
+export function renameSet(setId, newName) {
+  const set = store.sets.find((s) => s.id === setId);
+  if (set) {
+    set.name = newName;
+    store.isDirty = true;
   }
 }
 
@@ -58,6 +73,7 @@ export function addSongToSet(setId, song) {
       id: crypto.randomUUID(),
       ...song,
     });
+    store.isDirty = true;
   }
 }
 
@@ -67,6 +83,7 @@ export function removeSongFromSet(setId, songId) {
     const index = set.songs.findIndex((s) => s.id === songId);
     if (index !== -1) {
       set.songs.splice(index, 1);
+      store.isDirty = true;
     }
   }
 }
@@ -76,6 +93,7 @@ export function reorderSong(setId, fromIndex, toIndex) {
   if (set) {
     const [movedSong] = set.songs.splice(fromIndex, 1);
     set.songs.splice(toIndex, 0, movedSong);
+    store.isDirty = true;
   }
 }
 
@@ -86,6 +104,7 @@ export function moveSong(fromSetId, toSetId, fromIndex, toIndex) {
   if (fromSet && toSet) {
     const [movedSong] = fromSet.songs.splice(fromIndex, 1);
     toSet.songs.splice(toIndex, 0, movedSong);
+    store.isDirty = true;
   }
 }
 
@@ -95,12 +114,18 @@ export function updateSong(setId, songId, updates) {
     const song = set.songs.find((s) => s.id === songId);
     if (song) {
       Object.assign(song, updates);
+      store.isDirty = true;
     }
   }
 }
 
 export function updateMetadata(updates) {
   Object.assign(store.metadata, updates);
+  store.isDirty = true;
+}
+
+export function markClean() {
+  store.isDirty = false;
 }
 
 export function resetStore() {
@@ -110,6 +135,7 @@ export function resetStore() {
 
   // Update store properties
   store.sets = newData.sets;
+  store.isDirty = false; // Reset dirty state
   // Ensure metadata is reset too
   if (newData.metadata) {
     store.metadata = newData.metadata;
@@ -140,5 +166,6 @@ export function loadStore(data) {
     date: "",
     actName: "",
   };
+  store.isDirty = false;
   return true;
 }

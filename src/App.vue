@@ -1,6 +1,6 @@
 <script setup>
-import { ref, nextTick, computed } from 'vue';
-import { store, addSet, removeSet, updateMetadata, resetStore, loadStore } from './store';
+import { ref, nextTick, computed, onMounted, onUnmounted } from 'vue';
+import { store, addSet, removeSet, updateMetadata, resetStore, loadStore, markClean } from './store';
 import Set from './components/Set.vue';
 import SetPreview from './components/SetPreview.vue';
 import { autoScaleText } from './utils/autoScale';
@@ -8,6 +8,7 @@ import { autoScaleText } from './utils/autoScale';
 const showPreview = ref(false);
 const previewRef = ref(null);
 const fileInput = ref(null);
+const currentFileHandle = ref(null);
 
 const previewSets = computed(() => store.sets.filter(set => set.songs && set.songs.length > 0));
 
@@ -59,11 +60,17 @@ function printSets() {
 const showNewDialog = ref(false);
 
 function startNew() {
+  if (!store.isDirty) {
+    resetStore();
+    currentFileHandle.value = null;
+    return;
+  }
   showNewDialog.value = true;
 }
 
 function confirmNew() {
   resetStore();
+  currentFileHandle.value = null;
   showNewDialog.value = false;
 }
 
@@ -71,27 +78,96 @@ function cancelNew() {
   showNewDialog.value = false;
 }
 
-function saveToDisk() {
+async function saveToDisk(event) {
   const data = {
     metadata: store.metadata,
     sets: store.sets
   };
-  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = `${store.metadata.setListName || 'set-list'}.json`;
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  URL.revokeObjectURL(url);
+  const jsonString = JSON.stringify(data, null, 2);
+
+  try {
+    // Check if we can use the File System Access API
+    if (window.showSaveFilePicker) {
+      // Determine if we should "Save As" (Alt key or no current file)
+      const saveAs = event?.altKey || !currentFileHandle.value;
+
+      if (saveAs) {
+        const handle = await window.showSaveFilePicker({
+          suggestedName: `${store.metadata.setListName || 'set-list'}.json`,
+          types: [{
+            description: 'JSON Files',
+            accept: { 'application/json': ['.json'] },
+          }],
+        });
+        currentFileHandle.value = handle;
+      }
+
+      // Write to the file (either existing or new)
+      const writable = await currentFileHandle.value.createWritable();
+      await writable.write(jsonString);
+      await writable.close();
+      
+      markClean();
+    } else {
+      // Fallback for browsers without API support
+      const blob = new Blob([jsonString], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${store.metadata.setListName || 'set-list'}.json`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      markClean();
+    }
+  } catch (err) {
+    if (err.name !== 'AbortError') {
+      console.error('Failed to save file:', err);
+      alert('Failed to save file.');
+    }
+  }
 }
 
-function triggerFileInput() {
-  fileInput.value.click();
+async function loadFromDisk() {
+  if (store.isDirty) {
+    if (!confirm("You have unsaved changes. Are you sure you want to load a new file? Unsaved changes will be lost.")) {
+      return;
+    }
+  }
+
+  try {
+    if (window.showOpenFilePicker) {
+      const [handle] = await window.showOpenFilePicker({
+        types: [{
+          description: 'JSON Files',
+          accept: { 'application/json': ['.json'] },
+        }],
+        multiple: false
+      });
+      
+      const file = await handle.getFile();
+      const text = await file.text();
+      const data = JSON.parse(text);
+      
+      if (loadStore(data)) {
+        currentFileHandle.value = handle;
+      } else {
+        alert("Invalid set list file.");
+      }
+    } else {
+      // Fallback
+      fileInput.value.click();
+    }
+  } catch (err) {
+    if (err.name !== 'AbortError') {
+      console.error('Failed to load file:', err);
+      alert('Failed to load file.');
+    }
+  }
 }
 
-function loadFromDisk(event) {
+function handleLegacyLoad(event) {
   const file = event.target.files[0];
   if (!file) return;
 
@@ -100,7 +176,7 @@ function loadFromDisk(event) {
     try {
       const data = JSON.parse(e.target.result);
       if (loadStore(data)) {
-        // Success
+        currentFileHandle.value = null; // Legacy load doesn't give us a handle
         event.target.value = ''; // Reset input
       } else {
         alert("Invalid set list file.");
@@ -112,6 +188,21 @@ function loadFromDisk(event) {
   };
   reader.readAsText(file);
 }
+
+function handleBeforeUnload(e) {
+  if (store.isDirty) {
+    e.preventDefault();
+    e.returnValue = '';
+  }
+}
+
+onMounted(() => {
+  window.addEventListener('beforeunload', handleBeforeUnload);
+});
+
+onUnmounted(() => {
+  window.removeEventListener('beforeunload', handleBeforeUnload);
+});
 </script>
 
 <template>
@@ -123,13 +214,20 @@ function loadFromDisk(event) {
           <input 
             type="file" 
             ref="fileInput" 
-            @change="loadFromDisk" 
+            @change="handleLegacyLoad" 
             accept=".json" 
             style="display: none" 
           />
           <button type="button" @click="startNew" class="secondary">New</button>
-          <button type="button" @click="saveToDisk" class="secondary">Save</button>
-          <button type="button" @click="triggerFileInput" class="secondary">Load</button>
+          <button 
+            type="button" 
+            @click="saveToDisk" 
+            class="secondary"
+            :title="store.isDirty ? 'You have unsaved changes' : 'All changes saved'"
+          >
+            Save{{ store.isDirty ? ' *' : '' }}
+          </button>
+          <button type="button" @click="loadFromDisk" class="secondary">Load</button>
           <button type="button" @click="addSet">Add Set</button>
           <button type="button" @click="togglePreview" class="primary">Print / Export PDF</button>
         </div>
@@ -138,19 +236,39 @@ function loadFromDisk(event) {
       <div class="metadata-grid">
         <div class="input-group">
           <label>Set List Name</label>
-          <input v-model="store.metadata.setListName" placeholder="e.g. Summer Tour 2024" />
+          <input 
+            v-model="store.metadata.setListName" 
+            placeholder="e.g. Summer Tour 2024" 
+            @blur="updateMetadata({ setListName: store.metadata.setListName })"
+            @keyup.enter="$event.target.blur()"
+          />
         </div>
         <div class="input-group">
           <label>Venue</label>
-          <input v-model="store.metadata.venue" placeholder="e.g. The O2 Arena" />
+          <input 
+            v-model="store.metadata.venue" 
+            placeholder="e.g. The O2 Arena" 
+            @blur="updateMetadata({ venue: store.metadata.venue })"
+            @keyup.enter="$event.target.blur()"
+          />
         </div>
         <div class="input-group">
           <label>Date</label>
-          <input v-model="store.metadata.date" type="date" />
+          <input 
+            v-model="store.metadata.date" 
+            type="date" 
+            @blur="updateMetadata({ date: store.metadata.date })"
+            @keyup.enter="$event.target.blur()"
+          />
         </div>
         <div class="input-group">
           <label>Act Name</label>
-          <input v-model="store.metadata.actName" placeholder="e.g. The Beatles" />
+          <input 
+            v-model="store.metadata.actName" 
+            placeholder="e.g. The Beatles" 
+            @blur="updateMetadata({ actName: store.metadata.actName })"
+            @keyup.enter="$event.target.blur()"
+          />
         </div>
       </div>
     </header>

@@ -3,7 +3,7 @@ import { ref, nextTick } from 'vue';
 import Sortable from 'sortablejs';
 import { onMounted, onUnmounted } from 'vue';
 import SongItem from './SongItem.vue';
-import { reorderSong, moveSong, addSongToSet, removeSongFromSet, updateSong } from '../store';
+import { reorderSong, moveSong, addSongToSet, removeSongFromSet, updateSong, renameSet } from '../store';
 
 const props = defineProps({
   set: {
@@ -66,7 +66,7 @@ onUnmounted(() => {
 <template>
   <div class="set-container card">
     <div class="set-header">
-      <h2 contenteditable @blur="$event => set.name = $event.target.innerText">{{ set.name }}</h2>
+      <h2 contenteditable @blur="$event => renameSet(set.id, $event.target.innerText)">{{ set.name }}</h2>
       <button @click="$emit('remove-set')" class="icon-btn delete no-print">Delete Set</button>
     </div>
     
