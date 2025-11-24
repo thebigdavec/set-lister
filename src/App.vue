@@ -3,6 +3,7 @@ import { ref, nextTick, computed, onMounted, onUnmounted } from 'vue';
 import { store, addSet, removeSet, updateMetadata, resetStore, loadStore, markClean } from './store';
 import Set from './components/Set.vue';
 import SetPreview from './components/SetPreview.vue';
+import MenuBar from './components/MenuBar.vue';
 import { autoScaleText } from './utils/autoScale';
 
 const showPreview = ref(false);
@@ -208,6 +209,15 @@ onUnmounted(() => {
 <template>
   <div v-if="!showPreview" class="app-container">
     <header class="no-print">
+      <MenuBar 
+        :is-dirty="store.isDirty"
+        @new="startNew"
+        @load="loadFromDisk"
+        @save="saveToDisk"
+        @save-as="saveToDisk({ altKey: true })"
+        @add-set="addSet"
+        @export="togglePreview"
+      />
       <div class="header-top">
         <h1>Set Lister</h1>
         <div class="controls">
@@ -218,18 +228,6 @@ onUnmounted(() => {
             accept=".json" 
             style="display: none" 
           />
-          <button type="button" @click="startNew" class="secondary">New</button>
-          <button 
-            type="button" 
-            @click="saveToDisk" 
-            class="secondary"
-            :title="store.isDirty ? 'You have unsaved changes' : 'All changes saved'"
-          >
-            Save{{ store.isDirty ? ' *' : '' }}
-          </button>
-          <button type="button" @click="loadFromDisk" class="secondary">Load</button>
-          <button type="button" @click="addSet">Add Set</button>
-          <button type="button" @click="togglePreview" class="primary">Print / Export PDF</button>
         </div>
       </div>
       
@@ -370,6 +368,7 @@ h1 {
   margin: 0;
   font-size: 2rem;
   background: linear-gradient(45deg, #646cff, #a164ff);
+  background-clip: text;
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
 }
