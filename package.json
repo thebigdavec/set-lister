@@ -9,6 +9,7 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
+    "typecheck": "vue-tsc --noEmit",
     "preview": "vite preview"
   },
   "dependencies": {
@@ -17,7 +18,10 @@
     "vue": "^3.5.24"
   },
   "devDependencies": {
+    "@types/sortablejs": "^1.15.9",
     "@vitejs/plugin-vue": "^6.0.1",
-    "vite": "^7.2.2"
+    "typescript": "^5.6.3",
+    "vite": "^7.2.2",
+    "vue-tsc": "^2.1.10"
   }
 }

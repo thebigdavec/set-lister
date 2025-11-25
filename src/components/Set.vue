@@ -1,157 +1,156 @@
-<script setup>
-import { ref, nextTick } from 'vue';
-import Sortable from 'sortablejs';
-import { onMounted, onUnmounted } from 'vue';
-import SongItem from './SongItem.vue';
-import { reorderSong, moveSong, addSongToSet, removeSongFromSet, updateSong, renameSet } from '../store';
+<script setup lang="ts">
+  import { nextTick, onMounted, onUnmounted, ref } from 'vue';
+  import Sortable, { SortableEvent } from 'sortablejs';
+  import SongItem from './SongItem.vue';
+  import {
+    addSongToSet,
+    moveSong,
+    removeSongFromSet,
+    renameSet,
+    reorderSong,
+    updateSong,
+    type SetItem,
+  } from '../store';
 
-const props = defineProps({
-  set: {
-    type: Object,
-    required: true
+  const props = defineProps<{
+    set: SetItem;
+  }>();
+
+  const emit = defineEmits<{
+    (e: 'remove-set'): void;
+  }>();
+
+  const songListRef = ref<HTMLDivElement | null>(null);
+  const titleInputRef = ref<HTMLInputElement | null>(null);
+  let sortableInstance: Sortable | null = null;
+
+  const newSongTitle = ref('');
+  const newSongKey = ref('');
+
+  async function addSong(): Promise<void> {
+    if (!newSongTitle.value.trim()) return;
+
+    addSongToSet(props.set.id, {
+      title: newSongTitle.value,
+      key: newSongKey.value,
+    });
+
+    newSongTitle.value = '';
+    newSongKey.value = '';
+
+    await nextTick();
+    titleInputRef.value?.focus();
   }
-});
 
-const emit = defineEmits(['remove-set']);
-
-const songListRef = ref(null);
-const titleInputRef = ref(null);
-let sortableInstance = null;
-
-const newSongTitle = ref('');
-const newSongKey = ref('');
-
-async function addSong() {
-  if (!newSongTitle.value.trim()) return;
-  
-  addSongToSet(props.set.id, {
-    title: newSongTitle.value,
-    key: newSongKey.value
-  });
-  
-  newSongTitle.value = '';
-  newSongKey.value = '';
-  
-  await nextTick();
-  if (titleInputRef.value) {
-    titleInputRef.value.focus();
+  function handleTitleBlur(event: FocusEvent): void {
+    const target = event.target as HTMLElement | null;
+    if (!target) return;
+    renameSet(props.set.id, target.innerText);
   }
-}
 
-onMounted(() => {
-  sortableInstance = new Sortable(songListRef.value, {
-    group: 'songs',
-    animation: 150,
-    ghostClass: 'sortable-ghost',
-    onEnd: (evt) => {
-      const fromSetId = props.set.id;
-      const toSetId = evt.to.dataset.setId;
-      
-      if (evt.to === evt.from) {
-        reorderSong(fromSetId, evt.oldIndex, evt.newIndex);
-      } else {
-        moveSong(fromSetId, toSetId, evt.oldIndex, evt.newIndex);
-      }
+  function handleSortEnd(evt: SortableEvent): void {
+    const fromSetId = props.set.id;
+    const toSetId = (evt.to as HTMLElement | null)?.dataset.setId;
+
+    if (!toSetId) return;
+
+    if (evt.to === evt.from) {
+      reorderSong(fromSetId, evt.oldIndex ?? 0, evt.newIndex ?? 0);
+    } else {
+      moveSong(fromSetId, toSetId, evt.oldIndex ?? 0, evt.newIndex ?? 0);
     }
-  });
-});
-
-onUnmounted(() => {
-  if (sortableInstance) {
-    sortableInstance.destroy();
   }
-});
+
+  onMounted(() => {
+    if (!songListRef.value) return;
+
+    sortableInstance = new Sortable(songListRef.value, {
+      group: 'songs',
+      animation: 150,
+      ghostClass: 'sortable-ghost',
+      onEnd: handleSortEnd,
+    });
+  });
+
+  onUnmounted(() => {
+    sortableInstance?.destroy();
+  });
 </script>
 
 <template>
   <div class="set-container card">
     <div class="set-header">
-      <h2 contenteditable @blur="$event => renameSet(set.id, $event.target.innerText)">{{ set.name }}</h2>
+      <h2 contenteditable @blur="handleTitleBlur">{{ set.name }}</h2>
       <button @click="$emit('remove-set')" class="icon-btn delete no-print">Delete Set</button>
     </div>
-    
+
     <div ref="songListRef" class="song-list" :data-set-id="set.id">
-      <SongItem 
-        v-for="song in set.songs" 
-        :key="song.id" 
-        :song="song"
-        @update="(updates) => updateSong(set.id, song.id, updates)"
-        @remove="removeSongFromSet(set.id, song.id)"
-      />
+      <SongItem v-for="song in set.songs" :key="song.id" :song="song"
+        @update="(updates) => updateSong(set.id, song.id, updates)" @remove="removeSongFromSet(set.id, song.id)" />
     </div>
-    
+
     <div class="add-song no-print">
-      <input 
-        ref="titleInputRef"
-        v-model="newSongTitle" 
-        placeholder="Add new song..." 
-        @keyup.enter="addSong"
-      >
-      <input 
-        v-model="newSongKey" 
-        placeholder="Key" 
-        class="key-input"
-        @keyup.enter="addSong"
-      >
+      <input ref="titleInputRef" v-model="newSongTitle" placeholder="Add new song..." @keyup.enter="addSong">
+      <input v-model="newSongKey" placeholder="Key" class="key-input" @keyup.enter="addSong">
       <button @click="addSong">+</button>
     </div>
   </div>
 </template>
 
 <style scoped>
-.set-container {
-  background-color: #1e1e1e;
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
-}
+  .set-container {
+    background-color: #1e1e1e;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
 
-@media print {
-  /* Removed print styles as Set.vue is no longer used for printing */
-}
+  @media print {
+    /* Removed print styles as Set.vue is no longer used for printing */
+  }
 
-.set-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  border-bottom: 1px solid #333;
-  padding-bottom: 0.5rem;
-}
+  .set-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid #333;
+    padding-bottom: 0.5rem;
+  }
 
-.set-header h2 {
-  margin: 0;
-  font-size: 1.5em;
-  outline: none;
-}
+  .set-header h2 {
+    margin: 0;
+    font-size: 1.5em;
+    outline: none;
+  }
 
-.set-header h2:focus {
-  border-bottom: 1px solid var(--accent-color);
-}
+  .set-header h2:focus {
+    border-bottom: 1px solid var(--accent-color);
+  }
 
-.song-list {
-  min-height: 50px;
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-}
+  .song-list {
+    min-height: 50px;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
 
-.add-song {
-  display: flex;
-  gap: 0.5rem;
-  margin-top: 0.5rem;
-  flex-wrap: wrap;
-}
+  .add-song {
+    display: flex;
+    gap: 0.5rem;
+    margin-top: 0.5rem;
+    flex-wrap: wrap;
+  }
 
-.add-song input {
-  flex: 1;
-}
+  .add-song input {
+    flex: 1;
+  }
 
-.key-input {
-  flex: 0 0 60px;
-}
+  .key-input {
+    flex: 0 0 60px;
+  }
 
-.sortable-ghost {
-  opacity: 0.5;
-  background: #333;
-}
+  .sortable-ghost {
+    opacity: 0.5;
+    background: #333;
+  }
 </style>

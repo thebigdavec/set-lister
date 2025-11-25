@@ -1,61 +1,62 @@
-<script setup>
-  import { ref, onMounted, onUnmounted } from 'vue';
-  import {
-    FilePlus,
-    FolderOpen,
-    Save,
-    SaveAll,
-    PlusCircle,
-    FileDown,
-    ChevronDown
-  } from 'lucide-vue-next';
+<script setup lang="ts">
+import { onMounted, onUnmounted, ref, withDefaults } from 'vue';
+import {
+  ChevronDown,
+  FileDown,
+  FilePlus,
+  FolderOpen,
+  PlusCircle,
+  Save,
+  SaveAll,
+} from 'lucide-vue-next';
 
-  const props = defineProps({
-    hasSets: {
-      type: Boolean,
-      default: false
-    },
-    isDirty: {
-      type: Boolean,
-      default: false
-    }
-  });
-
-  const emit = defineEmits(['new', 'load', 'save', 'save-as', 'add-set', 'export']);
-
-  const activeMenu = ref(null);
-  const menuRef = ref(null);
-
-  function toggleMenu (menuName) {
-    if (activeMenu.value === menuName) {
-      activeMenu.value = null;
-    } else {
-      activeMenu.value = menuName;
-    }
+const props = withDefaults(
+  defineProps<{
+    hasSets?: boolean;
+    isDirty?: boolean;
+  }>(),
+  {
+    hasSets: false,
+    isDirty: false,
   }
+);
 
-  function closeMenu () {
-    activeMenu.value = null;
-  }
+type MenuAction = 'new' | 'load' | 'save' | 'save-as' | 'add-set' | 'export';
+type MenuName = 'file' | null;
 
-  function handleAction (action) {
-    emit(action);
+const emit = defineEmits<{
+  (e: MenuAction): void;
+}>();
+
+const activeMenu = ref<MenuName>(null);
+const menuRef = ref<HTMLDivElement | null>(null);
+
+function toggleMenu(menuName: MenuName): void {
+  activeMenu.value = activeMenu.value === menuName ? null : menuName;
+}
+
+function closeMenu(): void {
+  activeMenu.value = null;
+}
+
+function handleAction(action: MenuAction): void {
+  emit(action);
+  closeMenu();
+}
+
+function handleClickOutside(event: MouseEvent): void {
+  if (menuRef.value && event.target instanceof Node && !menuRef.value.contains(event.target)) {
     closeMenu();
   }
+}
 
-  function handleClickOutside (event) {
-    if (menuRef.value && !menuRef.value.contains(event.target)) {
-      closeMenu();
-    }
-  }
+onMounted(() => {
+  document.addEventListener('click', handleClickOutside);
+});
 
-  onMounted(() => {
-    document.addEventListener('click', handleClickOutside);
-  });
-
-  onUnmounted(() => {
-    document.removeEventListener('click', handleClickOutside);
-  });
+onUnmounted(() => {
+  document.removeEventListener('click', handleClickOutside);
+});
 </script>
 
 <template>

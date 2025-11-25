@@ -1,33 +1,39 @@
-<script setup>
+<script setup lang="ts">
 import { ref, watch } from 'vue';
+import type { Song } from '../store';
 
-const props = defineProps({
-  song: {
-    type: Object,
-    required: true
-  }
-});
+const props = defineProps<{
+  song: Song;
+}>();
 
-const emit = defineEmits(['update', 'remove']);
+const emit = defineEmits<{
+  (e: 'update', updates: Partial<Omit<Song, 'id'>>): void;
+  (e: 'remove'): void;
+}>();
 
 const isEditing = ref(false);
 const editTitle = ref(props.song.title);
 const editKey = ref(props.song.key);
+const titleInput = ref<HTMLInputElement | null>(null);
 
-watch(() => props.song, (newSong) => {
-  editTitle.value = newSong.title;
-  editKey.value = newSong.key;
-}, { deep: true });
+watch(
+  () => props.song,
+  (newSong) => {
+    editTitle.value = newSong.title;
+    editKey.value = newSong.key;
+  },
+  { deep: true }
+);
 
-function save() {
+function save(): void {
   emit('update', {
     title: editTitle.value,
-    key: editKey.value
+    key: editKey.value,
   });
   isEditing.value = false;
 }
 
-function cancel() {
+function cancel(): void {
   editTitle.value = props.song.title;
   editKey.value = props.song.key;
   isEditing.value = false;
