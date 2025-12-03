@@ -1,5 +1,5 @@
 <script setup lang="ts">
-  import { computed, nextTick, onMounted, onUnmounted, ref } from 'vue';
+  import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue';
   import { addSet, loadStore, markClean, removeSet, resetStore, store, updateMetadata } from './store';
   import Set from './components/Set.vue';
   import SetPreview from './components/SetPreview.vue';
@@ -11,6 +11,7 @@
   const previewRef = ref<HTMLDivElement | null>(null);
   const fileInput = ref<HTMLInputElement | null>(null);
   const currentFileHandle = ref<FileSystemFileHandle | null>(null);
+  const uppercasePreview = ref(false);
 
   const previewSets = computed(() => store.sets.filter((set) => set.songs.length > 0));
 
@@ -26,11 +27,12 @@
 
   const BOX_HEIGHT_CM = TARGET_HEIGHT_CM - MARGINS_CM.top - MARGINS_CM.bottom;
   const BOX_WIDTH_CM = TARGET_WIDTH_CM - MARGINS_CM.left - MARGINS_CM.right;
+  const TARGET_WIDTH_PX = TARGET_WIDTH_CM * CM_TO_PX;
+  const PREVIEW_UPPERCASE_KEY = 'set-lister-preview-uppercase';
 
-  async function togglePreview(): Promise<void> {
-    showPreview.value = true;
+  async function applyPreviewSizing(): Promise<void> {
+    if (!showPreview.value) return;
     await nextTick();
-
     if (!previewRef.value) return;
 
     for (const set of previewSets.value) {
@@ -38,11 +40,15 @@
       const songsEl = previewRef.value.querySelector<HTMLElement>(selector);
       if (!songsEl) continue;
 
-      const strings = set.songs.map((song) => formatSongLabel(song.title, song.key));
+      const strings = set.songs.map((song) => {
+        const title = uppercasePreview.value ? song.title.toUpperCase() : song.title;
+        return formatSongLabel(title, song.key);
+      });
+
       if (strings.length === 0) {
         songsEl.style.fontSize = '';
         songsEl.style.lineHeight = '';
-        songsEl.style.width = `${TARGET_WIDTH_CM * CM_TO_PX}px`;
+        songsEl.style.width = `${TARGET_WIDTH_PX}px`;
         songsEl.style.transform = '';
         songsEl.style.transformOrigin = '';
         continue;
@@ -51,10 +57,15 @@
       const { fontSizePx, lineHeight } = fitStringsToBox(strings, BOX_WIDTH_CM, BOX_HEIGHT_CM);
       songsEl.style.fontSize = `${fontSizePx}px`;
       songsEl.style.lineHeight = lineHeight.toString();
-      songsEl.style.width = `${TARGET_WIDTH_CM * CM_TO_PX}px`;
+      songsEl.style.width = `${TARGET_WIDTH_PX}px`;
       songsEl.style.transform = '';
       songsEl.style.transformOrigin = '';
     }
+  }
+
+  async function togglePreview(): Promise<void> {
+    showPreview.value = true;
+    await applyPreviewSizing();
   }
 
   function closePreview(): void {
@@ -220,11 +231,20 @@
   }
 
   onMounted(() => {
+    const savedUppercase = localStorage.getItem(PREVIEW_UPPERCASE_KEY);
+    uppercasePreview.value = savedUppercase === 'true';
     window.addEventListener('beforeunload', handleBeforeUnload);
   });
 
   onUnmounted(() => {
     window.removeEventListener('beforeunload', handleBeforeUnload);
+  });
+
+  watch(uppercasePreview, async (value) => {
+    localStorage.setItem(PREVIEW_UPPERCASE_KEY, String(value));
+    if (showPreview.value) {
+      await applyPreviewSizing();
+    }
   });
 </script>
 
@@ -281,14 +301,19 @@
 
   <div v-else class="print-preview">
     <div class="preview-controls no-print">
-      <button @click="printSets" class="primary">Print Now</button>
-      <button @click="closePreview">Edit</button>
+      <div class="preview-actions">
+        <button @click="printSets" class="preview-btn primary">Print Now</button>
+        <button @click="closePreview" class="preview-btn">Close Preview</button>
+      </div>
+      <label class="uppercase-toggle">
+        <input type="checkbox" v-model="uppercasePreview" />
+        Uppercase titles
+      </label>
     </div>
-
 
     <div ref="previewRef" class="preview-content">
       <div class="sets-wrapper">
-        <SetPreview v-for="set in previewSets" :key="set.id" :set="set" />
+        <SetPreview v-for="set in previewSets" :key="set.id" :set="set" :uppercase="uppercasePreview" />
       </div>
     </div>
   </div>
@@ -403,11 +428,61 @@
   }
 
   .preview-controls {
-    padding: 1rem;
-    background: #333;
     display: flex;
+    justify-content: space-between;
+    align-items: center;
     gap: 1rem;
-    justify-content: center;
+    background: #222;
+    border: 1px solid #444;
+    padding: 0.5rem 1rem;
+    border-radius: 6px;
+    margin: 1rem;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.35);
+  }
+
+  .preview-actions {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+  }
+
+  .preview-btn {
+    background: #333;
+    border: none;
+    color: #ddd;
+    padding: 0.6rem 1rem;
+    cursor: pointer;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.9rem;
+    box-shadow: 0 2px 4px -2px #000;
+    transition: background-color 0.1s ease;
+  }
+
+  .preview-btn:hover {
+    background: #444;
+    color: #fff;
+  }
+
+  .preview-btn.primary {
+    background: var(--accent-color);
+    color: white;
+  }
+
+  .uppercase-toggle {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.85rem;
+    color: #eee;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+
+  .uppercase-toggle input {
+    accent-color: var(--accent-color);
   }
 
   .preview-content {

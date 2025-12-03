@@ -1,17 +1,25 @@
 <script setup lang="ts">
-  import { computed } from 'vue';
+  import { computed, toRefs, withDefaults } from 'vue';
   import { store, type SetItem } from '../store';
 
-  const props = defineProps<{
-    set: SetItem;
-  }>();
+  const props = withDefaults(
+    defineProps<{
+      set: SetItem;
+      uppercase?: boolean;
+    }>(),
+    {
+      uppercase: false,
+    }
+  );
+
+  const { set, uppercase } = toRefs(props);
 
   const hasMetadata = computed(() => {
     const m = store.metadata;
     return Boolean(m.setListName || m.venue || m.date || m.actName);
   });
 
-  const showHeader = computed(() => hasMetadata.value || Boolean(props.set?.name));
+  const showHeader = computed(() => hasMetadata.value || Boolean(set.value?.name));
 
   function formatDate(dateStr: string | undefined): string {
     if (!dateStr) return '';
@@ -47,8 +55,8 @@
       <div class="song-list" :data-set-id="set.id">
         <div v-for="song in set.songs" :key="song.id" class="preview-song">
           <span class="song-label">
-            <span class="song-title">{{ song.title }}</span><span v-if="song.key" class="song-key"> ({{ song.key
-              }})</span>
+            <span class="song-title">{{ uppercase ? song.title.toUpperCase() : song.title }}</span><span v-if="song.key"
+              class="song-key"> ({{ song.key }})</span>
           </span>
         </div>
       </div>
