@@ -22,13 +22,17 @@
     const targetHeight = 1123 - 120;
     const targetWidth = 794 - 120;
 
-    const sets = Array.from(previewRef.value.querySelectorAll<HTMLElement>('.preview-set'));
+    for (const set of previewSets.value) {
+      const selector = `.preview-set[data-set-id="${set.id}"] .song-list`;
+      const songsEl = previewRef.value.querySelector<HTMLElement>(selector);
+      if (!songsEl) continue;
 
-    for (const setEl of sets) {
-      const songsEl = setEl.querySelector('.song-list');
-      if (songsEl) {
-        await autoScaleText(songsEl as HTMLElement, targetHeight, targetWidth, { debug: false, stepDelayMs: 0 });
-      }
+      await autoScaleText(songsEl, targetHeight, targetWidth, {
+        debug: false,
+        stepDelayMs: 0,
+        longestEntryWidth16px: set.metrics.longestEntryWidth16px,
+        totalRows: set.metrics.totalRows,
+      });
     }
   }
 

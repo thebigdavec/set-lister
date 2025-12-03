@@ -25,7 +25,7 @@
 </script>
 
 <template>
-  <div class="preview-set">
+  <div class="preview-set" :data-set-id="set.id">
     <div class="set-content">
       <div v-if="showHeader" class="metadata-header">
         <div v-if="hasMetadata" class="meta-left">
@@ -42,10 +42,12 @@
         </div>
       </div>
 
-      <div class="song-list">
+      <div class="song-list" :data-set-id="set.id">
         <div v-for="song in set.songs" :key="song.id" class="preview-song">
-          <span class="song-title">{{ song.title }}</span>
-          <span v-if="song.key" class="song-key">({{ song.key }})</span>
+          <span class="song-label">
+            <span class="song-title">{{ song.title }}</span><span v-if="song.key" class="song-key"> ({{ song.key
+            }})</span>
+          </span>
         </div>
       </div>
       <div class="set-spacer">&nbsp;</div>
@@ -146,22 +148,21 @@
   }
 
   .preview-song {
-    display: flex;
-    justify-content: space-between;
-    align-items: baseline;
     padding: 0.25em 0;
     white-space: nowrap;
   }
 
-  .song-title {
+  .song-label {
     font-weight: 600;
-    font-size: 1.2em;
+    font-size: inherit;
+  }
+
+  .song-title {
+    font-weight: inherit;
   }
 
   .song-key {
-    font-weight: bold;
-    margin-left: 1em;
-    font-size: 1em;
+    font-weight: 500;
     color: #333;
   }
 

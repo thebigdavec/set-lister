@@ -1,7 +1,12 @@
 type AutoScaleOptions = {
   debug?: boolean
   stepDelayMs?: number
+  longestEntryWidth16px?: number
+  totalRows?: number
 }
+
+const BASE_FONT_REFERENCE = 16
+const MIN_FONT_SIZE = 8
 
 function getSiblingReservedHeight(element: HTMLElement): number {
   const parent = element.parentElement
@@ -34,9 +39,20 @@ export async function autoScaleText(
   if (!songsEl || targetHeight <= 0 || targetWidth <= 0) return
   const debug = Boolean(options?.debug)
   const stepDelay = options?.stepDelayMs ?? (debug ? 150 : 0)
+  const widthHint =
+    typeof options?.longestEntryWidth16px === 'number' &&
+    options.longestEntryWidth16px > 0
+      ? options.longestEntryWidth16px
+      : null
+  const totalRowsHint =
+    typeof options?.totalRows === 'number' && options.totalRows > 0
+      ? Math.floor(options.totalRows)
+      : null
 
   const ensureDebugPanel = (): HTMLDivElement => {
-    let panel = document.getElementById('autoscale-debug') as HTMLDivElement | null
+    let panel = document.getElementById(
+      'autoscale-debug'
+    ) as HTMLDivElement | null
     if (!panel) {
       panel = document.createElement('div')
       panel.id = 'autoscale-debug'
@@ -63,7 +79,9 @@ export async function autoScaleText(
   const panel = debug ? ensureDebugPanel() : null
   const section = panel ? document.createElement('div') : null
   if (panel && section) {
-    section.style.borderTop = panel.childElementCount ? '1px solid rgba(255,255,255,0.2)' : 'none'
+    section.style.borderTop = panel.childElementCount
+      ? '1px solid rgba(255,255,255,0.2)'
+      : 'none'
     section.style.paddingTop = '6px'
     section.style.marginTop = '6px'
     panel.appendChild(section)
@@ -93,11 +111,7 @@ export async function autoScaleText(
     parseFloat(computed.paddingBottom || '0')
   const reservedHeight = getSiblingReservedHeight(songsEl)
 
-  const parentHeight = songsEl.parentElement?.clientHeight ?? targetHeight
-  const effectiveTargetHeight = Math.min(
-    parentHeight || targetHeight,
-    targetHeight
-  )
+  const effectiveTargetHeight = targetHeight
 
   const availableWidth = Math.max(targetWidth - paddingX, 50)
   const availableHeight = Math.max(
@@ -110,7 +124,9 @@ export async function autoScaleText(
 
   log(`Target: ${targetWidth.toFixed(1)}w x ${targetHeight.toFixed(1)}h`)
   log(`Reserved height (header/footer): ${reservedHeight.toFixed(1)}`)
-  log(`Available: ${availableWidth.toFixed(1)}w x ${availableHeight.toFixed(1)}h`)
+  log(
+    `Available: ${availableWidth.toFixed(1)}w x ${availableHeight.toFixed(1)}h`
+  )
 
   const baseFontSize = parseFloat(computed.fontSize || '16') || 16
   const normalLineHeight =
@@ -118,7 +134,17 @@ export async function autoScaleText(
       ? 1.2
       : parseFloat(computed.lineHeight) || 1.2
   const minLineHeightForWidth = 0.3
-  const targetLineHeight = Math.min(Math.max(normalLineHeight, minLineHeightForWidth), 3)
+  const targetLineHeight = Math.min(
+    Math.max(normalLineHeight, minLineHeightForWidth),
+    3
+  )
+
+  const widthLimitFromHint = widthHint
+    ? Math.floor((availableWidth * BASE_FONT_REFERENCE) / widthHint)
+    : null
+  const heightLimitFromHint = totalRowsHint
+    ? Math.floor(availableHeight / (totalRowsHint * targetLineHeight))
+    : null
 
   // Measure with an off-DOM clone so flex sizing does not inflate scrollHeight
   const clone = songsEl.cloneNode(true) as HTMLElement
@@ -138,16 +164,34 @@ export async function autoScaleText(
 
   const measureRows = () => {
     const songRows = Array.from(
-      clone.querySelectorAll<HTMLElement>('.preview-song, .song-row, .song-item')
+      clone.querySelectorAll<HTMLElement>(
+        '.preview-song, .song-row, .song-item'
+      )
     )
-    const maxRowWidth = songRows.reduce((max, row) => Math.max(max, row.scrollWidth), clone.scrollWidth)
+    const maxRowWidth = songRows.reduce(
+      (max, row) => Math.max(max, row.scrollWidth),
+      clone.scrollWidth
+    )
     const totalHeight = clone.scrollHeight
     return { maxRowWidth, totalHeight }
   }
 
   // Phase 1: width-limited search using minimal line-height to avoid wrap influence
-  let minSize = Math.max(10, Math.floor(baseFontSize * 0.8))
-  let maxSize = Math.max(minSize, Math.floor(baseFontSize * 8))
+  let minSize = Math.max(MIN_FONT_SIZE, Math.floor(baseFontSize * 0.8))
+  const naturalMax = Math.max(minSize, Math.floor(baseFontSize * 8))
+  const hintCap = widthLimitFromHint
+    ? Math.max(MIN_FONT_SIZE, widthLimitFromHint)
+    : naturalMax
+  let maxSize = Math.min(naturalMax, hintCap)
+  if (widthLimitFromHint) {
+    log(
+      `Width hint applied: cap ${hintCap}px derived from ${widthHint}px @16px`
+    )
+  }
+  if (maxSize < minSize) {
+    maxSize = minSize
+  }
+
   let optimalWidthSize = minSize
   let guard = 0
 
@@ -184,8 +228,17 @@ export async function autoScaleText(
   log(`Chosen width-limited font size: ${optimalWidthSize}px`)
 
   // Phase 2: height fitting with capped line-height, not exceeding width-limited size
-  minSize = Math.max(8, Math.floor(baseFontSize * 0.75))
+  minSize = Math.max(MIN_FONT_SIZE, Math.floor(baseFontSize * 0.75))
   maxSize = optimalWidthSize
+  if (heightLimitFromHint) {
+    log(
+      `Height hint applied: limiting font to ${heightLimitFromHint}px for ${totalRowsHint} rows`
+    )
+    maxSize = Math.min(maxSize, Math.max(heightLimitFromHint, MIN_FONT_SIZE))
+  }
+  if (maxSize < minSize) {
+    minSize = maxSize
+  }
   guard = 0
   let optimalSize = minSize
 
