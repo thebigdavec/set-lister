@@ -231,31 +231,34 @@
 <template>
   <div v-if="!showPreview" class="app-container">
     <header class="no-print">
+      <h1>Set Lister</h1>
       <MenuBar :has-sets="previewSets.length > 0" :is-dirty="store.isDirty" @new="startNew" @load="loadFromDisk"
         @save="saveToDisk" @save-as="saveToDisk({ altKey: true })" @add-set="addSet" @export="togglePreview" />
       <div class="header-top">
-        <h1>Set Lister</h1>
         <div class="controls">
           <input type="file" ref="fileInput" @change="handleLegacyLoad" accept=".json" style="display: none" />
         </div>
-        <input v-model="store.metadata.setListName" placeholder="e.g. Summer Tour 2024"
-          @blur="updateMetadata({ setListName: store.metadata.setListName })" @keyup.enter="blurInputOnEnter" />
+      </div>
+      <div class="header-metadata">
         <div class="metadata-grid">
           <div class="input-group">
             <label>Set List Name</label>
+            <input v-model="store.metadata.setListName" placeholder="e.g. Summer Tour 2024"
+              @blur="updateMetadata({ setListName: store.metadata.setListName })" @keyup.enter="blurInputOnEnter" />
+          </div>
+
+          <div class="input-group">
+            <label>Venue</label>
             <input v-model="store.metadata.venue" placeholder="e.g. The O2 Arena"
               @blur="updateMetadata({ venue: store.metadata.venue })" @keyup.enter="blurInputOnEnter" />
           </div>
+
           <div class="input-group">
-            <label>Venue</label>
+            <label>Date</label>
             <input v-model="store.metadata.date" type="date" @blur="updateMetadata({ date: store.metadata.date })"
               @keyup.enter="blurInputOnEnter" />
           </div>
-          <div class="input-group">
-            <label>Date</label>
-            <input v-model="store.metadata.actName" placeholder="e.g. The Beatles"
-              @blur="updateMetadata({ actName: store.metadata.actName })" @keyup.enter="blurInputOnEnter" />
-          </div>
+
           <div class="input-group">
             <label>Act Name</label>
             <input v-model="store.metadata.actName" placeholder="e.g. The Beatles"
@@ -302,21 +305,17 @@
 </template>
 
 <style scoped>
-
-  /* ... existing styles ... */
   header {
-    display: flex;
-    flex-direction: column;
-    gap: 1.5rem;
-    margin-bottom: 2rem;
-    padding-bottom: 1.5rem;
-    border-bottom: 1px solid #333;
+    margin-block-end: 1.5rem;
   }
 
-  .header-top {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
+  .header-top {}
+
+  .header-metadata {
+    background-color: #222;
+    padding: 1rem;
+    border-radius: 8px;
+    border: 1px solid #444;
   }
 
   .metadata-grid {
