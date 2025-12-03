@@ -19,6 +19,7 @@
   const editTitle = ref(props.song.title);
   const editKey = ref(props.song.key);
   const titleInput = ref<HTMLInputElement | null>(null);
+  const isCancelling = ref(false);
   const isMarker = computed(() => props.isEncoreMarker === true);
   const markerIsLast = computed(() => props.markerIsLast === true);
 
@@ -33,6 +34,10 @@
 
   function save(): void {
     if (isMarker.value) return;
+    if (isCancelling.value) {
+      isCancelling.value = false;
+      return;
+    }
     emit('update', {
       title: editTitle.value,
       key: editKey.value,
@@ -41,6 +46,7 @@
   }
 
   function cancel(): void {
+    isCancelling.value = false;
     if (isMarker.value) {
       isEditing.value = false;
       return;
@@ -82,7 +88,7 @@
         <input v-model="editTitle" placeholder="Song Title" @keyup.enter="save" @blur="save" ref="titleInput">
         <input v-model="editKey" placeholder="Key" class="key-input" @keyup.enter="save" @blur="save">
         <button @click="save">Save</button>
-        <button @click="cancel">Cancel</button>
+        <button @mousedown="isCancelling = true" @click="cancel">Cancel</button>
       </div>
     </template>
   </div>
