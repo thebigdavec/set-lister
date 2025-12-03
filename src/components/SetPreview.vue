@@ -26,6 +26,8 @@
 
 <template>
   <div class="preview-set" :data-set-id="set.id">
+    <div class="page-guide" aria-hidden="true"></div>
+    <div class="margin-guide" aria-hidden="true"></div>
     <div class="set-content">
       <div v-if="showHeader" class="metadata-header">
         <div v-if="hasMetadata" class="meta-left">
@@ -46,7 +48,7 @@
         <div v-for="song in set.songs" :key="song.id" class="preview-song">
           <span class="song-label">
             <span class="song-title">{{ song.title }}</span><span v-if="song.key" class="song-key"> ({{ song.key
-            }})</span>
+              }})</span>
           </span>
         </div>
       </div>
@@ -74,6 +76,29 @@
     display: flex;
     flex-direction: column;
     /* justify-content: center; REMOVED */
+    position: relative;
+  }
+
+  .page-guide {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    aspect-ratio: 210 / 297;
+    border: 2px solid rgba(0, 0, 0, 0.5);
+    pointer-events: none;
+    box-sizing: border-box;
+    z-index: 0;
+  }
+
+  .margin-guide {
+    position: absolute;
+    inset: .3in .3in auto .3in;
+    aspect-ratio: 210 / 297;
+    border: 2px dashed rgba(0, 0, 0, 0.3);
+    pointer-events: none;
+    box-sizing: border-box;
+    z-index: 0;
   }
 
   .metadata-header {
@@ -137,18 +162,11 @@
     /* height: 100%; REMOVED */
     flex: 1;
     /* Allow it to grow */
-  }
-
-  .song-list {
-    display: flex;
-    flex-direction: column;
-    gap: 0.5em;
-    flex: 0 0 auto;
-    align-self: stretch;
+    position: relative;
+    z-index: 1;
   }
 
   .preview-song {
-    padding: 0.25em 0;
     white-space: nowrap;
   }
 

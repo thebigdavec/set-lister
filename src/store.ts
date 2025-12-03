@@ -1,6 +1,6 @@
 import { reactive, watch } from 'vue'
 import { formatSongLabel, measureSongLabelWidth } from './utils/textMetrics'
-import { fitStringsToBox } from './utils/fitStringsToBox'
+// import { fitStringsToBox } from './utils/fitStringsToBox'
 
 const STORAGE_KEY = 'set-lister-data'
 
@@ -192,32 +192,6 @@ watch(
   store,
   state => {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(state))
-  },
-  { deep: true }
-)
-
-// Use a watcher to send songs `${song.title} (${song.key})` to fitStringsToBox
-// So that I can see the console.log for the max lines that can fit.
-watch(
-  () =>
-    store.sets.map(set =>
-      set.songs.map(song => formatSongLabel(song.title, song.key))
-    ),
-  songLabelsBySet => {
-    songLabelsBySet.forEach((labels, index) => {
-      // Let's sert the width and height of the box to represent an A4 page with .3inch margins at 300DPI
-      const boxWidthCm = 21.0 - 0.6 // A4 width - .3in margins
-      const boxHeightCm = 29.7 - 0.6 // A4 height - .3in margins
-
-      const { fontSize, lineHeight } = fitStringsToBox(
-        labels,
-        boxWidthCm,
-        boxHeightCm
-      )
-      console.log(
-        `Set ${index + 1}: fontSize=${fontSize}, lineHeight=${lineHeight}`
-      )
-    })
   },
   { deep: true }
 )

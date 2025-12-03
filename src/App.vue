@@ -4,7 +4,8 @@
   import Set from './components/Set.vue';
   import SetPreview from './components/SetPreview.vue';
   import MenuBar from './components/MenuBar.vue';
-  import { autoScaleText } from './utils/autoScale';
+  import { fitStringsToBox } from './utils/fitStringsToBox';
+  import { formatSongLabel } from './utils/textMetrics';
 
   const showPreview = ref(false);
   const previewRef = ref<HTMLDivElement | null>(null);
@@ -13,26 +14,46 @@
 
   const previewSets = computed(() => store.sets.filter((set) => set.songs.length > 0));
 
+  const CM_TO_PX = 37.795275591; // 1 cm ≈ 37.795 px
+  const TARGET_HEIGHT_CM = 29.7;
+  const TARGET_WIDTH_CM = 21.0;
+  const MARGINS_CM = {
+    top: 1,
+    bottom: 1,
+    left: 1,
+    right: 1,
+  }
+
+  const BOX_HEIGHT_CM = TARGET_HEIGHT_CM - MARGINS_CM.top - MARGINS_CM.bottom;
+  const BOX_WIDTH_CM = TARGET_WIDTH_CM - MARGINS_CM.left - MARGINS_CM.right;
+
   async function togglePreview(): Promise<void> {
     showPreview.value = true;
     await nextTick();
 
     if (!previewRef.value) return;
 
-    const targetHeight = 1123 - 120;
-    const targetWidth = 794 - 120;
-
     for (const set of previewSets.value) {
       const selector = `.preview-set[data-set-id="${set.id}"] .song-list`;
       const songsEl = previewRef.value.querySelector<HTMLElement>(selector);
       if (!songsEl) continue;
 
-      await autoScaleText(songsEl, targetHeight, targetWidth, {
-        debug: false,
-        stepDelayMs: 0,
-        longestEntryWidth16px: set.metrics.longestEntryWidth16px,
-        totalRows: set.metrics.totalRows,
-      });
+      const strings = set.songs.map((song) => formatSongLabel(song.title, song.key));
+      if (strings.length === 0) {
+        songsEl.style.fontSize = '';
+        songsEl.style.lineHeight = '';
+        songsEl.style.width = `${TARGET_WIDTH_CM * CM_TO_PX}px`;
+        songsEl.style.transform = '';
+        songsEl.style.transformOrigin = '';
+        continue;
+      }
+
+      const { fontSizePx, lineHeight } = fitStringsToBox(strings, BOX_WIDTH_CM, BOX_HEIGHT_CM);
+      songsEl.style.fontSize = `${fontSizePx}px`;
+      songsEl.style.lineHeight = lineHeight.toString();
+      songsEl.style.width = `${TARGET_WIDTH_CM * CM_TO_PX}px`;
+      songsEl.style.transform = '';
+      songsEl.style.transformOrigin = '';
     }
   }
 
