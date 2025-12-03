@@ -24,36 +24,38 @@ export function fitStringsToBox(
   const boxWidth = boxWidthCm * CM_TO_INCH * DPI
   const boxHeight = boxHeightCm * CM_TO_INCH * DPI
 
+  if (strings.length === 0) {
+    return {
+      fontSizePx: BASE_FONT_SIZE_PX,
+      lineHeight: BASE_LINE_HEIGHT
+    }
+  }
+
   let longestStringPx = 0
-  let fontSizePx = BASE_FONT_SIZE_PX
-  let lineHeightPx = 0
-  let lineHeight = BASE_LINE_HEIGHT
+  let lineHeightPx = BASE_FONT_SIZE_PX * BASE_LINE_HEIGHT
+
+  const measureSpan = document.createElement('span')
+  measureSpan.style.fontSize = `${BASE_FONT_SIZE_PX}px`
+  measureSpan.style.visibility = 'hidden'
+  measureSpan.style.position = 'absolute'
+  measureSpan.style.padding = '0'
+  measureSpan.style.margin = '0'
+  document.body.appendChild(measureSpan)
 
   for (const str of strings) {
-    const span = document.createElement('span')
-    span.style.fontSize = `${BASE_FONT_SIZE_PX}px`
-    span.style.visibility = 'hidden'
-    span.style.position = 'absolute'
-    span.style.padding = '0'
-    span.style.margin = '0'
-    span.textContent = str.trim()
-    document.body.appendChild(span)
-
-    const width = span.getBoundingClientRect().width
-    lineHeightPx = span.getBoundingClientRect().height
-
-    if (width > longestStringPx) {
-      longestStringPx = width
-    }
-
-    document.body.removeChild(span)
+    measureSpan.textContent = str.trim()
+    const rect = measureSpan.getBoundingClientRect()
+    longestStringPx = Math.max(longestStringPx, rect.width)
+    lineHeightPx = rect.height || lineHeightPx
   }
-  const widthScale = boxWidth / longestStringPx
-  fontSizePx = BASE_FONT_SIZE_PX * widthScale
+
+  document.body.removeChild(measureSpan)
+
+  const widthScale = longestStringPx > 0 ? boxWidth / longestStringPx : 1
+  let fontSizePx = BASE_FONT_SIZE_PX * widthScale
 
   const totalTextHeightPx = lineHeightPx * strings.length * widthScale
   let remainingHeightPx = boxHeight - totalTextHeightPx
-  console.log({ totalTextHeightPx, remainingHeightPx })
 
   while (remainingHeightPx < 0 && fontSizePx > 10) {
     fontSizePx -= 1
@@ -62,7 +64,8 @@ export function fitStringsToBox(
     remainingHeightPx = boxHeight - adjustedTextHeightPx
   }
 
-  if (remainingHeightPx) {
+  let lineHeight = BASE_LINE_HEIGHT
+  if (remainingHeightPx > 0) {
     const extraLineHeightPerLine =
       remainingHeightPx / (strings.length * (fontSizePx || 1))
     lineHeight += extraLineHeightPerLine
