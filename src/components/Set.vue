@@ -1,80 +1,118 @@
 <script setup lang="ts">
-  import { nextTick, onMounted, onUnmounted, ref } from 'vue';
-  import Sortable, { SortableEvent } from 'sortablejs';
-  import SongItem from './SongItem.vue';
+  import { computed, nextTick, onMounted, onUnmounted, ref } from 'vue'
+  import Sortable, { MoveEvent, SortableEvent } from 'sortablejs'
+  import SongItem from './SongItem.vue'
   import {
     addSongToSet,
+    isEncoreMarkerSong,
     moveSong,
     removeSongFromSet,
     renameSet,
     reorderSong,
     updateSong,
-    type SetItem,
-  } from '../store';
+    type SetItem
+  } from '../store'
 
-  const props = defineProps<{
-    set: SetItem;
-  }>();
+  const props = defineProps<{ set: SetItem; isLast: boolean }>()
 
-  const emit = defineEmits<{
-    (e: 'remove-set'): void;
-  }>();
+  defineEmits<{ (e: 'remove-set'): void }>()
 
-  const songListRef = ref<HTMLDivElement | null>(null);
-  const titleInputRef = ref<HTMLInputElement | null>(null);
-  let sortableInstance: Sortable | null = null;
+  const songListRef = ref<HTMLDivElement | null>(null)
+  const titleInputRef = ref<HTMLInputElement | null>(null)
+  let sortableInstance: Sortable | null = null
 
-  const newSongTitle = ref('');
-  const newSongKey = ref('');
+  const newSongTitle = ref('')
+  const newSongKey = ref('')
+
+  const markerIndex = computed(() => props.set.songs.findIndex(isEncoreMarkerSong))
+  const hasEncoreMarker = computed(() => markerIndex.value !== -1)
+  const markerIsLast = computed(() => {
+    if (markerIndex.value === -1) return false
+    return markerIndex.value === props.set.songs.length - 1
+  })
+
+  const encoreSummary = computed(() => {
+    if (!props.isLast) return 'Encore marker appears only in the final set.'
+    if (props.set.songs.length < 2) return 'Add two or more songs to unlock encores.'
+    if (!hasEncoreMarker.value) return 'Encore marker will appear automatically when eligible.'
+    return 'Drag the <encore> entry to choose where encores begin.'
+  })
 
   async function addSong(): Promise<void> {
-    if (!newSongTitle.value.trim()) return;
+    if (!newSongTitle.value.trim()) return
 
     addSongToSet(props.set.id, {
       title: newSongTitle.value,
-      key: newSongKey.value,
-    });
+      key: newSongKey.value
+    })
 
-    newSongTitle.value = '';
-    newSongKey.value = '';
+    newSongTitle.value = ''
+    newSongKey.value = ''
 
-    await nextTick();
-    titleInputRef.value?.focus();
+    await nextTick()
+    titleInputRef.value?.focus()
   }
 
   function handleTitleBlur(event: FocusEvent): void {
-    const target = event.target as HTMLElement | null;
-    if (!target) return;
-    renameSet(props.set.id, target.innerText);
+    const target = event.target as HTMLElement | null
+    if (!target) return
+    renameSet(props.set.id, target.innerText)
   }
 
   function handleSortEnd(evt: SortableEvent): void {
-    const fromSetId = props.set.id;
-    const toSetId = (evt.to as HTMLElement | null)?.dataset.setId;
+    const fromSetId = props.set.id
+    const toSetId = (evt.to as HTMLElement | null)?.dataset.setId
 
-    if (!toSetId) return;
+    if (!toSetId) return
 
     if (evt.to === evt.from) {
-      reorderSong(fromSetId, evt.oldIndex ?? 0, evt.newIndex ?? 0);
+      reorderSong(fromSetId, evt.oldIndex ?? 0, evt.newIndex ?? 0)
     } else {
-      moveSong(fromSetId, toSetId, evt.oldIndex ?? 0, evt.newIndex ?? 0);
+      moveSong(fromSetId, toSetId, evt.oldIndex ?? 0, evt.newIndex ?? 0)
     }
   }
 
+  function handleSortMove(evt: MoveEvent): boolean {
+    const dragged = evt.dragged as HTMLElement | null
+    if (!dragged) return true
+    const isMarker = dragged.dataset.encoreMarker === 'true'
+    if (!isMarker) return true
+    if (!props.isLast) return false
+    if (evt.to !== evt.from) return false
+    return true
+  }
+
+  function songIsEncore(index: number): boolean {
+    if (!props.isLast) return false
+    const divider = markerIndex.value
+    if (divider === -1) return false
+    return index > divider
+  }
+
+  function resetEncoreMarker(): void {
+    const index = markerIndex.value
+    if (index === -1) return
+    const lastIndex = props.set.songs.length - 1
+    if (index === lastIndex) return
+    reorderSong(props.set.id, index, lastIndex)
+  }
+
   onMounted(() => {
-    if (!songListRef.value) return;
+    if (!songListRef.value) return
 
     sortableInstance = new Sortable(songListRef.value, {
       group: 'songs',
       animation: 150,
       ghostClass: 'sortable-ghost',
-      onEnd: handleSortEnd,
-    });
-  });
+      draggable: '.song-item',
+      onMove: handleSortMove,
+      onEnd: handleSortEnd
+    })
+  })
 
   onUnmounted(() => {
-    sortableInstance?.destroy();
-  });
+    sortableInstance?.destroy()
+  })
 </script>
 
 <template>
@@ -85,14 +123,20 @@
     </div>
 
     <div ref="songListRef" class="song-list" :data-set-id="set.id">
-      <SongItem v-for="song in set.songs" :key="song.id" :song="song"
-        @update="(updates) => updateSong(set.id, song.id, updates)" @remove="removeSongFromSet(set.id, song.id)" />
+      <SongItem v-for="(song, index) in set.songs" :key="song.id" :song="song" :is-encore="songIsEncore(index)"
+        :is-encore-marker="song.isEncoreMarker === true" :marker-is-last="markerIsLast"
+        @update="updates => updateSong(set.id, song.id, updates)" @remove="removeSongFromSet(set.id, song.id)"
+        @reset-encore="resetEncoreMarker" />
     </div>
 
     <div class="add-song no-print">
-      <input ref="titleInputRef" v-model="newSongTitle" placeholder="Add new song..." @keyup.enter="addSong">
-      <input v-model="newSongKey" placeholder="Key" class="key-input" @keyup.enter="addSong">
+      <input ref="titleInputRef" v-model="newSongTitle" placeholder="Add new song..." @keyup.enter="addSong" />
+      <input v-model="newSongKey" placeholder="Key" class="key-input" @keyup.enter="addSong" />
       <button @click="addSong">+</button>
+    </div>
+
+    <div v-if="isLast" class="encore-actions no-print">
+      <p class="marker-hint">{{ encoreSummary }}</p>
     </div>
   </div>
 </template>
@@ -152,5 +196,18 @@
   .sortable-ghost {
     opacity: 0.5;
     background: #333;
+  }
+
+  .encore-actions {
+    margin-top: 0.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+  }
+
+  .marker-hint {
+    margin: 0;
+    font-size: 0.85rem;
+    color: #bbbbbb;
   }
 </style>

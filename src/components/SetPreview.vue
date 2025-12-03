@@ -1,18 +1,20 @@
 <script setup lang="ts">
   import { computed, toRefs, withDefaults } from 'vue';
-  import { store, type SetItem } from '../store';
+  import { isEncoreMarkerSong, store, type SetItem, type Song } from '../store';
 
   const props = withDefaults(
     defineProps<{
       set: SetItem;
       uppercase?: boolean;
+      isLast?: boolean;
     }>(),
     {
       uppercase: false,
+      isLast: false,
     }
   );
 
-  const { set, uppercase } = toRefs(props);
+  const { set, uppercase, isLast } = toRefs(props);
 
   const hasMetadata = computed(() => {
     const m = store.metadata;
@@ -20,6 +22,27 @@
   });
 
   const showHeader = computed(() => hasMetadata.value || Boolean(set.value?.name));
+
+  const markerIndex = computed(() => {
+    if (!isLast.value) return -1;
+    return set.value.songs.findIndex(isEncoreMarkerSong);
+  });
+
+  const firstEncoreSongId = computed(() => {
+    const idx = markerIndex.value;
+    if (idx === -1) return null;
+    return set.value.songs[idx + 1]?.id ?? null;
+  });
+
+  const previewSongs = computed(() => set.value.songs.filter(song => !isEncoreMarkerSong(song)));
+
+  function isEncoreSong(song: Song): boolean {
+    if (!isLast.value) return false;
+    const idx = markerIndex.value;
+    if (idx === -1) return false;
+    const originalIndex = set.value.songs.findIndex(s => s.id === song.id);
+    return originalIndex > idx;
+  }
 
   function formatDate(dateStr: string | undefined): string {
     if (!dateStr) return '';
@@ -53,12 +76,17 @@
       </div>
 
       <div class="song-list" :data-set-id="set.id">
-        <div v-for="song in set.songs" :key="song.id" class="preview-song">
-          <span class="song-label">
-            <span class="song-title">{{ uppercase ? song.title.toUpperCase() : song.title }}</span><span v-if="song.key"
-              class="song-key"> ({{ song.key }})</span>
-          </span>
-        </div>
+        <template v-for="song in previewSongs" :key="song.id">
+          <div v-if="song.id === firstEncoreSongId" class="preview-encore-divider">
+            <span>---- encores ----</span>
+          </div>
+          <div class="preview-song" :class="{ 'is-encore': isEncoreSong(song) }">
+            <span class="song-label">
+              <span class="song-title">{{ uppercase ? song.title.toUpperCase() : song.title }}</span><span
+                v-if="song.key" class="song-key"> ({{ song.key }})</span>
+            </span>
+          </div>
+        </template>
       </div>
       <div class="set-spacer">&nbsp;</div>
     </div>
@@ -93,7 +121,6 @@
     left: 0;
     width: 100%;
     aspect-ratio: 210 / 297;
-    border: 2px solid rgba(0, 0, 0, 0.5);
     pointer-events: none;
     box-sizing: border-box;
     z-index: 0;
@@ -103,7 +130,6 @@
     position: absolute;
     inset: .3in .3in auto .3in;
     aspect-ratio: 210 / 297;
-    border: 2px dashed rgba(0, 0, 0, 0.3);
     pointer-events: none;
     box-sizing: border-box;
     z-index: 0;
@@ -176,6 +202,28 @@
 
   .preview-song {
     white-space: nowrap;
+  }
+
+  .preview-song.is-encore {
+    color: #6c4dff;
+    font-style: italic;
+  }
+
+  .preview-encore-divider {
+    margin: 0.5rem 0;
+    position: relative;
+  }
+
+  .preview-encore-divider span {
+    position: absolute;
+    top: -0.75rem;
+    left: 0;
+    font-size: 0.75rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: #6c4dff;
+    background: #fff;
+    padding: 0 0.4rem;
   }
 
   .song-label {

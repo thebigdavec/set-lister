@@ -8,6 +8,7 @@ export interface Song {
   id: string
   title: string
   key?: string
+  isEncoreMarker?: boolean
 }
 
 export interface SetMetrics {
@@ -37,6 +38,8 @@ export interface StoreState {
   sets: SetItem[]
 }
 
+const ENCORE_MARKER_TITLE = '<encore>'
+
 const EMPTY_METRICS: SetMetrics = {
   longestEntryId: null,
   longestEntryText: '',
@@ -48,8 +51,14 @@ function cloneEmptyMetrics(): SetMetrics {
   return { ...EMPTY_METRICS }
 }
 
+function isEncoreMarkerSong(song: Song | undefined): boolean {
+  if (!song) return false
+  return song.isEncoreMarker === true || song.title === ENCORE_MARKER_TITLE
+}
+
 function buildSetMetrics(songs: Song[]): SetMetrics {
-  if (songs.length === 0) {
+  const filtered = songs.filter(song => !isEncoreMarkerSong(song))
+  if (filtered.length === 0) {
     return cloneEmptyMetrics()
   }
 
@@ -57,7 +66,7 @@ function buildSetMetrics(songs: Song[]): SetMetrics {
   let longestEntryText = ''
   let longestEntryWidth16px = 0
 
-  songs.forEach(song => {
+  filtered.forEach(song => {
     const label = formatSongLabel(song.title, song.key)
     const width = measureSongLabelWidth(song.title, song.key)
     if (width >= longestEntryWidth16px) {
@@ -71,11 +80,15 @@ function buildSetMetrics(songs: Song[]): SetMetrics {
     longestEntryId,
     longestEntryText,
     longestEntryWidth16px,
-    totalRows: songs.length
+    totalRows: filtered.length
   }
 }
 
 function applySongAdditionMetrics(set: SetItem, song: Song): void {
+  if (isEncoreMarkerSong(song)) {
+    set.metrics = buildSetMetrics(set.songs)
+    return
+  }
   const metrics = set.metrics ?? cloneEmptyMetrics()
   const label = formatSongLabel(song.title, song.key)
   const width = measureSongLabelWidth(song.title, song.key)
@@ -142,7 +155,8 @@ function normalizeSongs(songs?: Song[]): Song[] {
       typeof song?.title === 'string' && song.title.trim().length > 0
         ? song.title
         : `Song ${index + 1}`,
-    key: typeof song?.key === 'string' ? song.key : undefined
+    key: typeof song?.key === 'string' ? song.key : undefined,
+    isEncoreMarker: isEncoreMarkerSong(song)
   }))
 }
 
@@ -168,6 +182,32 @@ function normalizeSets(sets?: SetItem[]): SetItem[] {
     }
   })
 }
+
+function createEncoreMarker(): Song {
+  return {
+    id: crypto.randomUUID(),
+    title: ENCORE_MARKER_TITLE,
+    key: undefined,
+    isEncoreMarker: true
+  }
+}
+
+function findEncoreMarkerIndex(set: SetItem): number {
+  return set.songs.findIndex(song => isEncoreMarkerSong(song))
+}
+
+function countPlayableSongs(set: SetItem): number {
+  return set.songs.reduce(
+    (acc, song) => acc + (isEncoreMarkerSong(song) ? 0 : 1),
+    0
+  )
+}
+
+export function hasEncoreMarker(set: SetItem): boolean {
+  return findEncoreMarkerIndex(set) !== -1
+}
+
+export { isEncoreMarkerSong }
 
 function buildInitialState(): StoreState {
   const savedState = parseSavedState(localStorage.getItem(STORAGE_KEY))
@@ -198,6 +238,7 @@ watch(
 
 export function addSet(): void {
   store.sets.push(createEmptySet(`Set ${store.sets.length + 1}`))
+  sanitizeEncoreMarkers()
   store.isDirty = true
 }
 
@@ -205,6 +246,7 @@ export function removeSet(setId: string): void {
   const index = store.sets.findIndex(set => set.id === setId)
   if (index !== -1) {
     store.sets.splice(index, 1)
+    sanitizeEncoreMarkers()
     store.isDirty = true
   }
 }
@@ -230,8 +272,18 @@ export function addSongToSet(
       id: crypto.randomUUID(),
       ...song
     }
-    set.songs.push(newSong)
-    applySongAdditionMetrics(set, newSong)
+    const markerIndex = findEncoreMarkerIndex(set)
+    const markerIsLast =
+      markerIndex !== -1 && markerIndex === set.songs.length - 1
+
+    if (markerIsLast) {
+      set.songs.splice(markerIndex, 0, newSong)
+      refreshSetMetrics(set)
+    } else {
+      set.songs.push(newSong)
+      applySongAdditionMetrics(set, newSong)
+    }
+    sanitizeEncoreMarkers()
     store.isDirty = true
   }
 }
@@ -243,6 +295,7 @@ export function removeSongFromSet(setId: string, songId: string): void {
     if (index !== -1) {
       set.songs.splice(index, 1)
       refreshSetMetrics(set)
+      sanitizeEncoreMarkers()
       store.isDirty = true
     }
   }
@@ -256,7 +309,9 @@ export function reorderSong(
   const set = store.sets.find(s => s.id === setId)
   if (set && fromIndex >= 0 && toIndex >= 0 && fromIndex < set.songs.length) {
     const [movedSong] = set.songs.splice(fromIndex, 1)
-    set.songs.splice(Math.min(toIndex, set.songs.length), 0, movedSong)
+    const insertIndex = Math.min(toIndex, set.songs.length)
+    set.songs.splice(insertIndex, 0, movedSong)
+    refreshSetMetrics(set)
     store.isDirty = true
   }
 }
@@ -272,9 +327,16 @@ export function moveSong(
 
   if (fromSet && toSet && fromIndex >= 0 && fromIndex < fromSet.songs.length) {
     const [movedSong] = fromSet.songs.splice(fromIndex, 1)
-    toSet.songs.splice(Math.min(toIndex, toSet.songs.length), 0, movedSong)
+    if (movedSong?.isEncoreMarker && fromSetId !== toSetId) {
+      // Encore marker stays within its original set
+      fromSet.songs.splice(fromIndex, 0, movedSong)
+      return
+    }
+    const insertIndex = Math.min(toIndex, toSet.songs.length)
+    toSet.songs.splice(insertIndex, 0, movedSong)
     refreshSetMetrics(fromSet)
     refreshSetMetrics(toSet)
+    sanitizeEncoreMarkers()
     store.isDirty = true
   }
 }
@@ -309,6 +371,7 @@ export function resetStore(): void {
   store.sets = newData.sets
   store.isDirty = newData.isDirty
   store.metadata = newData.metadata
+  sanitizeEncoreMarkers()
 }
 
 export function loadStore(data: unknown): boolean {
@@ -331,6 +394,25 @@ export function loadStore(data: unknown): boolean {
     date: candidate.metadata?.date ?? '',
     actName: candidate.metadata?.actName ?? ''
   }
+  sanitizeEncoreMarkers()
   store.isDirty = false
   return true
+}
+
+export function sanitizeEncoreMarkers(): void {
+  if (!store.sets.length) return
+  const lastIndex = store.sets.length - 1
+
+  store.sets.forEach((set, index) => {
+    const markerIndex = findEncoreMarkerIndex(set)
+    const shouldHaveMarker = index === lastIndex && countPlayableSongs(set) >= 2
+
+    if (shouldHaveMarker && markerIndex === -1) {
+      set.songs.push(createEncoreMarker())
+      refreshSetMetrics(set)
+    } else if (!shouldHaveMarker && markerIndex !== -1) {
+      set.songs.splice(markerIndex, 1)
+      refreshSetMetrics(set)
+    }
+  })
 }

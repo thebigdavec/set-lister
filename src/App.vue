@@ -14,6 +14,7 @@
   const uppercasePreview = ref(false);
 
   const previewSets = computed(() => store.sets.filter((set) => set.songs.length > 0));
+  const lastSetId = computed(() => (store.sets.length ? store.sets[store.sets.length - 1].id : null));
 
   const CM_TO_PX = 37.795275591; // 1 cm ≈ 37.795 px
   const TARGET_HEIGHT_CM = 29.7;
@@ -290,7 +291,8 @@
 
     <main>
       <div class="sets-wrapper">
-        <Set v-for="set in store.sets" :key="set.id" :set="set" @remove-set="removeSet(set.id)" />
+        <Set v-for="set in store.sets" :key="set.id" :set="set" :is-last="set.id === lastSetId"
+          @remove-set="removeSet(set.id)" />
       </div>
     </main>
 
@@ -313,7 +315,8 @@
 
     <div ref="previewRef" class="preview-content">
       <div class="sets-wrapper">
-        <SetPreview v-for="set in previewSets" :key="set.id" :set="set" :uppercase="uppercasePreview" />
+        <SetPreview v-for="set in previewSets" :key="set.id" :set="set" :uppercase="uppercasePreview"
+          :is-last="set.id === lastSetId" />
       </div>
     </div>
   </div>
@@ -333,8 +336,6 @@
   header {
     margin-block-end: 1.5rem;
   }
-
-  .header-top {}
 
   .header-metadata {
     background-color: #222;
