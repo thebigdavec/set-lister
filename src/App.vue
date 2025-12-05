@@ -35,9 +35,9 @@ const TARGET_HEIGHT_CM = 29.7;
 const TARGET_WIDTH_CM = 21.0;
 const MARGINS_CM = {
     top: 1,
-    bottom: 1.5,
-    left: 1.5,
-    right: 1.5,
+    bottom: 1,
+    left: 1,
+    right: 1,
 };
 
 const BOX_HEIGHT_CM = TARGET_HEIGHT_CM - MARGINS_CM.top - MARGINS_CM.bottom;
@@ -691,6 +691,9 @@ footer {
     justify-content: center;
     flex-shrink: 0;
     margin-block-end: 1rem;
+    @media print {
+        margin: 0;
+    }
 }
 
 .preview-page :deep(.preview-set) {

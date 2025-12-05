@@ -69,11 +69,7 @@ function formatDate(dateStr: string | undefined): string {
 </script>
 
 <template>
-    <div
-        class="preview-set"
-        :class="{ 'last-set': isLast }"
-        :data-set-id="set.id"
-    >
+    <div class="preview-set" :data-set-id="set.id">
         <!-- Visual guides that mirror real-world page dimensions/margins for print preview -->
         <div v-show="showGuides" class="page-guide" aria-hidden="true"></div>
         <div v-show="showGuides" class="margin-guide" aria-hidden="true"></div>
@@ -280,6 +276,7 @@ function formatDate(dateStr: string | undefined): string {
 
 .set-spacer {
     min-height: 1em;
+    min-height: 0;
 }
 
 @page {
@@ -290,17 +287,9 @@ function formatDate(dateStr: string | undefined): string {
 @media print {
     .preview-set {
         width: 210mm;
-        height: 297mm;
-        min-height: 0;
+        height: 290mm;
         box-shadow: none;
-        margin: 0;
-        padding: 1cm;
         overflow: hidden;
-        page-break-after: always;
-    }
-
-    .preview-set.last-set {
-        page-break-after: auto;
     }
 
     .page-guide,
