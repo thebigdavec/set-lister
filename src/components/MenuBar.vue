@@ -1,12 +1,14 @@
 <script setup lang="ts">
-import { withDefaults } from "vue";
+import { onMounted, onUnmounted, ref, withDefaults } from "vue";
 import {
     FileDown,
     FilePlus,
     FolderOpen,
+    Menu,
     PlusCircle,
     Save,
     SaveAll,
+    X,
 } from "lucide-vue-next";
 
 withDefaults(
@@ -26,14 +28,62 @@ const emit = defineEmits<{
     (e: MenuAction): void;
 }>();
 
+const isMobileMenuOpen = ref(false);
+
 function handleAction(action: MenuAction): void {
     // Centralized emit so every button automatically closes transient UI if needed later
     emit(action);
+    // Close mobile menu after action
+    isMobileMenuOpen.value = false;
 }
+
+function toggleMobileMenu(): void {
+    isMobileMenuOpen.value = !isMobileMenuOpen.value;
+}
+
+function closeMobileMenu(): void {
+    isMobileMenuOpen.value = false;
+}
+
+function handleKeyDown(event: KeyboardEvent): void {
+    if (event.key === "Escape" && isMobileMenuOpen.value) {
+        closeMobileMenu();
+    }
+}
+
+onMounted(() => {
+    // Always listen for Escape key to close menu when open
+    // This is lightweight and ensures menu can be closed from anywhere
+    window.addEventListener("keydown", handleKeyDown);
+});
+
+onUnmounted(() => {
+    window.removeEventListener("keydown", handleKeyDown);
+});
 </script>
 
 <template>
-    <div class="menu-bar no-print">
+    <!-- Burger menu button (mobile only) -->
+    <button
+        class="burger-menu-button no-print"
+        @click="toggleMobileMenu"
+        aria-label="Toggle menu"
+        :aria-expanded="isMobileMenuOpen"
+    >
+        <Menu v-if="!isMobileMenuOpen" :size="24" />
+        <X v-else :size="24" />
+    </button>
+
+    <!-- Mobile menu overlay -->
+    <div
+        v-if="isMobileMenuOpen"
+        class="mobile-menu-overlay no-print"
+        @click="closeMobileMenu"
+        aria-hidden="true"
+    ></div>
+
+    <!-- Menu content (desktop always visible, mobile slide-in) -->
+    <div class="menu-bar no-print" :class="{ 'mobile-open': isMobileMenuOpen }">
         <div>
             <div class="menu-items">
                 <button @click="handleAction('new')" class="action-item">
@@ -75,15 +125,42 @@ function handleAction(action: MenuAction): void {
 </template>
 
 <style scoped>
+/* Burger menu button - hidden on desktop */
+.burger-menu-button {
+    display: none;
+    background: #333;
+    border: none;
+    color: #ddd;
+    padding: 0.6rem;
+    cursor: pointer;
+    border-radius: 6px;
+    box-shadow: 0 2px 4px -2px #000;
+    transition: background-color 0.2s;
+    position: relative;
+    z-index: 1001;
+}
+
+.burger-menu-button:hover {
+    background: #444;
+    color: white;
+}
+
+/* Mobile menu overlay */
+.mobile-menu-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 999;
+}
+
 .menu-bar {
     display: flex;
     flex-wrap: wrap;
     justify-content: space-between;
     gap: 0.5rem;
-    /*background: #222;*/
-    /*border: 1px solid #444;*/
-    /*padding: 0.5rem 1rem;*/
-    /*border-radius: 6px;*/
     margin-bottom: 1rem;
     position: relative;
     z-index: 100;
@@ -140,5 +217,57 @@ function handleAction(action: MenuAction): void {
 }
 .dirty-indicator {
     color: #ee8;
+}
+
+/* Mobile responsive styles */
+@media (max-width: 767px) {
+    /* Show burger button on mobile */
+    .burger-menu-button {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    /* Menu bar becomes a slide-in panel on mobile */
+    .menu-bar {
+        position: fixed;
+        top: 0;
+        right: -100%;
+        width: 280px;
+        height: 100vh;
+        background: #1a1a1a;
+        border-left: 1px solid #444;
+        flex-direction: column;
+        justify-content: flex-start;
+        align-items: stretch;
+        padding: 1rem;
+        margin: 0;
+        gap: 1rem;
+        z-index: 1000;
+        transition: right 0.3s ease-in-out;
+        overflow-y: auto;
+    }
+
+    /* When mobile menu is open, slide in from right */
+    .menu-bar.mobile-open {
+        right: 0;
+    }
+
+    /* Stack menu items vertically on mobile */
+    .menu-bar > * {
+        width: 100%;
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+
+    .menu-bar .menu-items {
+        width: 100%;
+        flex-direction: column;
+    }
+
+    .action-item {
+        width: 100%;
+        justify-content: flex-start;
+    }
 }
 </style>
