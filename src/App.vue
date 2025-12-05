@@ -314,11 +314,61 @@ function handleBeforeUnload(event: BeforeUnloadEvent): void {
     }
 }
 
+function handleKeyUp(event: KeyboardEvent): void {
+    if (!event.key) return;
+
+    if (showPreview.value) {
+        switch (event.key) {
+            case "Escape":
+                showPreview.value = false;
+                break;
+        }
+    } else {
+        switch (event.key) {
+            case "Control":
+                if (event.altKey) {
+                    switch (event.code) {
+                        case "KeyS":
+                            // control+alt+s
+                            saveToDisk({ altKey: true });
+                            break;
+                        case "KeyN":
+                            // control+alt+n
+                            addSet();
+                            break;
+                    }
+                } else {
+                    switch (event.code) {
+                        case "KeyN":
+                            // control+n
+                            startNew();
+                            break;
+                        case "KeyS":
+                            // control+s
+                            saveToDisk();
+                            break;
+                        case "KeyO":
+                            // control+o
+                            loadFromDisk();
+                            break;
+                        case "KeyE":
+                            // control+e
+                            togglePreview();
+                            break;
+                    }
+                }
+
+                break;
+        }
+    }
+}
+
 onMounted(() => {
     const savedUppercase = localStorage.getItem(PREVIEW_UPPERCASE_KEY);
     uppercasePreview.value = savedUppercase === "true";
     window.addEventListener("beforeunload", handleBeforeUnload);
     window.addEventListener("resize", handlePreviewResize);
+    window.addEventListener("keyup", handleKeyUp);
 });
 
 onUnmounted(() => {
