@@ -20,6 +20,7 @@ const previewRef = ref<HTMLDivElement | null>(null);
 const fileInput = ref<HTMLInputElement | null>(null);
 const currentFileHandle = ref<FileSystemFileHandle | null>(null);
 const uppercasePreview = ref(false);
+const showGuides = ref(false);
 const previewScale = ref(1);
 
 const previewSets = computed(() =>
@@ -88,8 +89,11 @@ async function applyPreviewSizing(): Promise<void> {
     if (!previewRef.value) return;
 
     for (const set of previewSets.value) {
-        const selector = `.preview-set[data-set-id="${set.id}"] .song-list`;
-        const songsEl = previewRef.value.querySelector<HTMLElement>(selector);
+        const setSelector = `.preview-set[data-set-id="${set.id}"]`;
+        const setEl = previewRef.value.querySelector<HTMLElement>(setSelector);
+        if (!setEl) continue;
+
+        const songsEl = setEl.querySelector<HTMLElement>(".song-list");
         if (!songsEl) continue;
 
         const strings = set.songs.map((song) => {
@@ -102,22 +106,34 @@ async function applyPreviewSizing(): Promise<void> {
         if (strings.length === 0) {
             songsEl.style.fontSize = "";
             songsEl.style.lineHeight = "";
-            songsEl.style.width = `${TARGET_WIDTH_PX}px`;
-            songsEl.style.transform = "";
-            songsEl.style.transformOrigin = "";
             continue;
         }
+
+        // Measure the header height to subtract from available space
+        // Use getBoundingClientRect and compute margin to get full height including margin-bottom
+        const headerEl = setEl.querySelector<HTMLElement>(".metadata-header");
+        let headerHeightPx = 0;
+        if (headerEl) {
+            const headerRect = headerEl.getBoundingClientRect();
+            const headerStyles = window.getComputedStyle(headerEl);
+            const marginBottom = parseFloat(headerStyles.marginBottom) || 0;
+            headerHeightPx = headerRect.height + marginBottom;
+        }
+
+        // Account for the .set-spacer element (min-height: 1em, roughly 16px)
+        const spacerHeightPx = 16;
+
+        // Convert to cm and subtract from available height
+        const usedHeightCm = (headerHeightPx + spacerHeightPx) / CM_TO_PX;
+        const availableHeightCm = BOX_HEIGHT_CM - usedHeightCm;
 
         const { fontSizePx, lineHeight } = fitStringsToBox(
             strings,
             BOX_WIDTH_CM,
-            BOX_HEIGHT_CM,
+            availableHeightCm,
         );
         songsEl.style.fontSize = `${fontSizePx}px`;
         songsEl.style.lineHeight = lineHeight.toString();
-        songsEl.style.width = `${TARGET_WIDTH_PX}px`;
-        songsEl.style.transform = "";
-        songsEl.style.transformOrigin = "";
     }
 }
 
@@ -438,6 +454,10 @@ watch(showPreview, async (value) => {
                 </button>
             </div>
             <label class="uppercase-toggle">
+                <input type="checkbox" v-model="showGuides" />
+                Show guides
+            </label>
+            <label class="uppercase-toggle">
                 <input type="checkbox" v-model="uppercasePreview" />
                 Uppercase titles
             </label>
@@ -454,6 +474,7 @@ watch(showPreview, async (value) => {
                     <SetPreview
                         :set="set"
                         :uppercase="uppercasePreview"
+                        :show-guides="showGuides"
                         :is-last="set.id === lastSetId"
                         :style="previewSheetStyle"
                     />

@@ -1,8 +1,12 @@
+import { formatSongLabel } from "./textMetrics";
+
 /**
- * Compute a font-size/line-height combo (based on a 16px baseline) that keeps
- * the supplied strings within a bounding box measured in centimeters.
- * It measures the longest string at the base size, scales it to fit the width,
- * then limits the result using the available vertical space.
+ * Compute a font-size/line-height combo that keeps the supplied strings
+ * within a bounding box measured in centimeters.
+ *
+ * The algorithm finds the optimal font size that maximizes text size while
+ * ensuring all strings fit both horizontally and vertically within the box.
+ * It uses DOM-based measurement for accurate results that match actual rendering.
  *
  * @param strings Strings to render (each entry is treated as a row)
  * @param boxWidthCm Width of the physical box in centimeters
@@ -17,75 +21,98 @@ export function fitStringsToBox(
   fontSizePx: number;
   lineHeight: number;
 } {
-  // Constants for font measurement and conversion
-  const BASE_FONT_SIZE_PX = 16; // Reference font size for measurements
-  const BASE_LINE_HEIGHT = 1; // Baseline line height multiplier
-  const DPI = 96; // Standard screen DPI for pixel calculations
-  const CM_TO_INCH = 0.393701; // Conversion factor from centimeters to inches
+  const BASE_FONT_SIZE_PX = 16;
+  const MIN_FONT_SIZE_PX = 10;
+  const MIN_LINE_HEIGHT = 1.0;
+  const MAX_LINE_HEIGHT = 1.8;
+  const CM_TO_PX = 37.795275591;
 
-  // Convert physical dimensions to pixels for calculation
-  const boxWidth = boxWidthCm * CM_TO_INCH * DPI;
-  const boxHeight = boxHeightCm * CM_TO_INCH * DPI;
+  const boxWidthPx = boxWidthCm * CM_TO_PX;
+  const boxHeightPx = boxHeightCm * CM_TO_PX;
 
-  // Handle edge case: no strings to measure
   if (strings.length === 0) {
     return {
       fontSizePx: BASE_FONT_SIZE_PX,
-      lineHeight: BASE_LINE_HEIGHT,
+      lineHeight: MIN_LINE_HEIGHT,
     };
   }
 
-  // Track the widest string and actual line height
-  let longestStringPx = 0;
-  let lineHeightPx = BASE_FONT_SIZE_PX * BASE_LINE_HEIGHT;
+  const numLines = strings.length;
 
-  // Create a hidden DOM element to measure text dimensions
+  // Create a hidden DOM element to measure text dimensions accurately
+  // This matches the actual rendering styles from SetPreview.vue
   const measureSpan = document.createElement("span");
   measureSpan.style.fontSize = `${BASE_FONT_SIZE_PX}px`;
-  measureSpan.style.visibility = "hidden"; // Hide from view but keep in layout
-  measureSpan.style.position = "absolute"; // Remove from document flow
+  measureSpan.style.fontWeight = "600";
+  measureSpan.style.fontFamily =
+    "Inter, system-ui, Avenir, Helvetica, Arial, sans-serif";
+  measureSpan.style.lineHeight = String(MIN_LINE_HEIGHT);
+  measureSpan.style.visibility = "hidden";
+  measureSpan.style.position = "absolute";
+  measureSpan.style.whiteSpace = "nowrap";
   measureSpan.style.padding = "0";
   measureSpan.style.margin = "0";
   document.body.appendChild(measureSpan);
 
   // Measure each string to find the longest width and actual line height
+  let maxWidthAtBase = 0;
+  let actualLineHeightAtBase = BASE_FONT_SIZE_PX;
+
   for (const str of strings) {
     measureSpan.textContent = str.trim();
     const rect = measureSpan.getBoundingClientRect();
-    longestStringPx = Math.max(longestStringPx, rect.width);
-    lineHeightPx = rect.height || lineHeightPx; // Use actual height or fallback
+    maxWidthAtBase = Math.max(maxWidthAtBase, rect.width);
+    // Get the actual rendered height - this accounts for font metrics
+    if (rect.height > 0) {
+      actualLineHeightAtBase = rect.height;
+    }
   }
 
-  // Clean up the temporary DOM element
   document.body.removeChild(measureSpan);
 
-  // Calculate initial scaling based on width constraint
-  // Scale font to fit the longest string within the box width
-  const widthScale = longestStringPx > 0 ? boxWidth / longestStringPx : 1;
-  let fontSizePx = BASE_FONT_SIZE_PX * widthScale;
-
-  // Check if the scaled text fits vertically
-  const totalTextHeightPx = lineHeightPx * strings.length * widthScale;
-  let remainingHeightPx = boxHeight - totalTextHeightPx;
-
-  // Reduce font size if text doesn't fit vertically
-  // Keep minimum font size of 10px for readability
-  while (remainingHeightPx < 0 && fontSizePx > 10) {
-    fontSizePx -= 1;
-    const scale = fontSizePx / BASE_FONT_SIZE_PX;
-    const adjustedTextHeightPx = lineHeightPx * strings.length * scale;
-    remainingHeightPx = boxHeight - adjustedTextHeightPx;
+  if (maxWidthAtBase === 0) {
+    return {
+      fontSizePx: BASE_FONT_SIZE_PX,
+      lineHeight: MIN_LINE_HEIGHT,
+    };
   }
 
-  // Distribute any remaining vertical space as increased line height
-  let lineHeight = BASE_LINE_HEIGHT;
-  if (remainingHeightPx > 0) {
-    // Calculate extra line height per line from remaining space
-    const extraLineHeightPerLine =
-      remainingHeightPx / (strings.length * (fontSizePx || 1));
-    lineHeight += extraLineHeightPerLine;
-    // Cap line height at 2.0 to prevent excessive spacing
-    lineHeight = Math.min(lineHeight, 2);
+  // The ratio of actual line height to font size at line-height: 1.0
+  // This accounts for font metrics (ascenders, descenders, etc.)
+  const lineHeightRatio = actualLineHeightAtBase / BASE_FONT_SIZE_PX;
+
+  // Calculate the maximum font size based on width constraint
+  const widthScale = boxWidthPx / maxWidthAtBase;
+  const maxFontByWidth = BASE_FONT_SIZE_PX * widthScale;
+
+  // Calculate the maximum font size based on height constraint
+  // Each line actually takes: fontSize * lineHeightRatio * lineHeight
+  // With MIN_LINE_HEIGHT, total height = fontSize * lineHeightRatio * MIN_LINE_HEIGHT * numLines
+  // We need: fontSize * lineHeightRatio * MIN_LINE_HEIGHT * numLines <= boxHeightPx
+  const maxFontByHeight =
+    boxHeightPx / (lineHeightRatio * MIN_LINE_HEIGHT * numLines);
+
+  // The optimal font size is the smaller of the two constraints
+  let fontSizePx = Math.min(maxFontByWidth, maxFontByHeight);
+
+  // Apply minimum font size constraint
+  fontSizePx = Math.max(fontSizePx, MIN_FONT_SIZE_PX);
+
+  // Calculate remaining vertical space
+  const minTextHeightPx =
+    fontSizePx * lineHeightRatio * MIN_LINE_HEIGHT * numLines;
+  const remainingHeightPx = boxHeightPx - minTextHeightPx;
+
+  // Distribute remaining vertical space as increased line height
+  let lineHeight = MIN_LINE_HEIGHT;
+  if (remainingHeightPx > 0 && numLines > 0) {
+    // Extra height per line we can add
+    const extraPerLine = remainingHeightPx / numLines;
+    // Convert to line-height units (relative to fontSize * lineHeightRatio)
+    lineHeight =
+      MIN_LINE_HEIGHT + extraPerLine / (fontSizePx * lineHeightRatio);
+    // Cap line height to prevent excessive spacing
+    lineHeight = Math.min(lineHeight, MAX_LINE_HEIGHT);
   }
 
   return {
@@ -93,3 +120,6 @@ export function fitStringsToBox(
     lineHeight,
   };
 }
+
+// Re-export formatSongLabel for convenience
+export { formatSongLabel };
