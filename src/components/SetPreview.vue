@@ -105,7 +105,7 @@ function formatDate(dateStr: string | undefined): string {
                         v-if="song.id === firstEncoreSongId"
                         class="preview-encore-divider"
                     >
-                        <span>---- encores ----</span>
+                        <span>encores</span>
                     </div>
                     <div
                         class="preview-song"
@@ -238,8 +238,12 @@ function formatDate(dateStr: string | undefined): string {
     white-space: nowrap;
 }
 
+.song-key {
+    font-weight: 400;
+}
+
 .preview-song.is-encore {
-    color: #6c4dff;
+    color: #ccc;
     font-style: italic;
 }
 
@@ -250,14 +254,17 @@ function formatDate(dateStr: string | undefined): string {
 
 .preview-encore-divider span {
     position: absolute;
-    top: -0.75rem;
-    left: 0;
+    top: -0.5rem;
+    left: 50%;
+    transform: translateX(-50%);
     font-size: 0.75rem;
+    font-weight: 700;
     letter-spacing: 0.08em;
     text-transform: uppercase;
-    color: #6c4dff;
-    background: #fff;
-    padding: 0 0.4rem;
+    color: #444;
+    padding: 0 2rem;
+    border-radius: 100%;
+    border-inline: 200px solid #6c4dff80;
 }
 
 .song-label {
@@ -267,11 +274,6 @@ function formatDate(dateStr: string | undefined): string {
 
 .song-title {
     font-weight: inherit;
-}
-
-.song-key {
-    font-weight: 500;
-    color: #333;
 }
 
 .set-spacer {
