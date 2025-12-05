@@ -35,9 +35,9 @@ const TARGET_HEIGHT_CM = 29.7;
 const TARGET_WIDTH_CM = 21.0;
 const MARGINS_CM = {
     top: 1,
-    bottom: 1,
-    left: 1,
-    right: 1,
+    bottom: 1.5,
+    left: 1.5,
+    right: 1.5,
 };
 
 const BOX_HEIGHT_CM = TARGET_HEIGHT_CM - MARGINS_CM.top - MARGINS_CM.bottom;
@@ -445,22 +445,22 @@ watch(showPreview, async (value) => {
 
     <div v-else class="print-preview">
         <div class="preview-controls no-print">
-            <div class="preview-actions">
+            <div class="preview-settings">
+                <label class="uppercase-toggle">
+                    <input type="checkbox" v-model="showGuides" />
+                    Show guides
+                </label>
+                <label class="uppercase-toggle">
+                    <input type="checkbox" v-model="uppercasePreview" />
+                    Uppercase titles
+                </label>
                 <button @click="printSets" class="preview-btn primary">
-                    Print Now
+                    Print
                 </button>
-                <button @click="closePreview" class="preview-btn">
-                    Close Preview
+                <button @click="closePreview" class="preview-btn danger">
+                    X
                 </button>
             </div>
-            <label class="uppercase-toggle">
-                <input type="checkbox" v-model="showGuides" />
-                Show guides
-            </label>
-            <label class="uppercase-toggle">
-                <input type="checkbox" v-model="uppercasePreview" />
-                Uppercase titles
-            </label>
         </div>
 
         <div ref="previewRef" class="preview-content">
@@ -570,6 +570,9 @@ h1 {
     grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
     gap: 2rem;
     align-items: start;
+    > * {
+        /*margin-block-end: 1rem;*/
+    }
 }
 
 footer {
@@ -586,8 +589,6 @@ footer {
     left: 0;
     width: 100vw;
     height: 100vh;
-    background: white;
-    color: black;
     z-index: 1000;
     display: flex;
     flex-direction: column;
@@ -595,14 +596,15 @@ footer {
 
 .preview-controls {
     display: flex;
-    justify-content: space-between;
+    flex-wrap: wrap;
+    justify-content: center;
     align-items: center;
     gap: 1rem;
     background: #222;
     border: 1px solid #444;
     padding: 0.5rem 1rem;
     border-radius: 6px;
-    margin: 1rem;
+    /*margin: 1rem;*/
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.35);
 }
 
@@ -637,18 +639,27 @@ footer {
     color: white;
 }
 
-.uppercase-toggle {
+.preview-settings {
     display: flex;
-    align-items: center;
     gap: 0.5rem;
-    font-size: 0.85rem;
-    color: #eee;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-}
-
-.uppercase-toggle input {
-    accent-color: var(--accent-color);
+    > * {
+        background: #333;
+        border: none;
+        color: #ddd;
+        padding: 0.6rem 1rem;
+        cursor: pointer;
+        border-radius: 6px;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        font-size: 0.85rem;
+        color: #eee;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        input {
+            accent-color: var(--accent-color);
+        }
+    }
 }
 
 .preview-content {
@@ -679,6 +690,7 @@ footer {
     display: flex;
     justify-content: center;
     flex-shrink: 0;
+    margin-block-end: 1rem;
 }
 
 .preview-page :deep(.preview-set) {
@@ -699,10 +711,32 @@ footer {
         height: auto;
         width: auto;
         overflow: visible;
+        background: none;
     }
 
     .preview-controls {
         display: none;
+    }
+
+    .preview-content {
+        flex: none;
+        padding: 0;
+        gap: 0;
+        background: none;
+        display: block;
+        overflow: visible;
+        height: auto;
+        width: auto;
+    }
+
+    .sets-wrapper {
+        display: block;
+    }
+
+    .preview-page {
+        transform: none !important;
+        height: auto !important;
+        display: block;
     }
 
     .app-container {
