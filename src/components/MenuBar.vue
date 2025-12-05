@@ -52,6 +52,8 @@ function handleKeyDown(event: KeyboardEvent): void {
 }
 
 onMounted(() => {
+    // Always listen for Escape key to close menu when open
+    // This is lightweight and ensures menu can be closed from anywhere
     window.addEventListener("keydown", handleKeyDown);
 });
 
@@ -145,7 +147,6 @@ onUnmounted(() => {
 
 /* Mobile menu overlay */
 .mobile-menu-overlay {
-    display: none;
     position: fixed;
     top: 0;
     left: 0;
@@ -225,11 +226,6 @@ onUnmounted(() => {
         display: flex;
         align-items: center;
         justify-content: center;
-    }
-
-    /* Show overlay when menu is open */
-    .mobile-menu-overlay {
-        display: block;
     }
 
     /* Menu bar becomes a slide-in panel on mobile */
