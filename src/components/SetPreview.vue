@@ -143,7 +143,6 @@ function formatDate(dateStr: string | undefined): string {
     /* Flex layout */
     display: flex;
     flex-direction: column;
-    /* justify-content: center; REMOVED */
     position: relative;
 }
 
@@ -227,9 +226,7 @@ function formatDate(dateStr: string | undefined): string {
 .set-content {
     display: flex;
     flex-direction: column;
-    /* height: 100%; REMOVED */
     flex: 1;
-    /* Allow it to grow */
     position: relative;
     z-index: 1;
 }

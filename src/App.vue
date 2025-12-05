@@ -374,6 +374,7 @@ onMounted(() => {
 onUnmounted(() => {
     window.removeEventListener("beforeunload", handleBeforeUnload);
     window.removeEventListener("resize", handlePreviewResize);
+    window.removeEventListener("keyup", handleKeyUp);
 });
 
 watch(uppercasePreview, async (value) => {
@@ -487,10 +488,6 @@ watch(showPreview, async (value) => {
                 />
             </div>
         </main>
-
-        <footer class="no-print">
-            <p>Drag and drop songs to reorder. Click 'Print' to save as PDF.</p>
-        </footer>
     </div>
 
     <div v-else class="print-preview">
@@ -620,9 +617,6 @@ h1 {
     grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
     gap: 2rem;
     align-items: start;
-    > * {
-        /*margin-block-end: 1rem;*/
-    }
 }
 
 footer {
@@ -654,7 +648,6 @@ footer {
     border: 1px solid #444;
     padding: 0.5rem 1rem;
     border-radius: 6px;
-    /*margin: 1rem;*/
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.35);
 }
 
