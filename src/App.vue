@@ -22,6 +22,7 @@ const currentFileHandle = ref<FileSystemFileHandle | null>(null);
 const uppercasePreview = ref(false);
 const showGuides = ref(false);
 const previewScale = ref(1);
+const isMetaExpanded = ref(false);
 
 const previewSets = computed(() =>
     store.sets.filter((set) => set.songs.length > 0),
@@ -29,6 +30,9 @@ const previewSets = computed(() =>
 const lastSetId = computed(() =>
     store.sets.length ? store.sets[store.sets.length - 1].id : null,
 );
+const toggleMetaExpanded = () => {
+    isMetaExpanded.value = !isMetaExpanded.value;
+};
 
 const CM_TO_PX = 37.795275591; // 1 cm ≈ 37.795 px
 const TARGET_HEIGHT_CM = 29.7;
@@ -421,7 +425,12 @@ watch(showPreview, async (value) => {
                 </div>
             </div>
             <div class="header-metadata">
-                <div class="metadata-grid">
+                <div v-if="!isMetaExpanded" class="metadata-grid">
+                    <div class="metadata-title">
+                        Setlist Details
+                        <button @click="toggleMetaExpanded">Close</button>
+                    </div>
+
                     <div class="input-group">
                         <label>Set List Name</label>
                         <input
@@ -430,6 +439,20 @@ watch(showPreview, async (value) => {
                             @blur="
                                 updateMetadata({
                                     setListName: store.metadata.setListName,
+                                })
+                            "
+                            @keyup.enter="blurInputOnEnter"
+                        />
+                    </div>
+
+                    <div class="input-group">
+                        <label>Act Name</label>
+                        <input
+                            v-model="store.metadata.actName"
+                            placeholder="e.g. The Beatles"
+                            @blur="
+                                updateMetadata({
+                                    actName: store.metadata.actName,
                                 })
                             "
                             @keyup.enter="blurInputOnEnter"
@@ -459,19 +482,24 @@ watch(showPreview, async (value) => {
                             @keyup.enter="blurInputOnEnter"
                         />
                     </div>
-
-                    <div class="input-group">
-                        <label>Act Name</label>
-                        <input
-                            v-model="store.metadata.actName"
-                            placeholder="e.g. The Beatles"
-                            @blur="
-                                updateMetadata({
-                                    actName: store.metadata.actName,
-                                })
-                            "
-                            @keyup.enter="blurInputOnEnter"
-                        />
+                </div>
+                <div v-else class="metadata-details">
+                    <!-- Show metadata in a compact, tidy, well laid-out, no form elements, just for display purposes -->
+                    <div class="metadata-title">
+                        Setlist Details
+                        <button @click="toggleMetaExpanded">Edit</button>
+                    </div>
+                    <div class="metadata-detail">
+                        Set List: {{ store.metadata.setListName || "N/A" }}
+                    </div>
+                    <div class="metadata-detail">
+                        Act Name: {{ store.metadata.actName || "N/A" }}
+                    </div>
+                    <div class="metadata-detail">
+                        Venue: {{ store.metadata.venue || "N/A" }}
+                    </div>
+                    <div class="metadata-detail">
+                        Date: {{ store.metadata.date || "N/A" }}
                     </div>
                 </div>
             </div>
@@ -838,5 +866,26 @@ footer {
 .danger:hover {
     background-color: #cc0000;
     border-color: #cc0000;
+}
+
+.metadata-details {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+.metadata-title {
+    display: flex;
+    gap: 0.5rem;
+    justify-content: space-between;
+    align-items: center;
+    button {
+        font-size: 0.8rem;
+        background: #333;
+        transition: background-color 0.2s ease;
+        &:hover,
+        &:focus-visible {
+            background: #444;
+        }
+    }
 }
 </style>
