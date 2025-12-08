@@ -7,10 +7,9 @@ import {
     removeSet,
     resetStore,
     store,
-    updateMetadata,
 } from "./store";
-import { Users, MapPin, Calendar } from "lucide-vue-next";
 import Set from "./components/Set.vue";
+import HeaderMetadata from "./components/HeaderMetadata.vue";
 import SetPreview from "./components/SetPreview.vue";
 import MenuBar from "./components/MenuBar.vue";
 import { fitStringsToBox } from "./utils/fitStringsToBox";
@@ -23,7 +22,6 @@ const currentFileHandle = ref<FileSystemFileHandle | null>(null);
 const uppercasePreview = ref(false);
 const showGuides = ref(false);
 const previewScale = ref(1);
-const isEditingMetadata = ref(false);
 
 const previewSets = computed(() =>
     store.sets.filter((set) => set.songs.length > 0),
@@ -31,9 +29,6 @@ const previewSets = computed(() =>
 const lastSetId = computed(() =>
     store.sets.length ? store.sets[store.sets.length - 1].id : null,
 );
-const toggleEditingMetadata = () => {
-    isEditingMetadata.value = !isEditingMetadata.value;
-};
 
 const CM_TO_PX = 37.795275591; // 1 cm ≈ 37.795 px
 const TARGET_HEIGHT_CM = 29.7;
@@ -175,11 +170,6 @@ function confirmNew(): void {
 
 function cancelNew(): void {
     showNewDialog.value = false;
-}
-
-function blurInputOnEnter(event: KeyboardEvent): void {
-    const target = event.target as HTMLInputElement | null;
-    target?.blur();
 }
 
 type SaveEvent = MouseEvent | KeyboardEvent | { altKey?: boolean } | undefined;
@@ -389,87 +379,7 @@ watch(showPreview, async (value) => {
                 @export="togglePreview"
             />
 
-            <div class="header-metadata">
-                <div class="metadata-title">
-                    Setlist Details
-                    <button @click="toggleEditingMetadata">
-                        {{ isEditingMetadata ? "Close" : "Edit" }}
-                    </button>
-                </div>
-                <div v-if="isEditingMetadata" class="metadata-grid">
-                    <div class="input-group">
-                        <label>Set List Name</label>
-                        <input
-                            v-model="store.metadata.setListName"
-                            placeholder="e.g. Summer Tour 2024"
-                            @blur="
-                                updateMetadata({
-                                    setListName: store.metadata.setListName,
-                                })
-                            "
-                            @keyup.enter="blurInputOnEnter"
-                        />
-                    </div>
-
-                    <div class="input-group">
-                        <label>Act Name</label>
-                        <input
-                            v-model="store.metadata.actName"
-                            placeholder="e.g. The Beatles"
-                            @blur="
-                                updateMetadata({
-                                    actName: store.metadata.actName,
-                                })
-                            "
-                            @keyup.enter="blurInputOnEnter"
-                        />
-                    </div>
-
-                    <div class="input-group">
-                        <label>Venue</label>
-                        <input
-                            v-model="store.metadata.venue"
-                            placeholder="e.g. The O2 Arena"
-                            @blur="
-                                updateMetadata({ venue: store.metadata.venue })
-                            "
-                            @keyup.enter="blurInputOnEnter"
-                        />
-                    </div>
-
-                    <div class="input-group">
-                        <label>Date</label>
-                        <input
-                            v-model="store.metadata.date"
-                            type="date"
-                            @blur="
-                                updateMetadata({ date: store.metadata.date })
-                            "
-                            @keyup.enter="blurInputOnEnter"
-                        />
-                    </div>
-                </div>
-                <div v-else class="metadata-details">
-                    <h3
-                        v-if="store.metadata.setListName"
-                        class="metadata-detail metadata-detail--heading"
-                    >
-                        {{ store.metadata.setListName }}
-                    </h3>
-                    <div v-if="store.metadata.actName" class="metadata-detail">
-                        <Users size="1rem" class="icon" />
-                        {{ store.metadata.actName }}
-                    </div>
-                    <div v-if="store.metadata.venue" class="metadata-detail">
-                        <MapPin size="1rem" class="icon" />
-                        {{ store.metadata.venue }}
-                    </div>
-                    <div v-if="store.metadata.date" class="metadata-detail">
-                        <Calendar size="1rem" class="icon" />
-                        {{ store.metadata.date }}
-                    </div>
-                </div>
-            </div>
+            <HeaderMetadata />
         </header>
 
         <main>
@@ -542,45 +452,6 @@ watch(showPreview, async (value) => {
 <style scoped>
 header {
     margin-block-end: 1.5rem;
-}
-
-.header-metadata {
-    background-color: #222;
-    padding: 1rem;
-    border-radius: 8px;
-    border: 1px solid #444;
-}
-
-.metadata-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-    gap: 1rem;
-}
-
-.input-group {
-    display: flex;
-    flex-direction: column;
-    gap: 0.5rem;
-}
-
-.input-group label {
-    font-size: 0.8rem;
-    color: #888;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-}
-
-.input-group input {
-    padding: 0.5rem;
-    border-radius: 4px;
-    border: 1px solid #444;
-    background: #222;
-    color: white;
-}
-
-.input-group input:focus {
-    border-color: var(--accent-color);
-    outline: none;
 }
 
 h1 {
@@ -827,50 +698,5 @@ footer {
 .danger:hover {
     background-color: #cc0000;
     border-color: #cc0000;
-}
-
-.metadata-details {
-    display: flex;
-    flex-direction: column;
-    > * {
-        margin: 0;
-        padding: 0;
-    }
-}
-
-.metadata-title {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    gap: 0.5rem;
-    font-size: 1.2rem;
-    color: #ddd;
-
-    button {
-        font-size: 0.8em;
-        background: #333;
-        transition: background-color 0.2s ease;
-        &:hover,
-        &:focus-visible {
-            background: #444;
-        }
-    }
-}
-
-.metadata-detail {
-    display: flex;
-    gap: 0.5rem;
-    align-items: center;
-    color: #ddd;
-
-    &.metadata-detail--heading {
-        color: #e3e3e3;
-    }
-}
-.icon {
-    color: #cca;
-}
-h3.metadata-detail {
-    font-size: 1.2rem;
 }
 </style>
