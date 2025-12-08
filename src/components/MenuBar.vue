@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted, onUnmounted, ref, withDefaults } from "vue";
+import { onMounted, onUnmounted, ref } from "vue";
 import {
     FileDown,
     FilePlus,

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, toRefs, withDefaults } from "vue";
+import { computed, toRefs } from "vue";
 import { isEncoreMarkerSong, store, type SetItem, type Song } from "../store";
 
 const props = withDefaults(
