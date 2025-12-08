@@ -96,11 +96,11 @@ function blurInputOnEnter(e: KeyboardEvent) {
 </template>
 
 <style scoped>
-.header-metadata {
-    background-color: #222;
+.setlist-metadata {
+    background-color: #1e1e1e;
     padding: 1rem;
     border-radius: 8px;
-    border: 1px solid #444;
+    border: 1px solid #333;
 }
 
 .metadata-grid {
@@ -149,12 +149,12 @@ function blurInputOnEnter(e: KeyboardEvent) {
     justify-content: space-between;
     align-items: center;
     gap: 0.5rem;
-    font-size: 1.2rem;
+    font-size: 1.6rem;
     color: #ddd;
 
     button {
-        font-size: 0.8em;
-        background: #333;
+        font-size: 1rem;
+        background: #242424;
         transition: background-color 0.2s ease;
         &:hover,
         &:focus-visible {
