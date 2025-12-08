@@ -5,11 +5,13 @@ import SetList from "./components/SetList.vue";
 import SetlistMetadata from "./components/SetlistMetadata.vue";
 import SetPreview from "./components/SetPreview.vue";
 import MenuBar from "./components/MenuBar.vue";
+import ConfirmDialog from "./components/ConfirmDialog.vue";
 import { STORAGE_KEYS } from "./constants";
 import {
     useFileOperations,
     useKeyboardShortcuts,
     usePreviewScaling,
+    useDialogs,
     createEditBindings,
     createPreviewBindings,
 } from "./composables";
@@ -37,6 +39,17 @@ const previewSets = computed(() =>
 // Composables
 // =============================================================================
 
+// Dialog management for confirmations and alerts
+const {
+    confirmDialog,
+    alertDialog,
+    showConfirm,
+    showAlert,
+    handleConfirm: handleDialogConfirm,
+    handleCancel: handleDialogCancel,
+    handleAlertOk,
+} = useDialogs();
+
 // File operations (save, load, beforeunload)
 const {
     fileInput,
@@ -44,7 +57,7 @@ const {
     loadFromDisk,
     clearFileHandle,
     handleBeforeUnload,
-} = useFileOperations();
+} = useFileOperations({ showConfirm, showAlert });
 
 // Preview scaling and sizing
 const {
@@ -207,19 +220,39 @@ watch(showPreview, async (value) => {
             </div>
         </div>
     </div>
-    <div v-if="showNewDialog" class="modal-overlay">
-        <div class="modal">
-            <h3>Start New Set List?</h3>
-            <p>
-                Are you sure you want to start a new set list? All current
-                changes will be lost if not saved.
-            </p>
-            <div class="modal-actions">
-                <button @click="cancelNew">Cancel</button>
-                <button @click="confirmNew" class="danger">Start New</button>
-            </div>
-        </div>
-    </div>
+    <!-- New Set List Confirmation Dialog -->
+    <ConfirmDialog
+        :show="showNewDialog"
+        title="Start New Set List?"
+        message="Are you sure you want to start a new set list? All current changes will be lost if not saved."
+        cancel-text="Cancel"
+        confirm-text="Start New"
+        :danger="true"
+        @confirm="confirmNew"
+        @cancel="cancelNew"
+    />
+
+    <!-- Generic Confirmation Dialog (for file operations) -->
+    <ConfirmDialog
+        :show="confirmDialog.show"
+        :title="confirmDialog.title"
+        :message="confirmDialog.message"
+        :cancel-text="confirmDialog.cancelText"
+        :confirm-text="confirmDialog.confirmText"
+        :danger="confirmDialog.danger"
+        @confirm="handleDialogConfirm"
+        @cancel="handleDialogCancel"
+    />
+
+    <!-- Alert Dialog (for errors and notifications) -->
+    <ConfirmDialog
+        :show="alertDialog.show"
+        :title="alertDialog.title"
+        :message="alertDialog.message"
+        :alert-mode="true"
+        :ok-text="alertDialog.okText"
+        @ok="handleAlertOk"
+    />
 </template>
 
 <style scoped>
@@ -414,55 +447,5 @@ footer {
     .app-container {
         display: none;
     }
-}
-
-/* Modal Styles */
-.modal-overlay {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: rgba(0, 0, 0, 0.7);
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    z-index: 2000;
-}
-
-.modal {
-    background: #333;
-    padding: 2rem;
-    border-radius: 8px;
-    max-width: 400px;
-    width: 90%;
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
-}
-
-.modal h3 {
-    margin-top: 0;
-    color: white;
-}
-
-.modal p {
-    color: #ccc;
-    margin-bottom: 2rem;
-}
-
-.modal-actions {
-    display: flex;
-    justify-content: flex-end;
-    gap: 1rem;
-}
-
-.danger {
-    background-color: #ff4444;
-    color: white;
-    border-color: #ff4444;
-}
-
-.danger:hover {
-    background-color: #cc0000;
-    border-color: #cc0000;
 }
 </style>

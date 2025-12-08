@@ -2,10 +2,38 @@ import { ref } from "vue";
 import { loadStore, markClean, store } from "../store";
 
 /**
+ * Options for useFileOperations composable
+ */
+export interface FileOperationsOptions {
+  /**
+   * Show a confirmation dialog and return a promise that resolves to true if confirmed.
+   * If not provided, falls back to native confirm().
+   */
+  showConfirm?: (options: {
+    title: string;
+    message: string;
+    confirmText?: string;
+    cancelText?: string;
+    danger?: boolean;
+  }) => Promise<boolean>;
+
+  /**
+   * Show an alert dialog and return a promise that resolves when acknowledged.
+   * If not provided, falls back to native alert().
+   */
+  showAlert?: (options: {
+    title: string;
+    message: string;
+    okText?: string;
+  }) => Promise<void>;
+}
+
+/**
  * Composable for file save/load operations using File System Access API
  * with fallbacks for browsers that don't support it.
  */
-export function useFileOperations() {
+export function useFileOperations(options: FileOperationsOptions = {}) {
+  const { showConfirm, showAlert } = options;
   const currentFileHandle = ref<FileSystemFileHandle | null>(null);
   const fileInput = ref<HTMLInputElement | null>(null);
 
@@ -73,7 +101,14 @@ export function useFileOperations() {
       const error = err as DOMException;
       if (error.name !== "AbortError") {
         console.error("Failed to save file:", err);
-        alert("Failed to save file.");
+        if (showAlert) {
+          await showAlert({
+            title: "Save Error",
+            message: "Failed to save file. Please try again.",
+          });
+        } else {
+          alert("Failed to save file.");
+        }
       }
     }
   }
@@ -84,9 +119,21 @@ export function useFileOperations() {
    */
   async function loadFromDisk(): Promise<void> {
     if (store.isDirty) {
-      const confirmed = confirm(
-        "You have unsaved changes. Are you sure you want to load a new file? Unsaved changes will be lost."
-      );
+      let confirmed: boolean;
+      if (showConfirm) {
+        confirmed = await showConfirm({
+          title: "Unsaved Changes",
+          message:
+            "You have unsaved changes. Are you sure you want to load a new file? Unsaved changes will be lost.",
+          confirmText: "Load File",
+          cancelText: "Cancel",
+          danger: true,
+        });
+      } else {
+        confirmed = confirm(
+          "You have unsaved changes. Are you sure you want to load a new file? Unsaved changes will be lost.",
+        );
+      }
       if (!confirmed) return;
     }
 
@@ -112,7 +159,14 @@ export function useFileOperations() {
         if (loadStore(data)) {
           currentFileHandle.value = handle;
         } else {
-          alert("Invalid set list file.");
+          if (showAlert) {
+            await showAlert({
+              title: "Invalid File",
+              message: "The selected file is not a valid set list file.",
+            });
+          } else {
+            alert("Invalid set list file.");
+          }
         }
       } else {
         // Fallback for browsers without File System Access API
@@ -122,7 +176,14 @@ export function useFileOperations() {
       const error = err as DOMException;
       if (error.name !== "AbortError") {
         console.error("Failed to load file:", err);
-        alert("Failed to load file.");
+        if (showAlert) {
+          await showAlert({
+            title: "Load Error",
+            message: "Failed to load file. Please try again.",
+          });
+        } else {
+          alert("Failed to load file.");
+        }
       }
     }
   }
@@ -130,9 +191,7 @@ export function useFileOperations() {
   /**
    * Handle file input change event (fallback for browsers without File System Access API)
    */
-  async function handleFileInputChange(
-    event: Event
-  ): Promise<void> {
+  async function handleFileInputChange(event: Event): Promise<void> {
     const input = event.target as HTMLInputElement;
     const file = input.files?.[0];
     if (!file) return;
@@ -144,11 +203,25 @@ export function useFileOperations() {
       if (loadStore(data)) {
         currentFileHandle.value = null;
       } else {
-        alert("Invalid set list file.");
+        if (showAlert) {
+          await showAlert({
+            title: "Invalid File",
+            message: "The selected file is not a valid set list file.",
+          });
+        } else {
+          alert("Invalid set list file.");
+        }
       }
     } catch (err) {
       console.error("Failed to load file:", err);
-      alert("Failed to load file.");
+      if (showAlert) {
+        await showAlert({
+          title: "Load Error",
+          message: "Failed to load file. Please try again.",
+        });
+      } else {
+        alert("Failed to load file.");
+      }
     }
 
     // Reset the input so the same file can be selected again
