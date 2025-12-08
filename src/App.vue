@@ -9,7 +9,7 @@ import {
     store,
 } from "./store";
 import Set from "./components/Set.vue";
-import HeaderMetadata from "./components/HeaderMetadata.vue";
+import SetlistMetadata from "./components/SetlistMetadata.vue";
 import SetPreview from "./components/SetPreview.vue";
 import MenuBar from "./components/MenuBar.vue";
 import { fitStringsToBox } from "./utils/fitStringsToBox";
@@ -379,7 +379,7 @@ watch(showPreview, async (value) => {
                 @export="togglePreview"
             />
 
-            <HeaderMetadata />
+            <SetlistMetadata />
         </header>
 
         <main>
