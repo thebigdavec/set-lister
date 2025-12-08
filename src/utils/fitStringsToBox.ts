@@ -8,6 +8,32 @@ import {
 } from "../constants";
 import { formatSongLabel } from "./textMetrics";
 
+// Cached DOM element for text measurement
+let cachedMeasureSpan: HTMLSpanElement | null = null;
+
+/**
+ * Get or create a cached span element for text measurement.
+ * The element is hidden off-screen and reused across calls for better performance.
+ * @returns The cached span element, or null if document is not available (SSR)
+ */
+function getMeasureSpan(): HTMLSpanElement | null {
+  if (typeof document === "undefined") return null;
+
+  if (!cachedMeasureSpan) {
+    cachedMeasureSpan = document.createElement("span");
+    cachedMeasureSpan.style.visibility = "hidden";
+    cachedMeasureSpan.style.position = "absolute";
+    cachedMeasureSpan.style.whiteSpace = "nowrap";
+    cachedMeasureSpan.style.padding = "0";
+    cachedMeasureSpan.style.margin = "0";
+    cachedMeasureSpan.style.left = "-9999px";
+    cachedMeasureSpan.style.top = "-9999px";
+    document.body.appendChild(cachedMeasureSpan);
+  }
+
+  return cachedMeasureSpan;
+}
+
 /**
  * Compute a font-size/line-height combo that keeps the supplied strings
  * within a bounding box measured in centimeters.
@@ -41,19 +67,21 @@ export function fitStringsToBox(
 
   const numLines = strings.length;
 
-  // Create a hidden DOM element to measure text dimensions accurately
-  // This matches the actual rendering styles from SetPreview.vue
-  const measureSpan = document.createElement("span");
+  // Get the cached measurement span element
+  const measureSpan = getMeasureSpan();
+  if (!measureSpan) {
+    // Fallback for SSR/non-DOM environments
+    return {
+      fontSizePx: BASE_FONT_SIZE_PX,
+      lineHeight: MIN_LINE_HEIGHT,
+    };
+  }
+
+  // Update font styles for this measurement (reusing cached element)
   measureSpan.style.fontSize = `${BASE_FONT_SIZE_PX}px`;
   measureSpan.style.fontWeight = "600";
   measureSpan.style.fontFamily = DEFAULT_FONT_FAMILY;
   measureSpan.style.lineHeight = String(MIN_LINE_HEIGHT);
-  measureSpan.style.visibility = "hidden";
-  measureSpan.style.position = "absolute";
-  measureSpan.style.whiteSpace = "nowrap";
-  measureSpan.style.padding = "0";
-  measureSpan.style.margin = "0";
-  document.body.appendChild(measureSpan);
 
   // Measure each string to find the longest width and actual line height
   let maxWidthAtBase = 0;
@@ -69,7 +97,8 @@ export function fitStringsToBox(
     }
   }
 
-  document.body.removeChild(measureSpan);
+  // Clear the text content after measurement (keeps DOM clean)
+  measureSpan.textContent = "";
 
   if (maxWidthAtBase === 0) {
     return {
