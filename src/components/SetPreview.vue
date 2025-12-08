@@ -1,11 +1,12 @@
 <script setup lang="ts">
 import { computed, toRef, toRefs } from "vue";
-import { store, type SetItem } from "../store";
+import { type SetItem, type SetListMetadata } from "../store";
 import { useEncoreHelpers } from "../composables";
 
 const props = withDefaults(
     defineProps<{
         set: SetItem;
+        metadata: SetListMetadata;
         uppercase?: boolean;
         showGuides?: boolean;
         isLast?: boolean;
@@ -17,7 +18,7 @@ const props = withDefaults(
     },
 );
 
-const { set, uppercase, showGuides, isLast } = toRefs(props);
+const { set, metadata, uppercase, showGuides, isLast } = toRefs(props);
 
 // Use the consolidated encore helpers
 const {
@@ -32,7 +33,7 @@ const {
 
 // Determine whether any optional metadata exists to show the left-hand header block
 const hasMetadata = computed(() => {
-    const m = store.metadata;
+    const m = metadata.value;
     return Boolean(m.setListName || m.venue || m.date || m.actName);
 });
 
@@ -62,18 +63,18 @@ function formatDate(dateStr: string | undefined): string {
             <!-- Header block summarizing show metadata and set name -->
             <div v-if="showHeader" class="metadata-header">
                 <div v-if="hasMetadata" class="meta-left">
-                    <h1 v-if="store.metadata.setListName" class="meta-title">
-                        {{ store.metadata.setListName }}
+                    <h1 v-if="metadata.setListName" class="meta-title">
+                        {{ metadata.setListName }}
                     </h1>
                     <div class="meta-details">
-                        <span v-if="store.metadata.actName" class="meta-item">{{
-                            store.metadata.actName
+                        <span v-if="metadata.actName" class="meta-item">{{
+                            metadata.actName
                         }}</span>
-                        <span v-if="store.metadata.venue" class="meta-item">{{
-                            store.metadata.venue
+                        <span v-if="metadata.venue" class="meta-item">{{
+                            metadata.venue
                         }}</span>
-                        <span v-if="store.metadata.date" class="meta-item">{{
-                            formatDate(store.metadata.date)
+                        <span v-if="metadata.date" class="meta-item">{{
+                            formatDate(metadata.date)
                         }}</span>
                     </div>
                 </div>

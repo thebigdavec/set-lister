@@ -197,6 +197,7 @@ watch(showPreview, async (value) => {
                 >
                     <SetPreview
                         :set="set"
+                        :metadata="store.metadata"
                         :uppercase="uppercasePreview"
                         :show-guides="showGuides"
                         :is-last="set.id === lastSetId"
