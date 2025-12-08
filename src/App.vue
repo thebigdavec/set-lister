@@ -10,6 +10,7 @@ import { formatSongLabel } from "./utils/textMetrics";
 import {
     BOX_HEIGHT_CM,
     BOX_WIDTH_CM,
+    CM_TO_PX,
     STORAGE_KEYS,
     TARGET_HEIGHT_PX,
     TARGET_WIDTH_PX,
