@@ -14,3 +14,8 @@ export {
   useEncoreHelpers,
   type EncoreHelpersOptions,
 } from "./useEncoreHelpers";
+export {
+  useDialogs,
+  type ConfirmDialogState,
+  type AlertDialogState,
+} from "./useDialogs";

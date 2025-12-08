@@ -11,6 +11,7 @@ import {
     useFileOperations,
     useKeyboardShortcuts,
     usePreviewScaling,
+    useDialogs,
     createEditBindings,
     createPreviewBindings,
 } from "./composables";
@@ -38,6 +39,17 @@ const previewSets = computed(() =>
 // Composables
 // =============================================================================
 
+// Dialog management for confirmations and alerts
+const {
+    confirmDialog,
+    alertDialog,
+    showConfirm,
+    showAlert,
+    handleConfirm: handleDialogConfirm,
+    handleCancel: handleDialogCancel,
+    handleAlertOk,
+} = useDialogs();
+
 // File operations (save, load, beforeunload)
 const {
     fileInput,
@@ -45,7 +57,7 @@ const {
     loadFromDisk,
     clearFileHandle,
     handleBeforeUnload,
-} = useFileOperations();
+} = useFileOperations({ showConfirm, showAlert });
 
 // Preview scaling and sizing
 const {
@@ -208,6 +220,7 @@ watch(showPreview, async (value) => {
             </div>
         </div>
     </div>
+    <!-- New Set List Confirmation Dialog -->
     <ConfirmDialog
         :show="showNewDialog"
         title="Start New Set List?"
@@ -217,6 +230,28 @@ watch(showPreview, async (value) => {
         :danger="true"
         @confirm="confirmNew"
         @cancel="cancelNew"
+    />
+
+    <!-- Generic Confirmation Dialog (for file operations) -->
+    <ConfirmDialog
+        :show="confirmDialog.show"
+        :title="confirmDialog.title"
+        :message="confirmDialog.message"
+        :cancel-text="confirmDialog.cancelText"
+        :confirm-text="confirmDialog.confirmText"
+        :danger="confirmDialog.danger"
+        @confirm="handleDialogConfirm"
+        @cancel="handleDialogCancel"
+    />
+
+    <!-- Alert Dialog (for errors and notifications) -->
+    <ConfirmDialog
+        :show="alertDialog.show"
+        :title="alertDialog.title"
+        :message="alertDialog.message"
+        :alert-mode="true"
+        :ok-text="alertDialog.okText"
+        @ok="handleAlertOk"
     />
 </template>
 

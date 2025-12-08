@@ -15,17 +15,24 @@ const props = withDefaults(
         confirmText?: string;
         /** Whether the confirm action is destructive (styles button as danger) */
         danger?: boolean;
+        /** Alert mode - shows only a single OK button instead of cancel/confirm */
+        alertMode?: boolean;
+        /** Text for the OK button in alert mode */
+        okText?: string;
     }>(),
     {
         cancelText: "Cancel",
         confirmText: "Confirm",
         danger: false,
-    }
+        alertMode: false,
+        okText: "OK",
+    },
 );
 
 const emit = defineEmits<{
     (e: "confirm"): void;
     (e: "cancel"): void;
+    (e: "ok"): void;
 }>();
 
 const overlayRef = ref<HTMLDivElement | null>(null);
@@ -44,8 +51,19 @@ function handleOverlayClick(event: MouseEvent): void {
  */
 function handleKeyDown(event: KeyboardEvent): void {
     if (event.key === "Escape" && props.show) {
-        emit("cancel");
+        if (props.alertMode) {
+            emit("ok");
+        } else {
+            emit("cancel");
+        }
     }
+}
+
+/**
+ * Handle OK button click in alert mode
+ */
+function handleOk(): void {
+    emit("ok");
 }
 
 onMounted(() => {
@@ -72,16 +90,26 @@ onUnmounted(() => {
                 <div class="modal">
                     <h3>{{ title }}</h3>
                     <p>{{ message }}</p>
+                    <slot></slot>
                     <div class="modal-actions">
-                        <button @click="emit('cancel')" class="cancel-btn">
-                            {{ cancelText }}
-                        </button>
-                        <button
-                            @click="emit('confirm')"
-                            :class="['confirm-btn', { danger }]"
-                        >
-                            {{ confirmText }}
-                        </button>
+                        <!-- Alert mode: single OK button -->
+                        <template v-if="alertMode">
+                            <button @click="handleOk" class="confirm-btn">
+                                {{ okText }}
+                            </button>
+                        </template>
+                        <!-- Confirm mode: cancel and confirm buttons -->
+                        <template v-else>
+                            <button @click="emit('cancel')" class="cancel-btn">
+                                {{ cancelText }}
+                            </button>
+                            <button
+                                @click="emit('confirm')"
+                                :class="['confirm-btn', { danger }]"
+                            >
+                                {{ confirmText }}
+                            </button>
+                        </template>
                     </div>
                 </div>
             </div>
