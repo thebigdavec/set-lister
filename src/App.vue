@@ -1,28 +1,33 @@
 <script setup lang="ts">
 import { computed, nextTick, onMounted, onUnmounted, ref, watch } from "vue";
-import { addSet, loadStore, markClean, resetStore, store } from "./store";
+import { addSet, resetStore, store } from "./store";
 import SetList from "./components/SetList.vue";
 import SetlistMetadata from "./components/SetlistMetadata.vue";
 import SetPreview from "./components/SetPreview.vue";
 import MenuBar from "./components/MenuBar.vue";
-import { fitStringsToBox } from "./utils/fitStringsToBox";
-import { formatSongLabel } from "./utils/textMetrics";
+import { STORAGE_KEYS } from "./constants";
 import {
-    BOX_HEIGHT_CM,
-    BOX_WIDTH_CM,
-    CM_TO_PX,
-    STORAGE_KEYS,
-    TARGET_HEIGHT_PX,
-    TARGET_WIDTH_PX,
-} from "./constants";
+    useFileOperations,
+    useKeyboardShortcuts,
+    usePreviewScaling,
+    createEditBindings,
+    createPreviewBindings,
+} from "./composables";
+
+// =============================================================================
+// Refs and State
+// =============================================================================
 
 const showPreview = ref(false);
 const previewRef = ref<HTMLDivElement | null>(null);
-const fileInput = ref<HTMLInputElement | null>(null);
-const currentFileHandle = ref<FileSystemFileHandle | null>(null);
 const uppercasePreview = ref(false);
 const showGuides = ref(false);
 const previewScale = ref(1);
+const showNewDialog = ref(false);
+
+// =============================================================================
+// Computed Properties
+// =============================================================================
 
 const previewSets = computed(() =>
     store.sets.filter((set) => set.songs.length > 0),
@@ -31,95 +36,55 @@ const lastSetId = computed(() =>
     store.sets.length ? store.sets[store.sets.length - 1].id : null,
 );
 
-const previewSheetStyle = computed(() => ({
-    width: `${TARGET_WIDTH_PX}px`,
-    minHeight: `${TARGET_HEIGHT_PX}px`,
-}));
+// =============================================================================
+// Composables
+// =============================================================================
 
-const previewWrapperStyle = computed(() => ({
-    transform: `scale(${previewScale.value})`,
-    transformOrigin: "top center",
-    height: `${TARGET_HEIGHT_PX * previewScale.value}px`,
-}));
+// File operations (save, load, beforeunload)
+const {
+    fileInput,
+    saveToDisk,
+    loadFromDisk,
+    clearFileHandle,
+    handleBeforeUnload,
+} = useFileOperations();
 
-function updatePreviewScale(): void {
-    if (!showPreview.value || !previewRef.value) {
-        previewScale.value = 1;
+// Preview scaling and sizing
+const {
+    previewSheetStyle,
+    previewWrapperStyle,
+    updatePreviewScale,
+    handlePreviewResize,
+    applyPreviewSizing,
+    printSets,
+} = usePreviewScaling(previewScale, {
+    previewRef,
+    showPreview,
+    uppercasePreview,
+    previewSets,
+});
+
+// =============================================================================
+// Dialog and Preview Functions
+// =============================================================================
+
+function startNew(): void {
+    if (!store.isDirty) {
+        resetStore();
+        clearFileHandle();
         return;
     }
-
-    const container = previewRef.value;
-    const styles = window.getComputedStyle(container);
-    const paddingLeft = parseFloat(styles.paddingLeft || "0");
-    const paddingRight = parseFloat(styles.paddingRight || "0");
-    const availableWidth = container.clientWidth - paddingLeft - paddingRight;
-
-    if (availableWidth <= 0) {
-        previewScale.value = 1;
-        return;
-    }
-
-    const scale = Math.min(1, availableWidth / TARGET_WIDTH_PX);
-    previewScale.value = Number.isFinite(scale) && scale > 0 ? scale : 1;
+    showNewDialog.value = true;
 }
 
-function handlePreviewResize(): void {
-    if (!showPreview.value) return;
-    updatePreviewScale();
+function confirmNew(): void {
+    resetStore();
+    clearFileHandle();
+    showNewDialog.value = false;
 }
 
-async function applyPreviewSizing(): Promise<void> {
-    if (!showPreview.value) return;
-    await nextTick();
-    if (!previewRef.value) return;
-
-    for (const set of previewSets.value) {
-        const setSelector = `.preview-set[data-set-id="${set.id}"]`;
-        const setEl = previewRef.value.querySelector<HTMLElement>(setSelector);
-        if (!setEl) continue;
-
-        const songsEl = setEl.querySelector<HTMLElement>(".song-list");
-        if (!songsEl) continue;
-
-        const strings = set.songs.map((song) => {
-            const title = uppercasePreview.value
-                ? song.title.toUpperCase()
-                : song.title;
-            return formatSongLabel(title, song.key);
-        });
-
-        if (strings.length === 0) {
-            songsEl.style.fontSize = "";
-            songsEl.style.lineHeight = "";
-            continue;
-        }
-
-        // Measure the header height to subtract from available space
-        // Use getBoundingClientRect and compute margin to get full height including margin-bottom
-        const headerEl = setEl.querySelector<HTMLElement>(".metadata-header");
-        let headerHeightPx = 0;
-        if (headerEl) {
-            const headerRect = headerEl.getBoundingClientRect();
-            const headerStyles = window.getComputedStyle(headerEl);
-            const marginBottom = parseFloat(headerStyles.marginBottom) || 0;
-            headerHeightPx = headerRect.height + marginBottom;
-        }
-
-        // Account for the .set-spacer element (min-height: 1em, roughly 16px)
-        const spacerHeightPx = 16;
-
-        // Convert to cm and subtract from available height
-        const usedHeightCm = (headerHeightPx + spacerHeightPx) / CM_TO_PX;
-        const availableHeightCm = BOX_HEIGHT_CM - usedHeightCm;
-
-        const { fontSizePx, lineHeight } = fitStringsToBox(
-            strings,
-            BOX_WIDTH_CM,
-            availableHeightCm,
-        );
-        songsEl.style.fontSize = `${fontSizePx}px`;
-        songsEl.style.lineHeight = lineHeight.toString();
-    }
+function cancelNew(): void {
+    showNewDialog.value = false;
 }
 
 async function togglePreview(): Promise<void> {
@@ -132,202 +97,37 @@ function closePreview(): void {
     showPreview.value = false;
 }
 
-function printSets(): void {
-    window.print();
-}
+// =============================================================================
+// Keyboard Shortcuts
+// =============================================================================
 
-const showNewDialog = ref(false);
+useKeyboardShortcuts(showPreview, {
+    editBindings: createEditBindings({
+        startNew,
+        saveToDisk,
+        loadFromDisk,
+        togglePreview,
+        addSet,
+    }),
+    previewBindings: createPreviewBindings({
+        closePreview,
+    }),
+});
 
-function startNew(): void {
-    if (!store.isDirty) {
-        resetStore();
-        currentFileHandle.value = null;
-        return;
-    }
-    showNewDialog.value = true;
-}
-
-function confirmNew(): void {
-    resetStore();
-    currentFileHandle.value = null;
-    showNewDialog.value = false;
-}
-
-function cancelNew(): void {
-    showNewDialog.value = false;
-}
-
-type SaveEvent = MouseEvent | KeyboardEvent | { altKey?: boolean } | undefined;
-
-async function saveToDisk(event?: SaveEvent): Promise<void> {
-    const data = {
-        metadata: store.metadata,
-        sets: store.sets,
-    };
-    const jsonString = JSON.stringify(data, null, 2);
-
-    try {
-        if (
-            "showSaveFilePicker" in window &&
-            typeof window.showSaveFilePicker === "function"
-        ) {
-            const saveAs =
-                Boolean(event && "altKey" in event && event.altKey) ||
-                !currentFileHandle.value;
-
-            if (saveAs) {
-                const handle = await window.showSaveFilePicker({
-                    suggestedName: `${store.metadata.setListName || "set-list"}.json`,
-                    types: [
-                        {
-                            description: "JSON Files",
-                            accept: { "application/json": [".json"] },
-                        },
-                    ],
-                });
-                currentFileHandle.value = handle;
-            }
-
-            if (!currentFileHandle.value) return;
-
-            const writable = await currentFileHandle.value.createWritable();
-            await writable.write(jsonString);
-            await writable.close();
-
-            markClean();
-        } else {
-            const blob = new Blob([jsonString], { type: "application/json" });
-            const url = URL.createObjectURL(blob);
-            const anchor = document.createElement("a");
-            anchor.href = url;
-            anchor.download = `${store.metadata.setListName || "set-list"}.json`;
-            document.body.appendChild(anchor);
-            anchor.click();
-            document.body.removeChild(anchor);
-            URL.revokeObjectURL(url);
-            markClean();
-        }
-    } catch (err) {
-        const error = err as DOMException;
-        if (error.name !== "AbortError") {
-            console.error("Failed to save file:", err);
-            alert("Failed to save file.");
-        }
-    }
-}
-
-async function loadFromDisk(): Promise<void> {
-    if (store.isDirty) {
-        const confirmed = confirm(
-            "You have unsaved changes. Are you sure you want to load a new file? Unsaved changes will be lost.",
-        );
-        if (!confirmed) return;
-    }
-
-    try {
-        if (
-            "showOpenFilePicker" in window &&
-            typeof window.showOpenFilePicker === "function"
-        ) {
-            const [handle] = await window.showOpenFilePicker({
-                types: [
-                    {
-                        description: "JSON Files",
-                        accept: { "application/json": [".json"] },
-                    },
-                ],
-                multiple: false,
-            });
-
-            const file = await handle.getFile();
-            const text = await file.text();
-            const data = JSON.parse(text);
-
-            if (loadStore(data)) {
-                currentFileHandle.value = handle;
-            } else {
-                alert("Invalid set list file.");
-            }
-        } else {
-            fileInput.value?.click();
-        }
-    } catch (err) {
-        const error = err as DOMException;
-        if (error.name !== "AbortError") {
-            console.error("Failed to load file:", err);
-            alert("Failed to load file.");
-        }
-    }
-}
-
-function handleBeforeUnload(event: BeforeUnloadEvent): void {
-    if (store.isDirty) {
-        event.preventDefault();
-        event.returnValue = "";
-    }
-}
-
-function handleKeyUp(event: KeyboardEvent): void {
-    if (!event.key) return;
-
-    if (showPreview.value) {
-        switch (event.key) {
-            case "Escape":
-                showPreview.value = false;
-                break;
-        }
-    } else {
-        switch (event.key) {
-            case "Control":
-                if (event.altKey) {
-                    switch (event.code) {
-                        case "KeyS":
-                            // control+alt+s
-                            saveToDisk({ altKey: true });
-                            break;
-                        case "KeyN":
-                            // control+alt+n
-                            addSet();
-                            break;
-                    }
-                } else {
-                    switch (event.code) {
-                        case "KeyN":
-                            // control+n
-                            startNew();
-                            break;
-                        case "KeyS":
-                            // control+s
-                            saveToDisk();
-                            break;
-                        case "KeyO":
-                            // control+o
-                            loadFromDisk();
-                            break;
-                        case "KeyE":
-                            // control+e
-                            togglePreview();
-                            break;
-                    }
-                }
-
-                break;
-        }
-    }
-}
+// =============================================================================
+// Lifecycle
+// =============================================================================
 
 onMounted(() => {
     const savedUppercase = localStorage.getItem(STORAGE_KEYS.PREVIEW_UPPERCASE);
     uppercasePreview.value = savedUppercase === "true";
     window.addEventListener("beforeunload", handleBeforeUnload);
     window.addEventListener("resize", handlePreviewResize);
-    window.addEventListener("keyup", handleKeyUp);
 });
 
 onUnmounted(() => {
     window.removeEventListener("beforeunload", handleBeforeUnload);
     window.removeEventListener("resize", handlePreviewResize);
-    window.removeEventListener("keyup", handleKeyUp);
 });
 
 watch(uppercasePreview, async (value) => {
