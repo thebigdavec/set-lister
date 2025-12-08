@@ -1,14 +1,7 @@
 <script setup lang="ts">
 import { computed, nextTick, onMounted, onUnmounted, ref, watch } from "vue";
-import {
-    addSet,
-    loadStore,
-    markClean,
-    removeSet,
-    resetStore,
-    store,
-} from "./store";
-import Set from "./components/Set.vue";
+import { addSet, loadStore, markClean, resetStore, store } from "./store";
+import SetList from "./components/SetList.vue";
 import SetlistMetadata from "./components/SetlistMetadata.vue";
 import SetPreview from "./components/SetPreview.vue";
 import MenuBar from "./components/MenuBar.vue";
@@ -382,17 +375,7 @@ watch(showPreview, async (value) => {
             <SetlistMetadata />
         </header>
 
-        <main>
-            <div class="sets-wrapper">
-                <Set
-                    v-for="set in store.sets"
-                    :key="set.id"
-                    :set="set"
-                    :is-last="set.id === lastSetId"
-                    @remove-set="removeSet(set.id)"
-                />
-            </div>
-        </main>
+        <SetList />
     </div>
 
     <div v-else class="print-preview">
@@ -476,13 +459,6 @@ h1 {
 .primary:hover {
     background-color: #535bf2;
     border-color: #535bf2;
-}
-
-.sets-wrapper {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-    gap: 2rem;
-    align-items: start;
 }
 
 footer {
