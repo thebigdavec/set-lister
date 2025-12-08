@@ -1,10 +1,9 @@
 <script setup lang="ts">
-import { computed, nextTick, onMounted, onUnmounted, ref } from "vue";
+import { computed, nextTick, onMounted, onUnmounted, ref, toRef } from "vue";
 import Sortable, { MoveEvent, SortableEvent } from "sortablejs";
 import SongItem from "./SongItem.vue";
 import {
     addSongToSet,
-    isEncoreMarkerSong,
     moveSong,
     removeSongFromSet,
     renameSet,
@@ -12,8 +11,16 @@ import {
     updateSong,
     type SetItem,
 } from "../store";
+import { useEncoreHelpers } from "../composables";
 
 const props = defineProps<{ set: SetItem; isLast: boolean }>();
+
+// Use the consolidated encore helpers
+const { markerIndex, hasEncoreMarker, markerIsLast, isEncoreSongByIndex } =
+    useEncoreHelpers({
+        set: toRef(props, "set"),
+        isLast: toRef(props, "isLast"),
+    });
 
 defineEmits<{ (e: "remove-set"): void }>();
 
@@ -23,15 +30,6 @@ let sortableInstance: Sortable | null = null;
 
 const newSongTitle = ref("");
 const newSongKey = ref("");
-
-const markerIndex = computed(() =>
-    props.set.songs.findIndex(isEncoreMarkerSong),
-);
-const hasEncoreMarker = computed(() => markerIndex.value !== -1);
-const markerIsLast = computed(() => {
-    if (markerIndex.value === -1) return false;
-    return markerIndex.value === props.set.songs.length - 1;
-});
 
 const encoreSummary = computed(() => {
     if (!props.isLast) return "Encore marker appears only in the final set.";
@@ -87,10 +85,7 @@ function handleSortMove(evt: MoveEvent): boolean {
 }
 
 function songIsEncore(index: number): boolean {
-    if (!props.isLast) return false;
-    const divider = markerIndex.value;
-    if (divider === -1) return false;
-    return index > divider;
+    return isEncoreSongByIndex(index);
 }
 
 function resetEncoreMarker(): void {

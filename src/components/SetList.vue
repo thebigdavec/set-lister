@@ -1,11 +1,6 @@
 <script setup lang="ts">
-import { computed } from "vue";
-import { store, removeSet } from "../store";
+import { lastSetId, removeSet, store } from "../store";
 import Set from "./Set.vue";
-
-const lastSetId = computed(() =>
-    store.sets.length ? store.sets[store.sets.length - 1].id : null
-);
 </script>
 
 <template>

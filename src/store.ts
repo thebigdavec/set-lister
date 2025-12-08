@@ -1,4 +1,4 @@
-import { reactive, watch } from "vue";
+import { computed, reactive, watch } from "vue";
 import { STORAGE_KEYS } from "./constants";
 import { formatSongLabel, measureSongLabelWidth } from "./utils/textMetrics";
 
@@ -225,6 +225,23 @@ function buildInitialState(): StoreState {
 }
 
 export const store = reactive<StoreState>(buildInitialState());
+
+/**
+ * Computed property for the ID of the last set in the list.
+ * Returns null if there are no sets.
+ */
+export const lastSetId = computed(() =>
+  store.sets.length ? store.sets[store.sets.length - 1].id : null,
+);
+
+/**
+ * Check if a set is the last set in the list.
+ * @param setId - The ID of the set to check
+ * @returns true if the set is the last one
+ */
+export function isLastSet(setId: string): boolean {
+  return setId === lastSetId.value;
+}
 
 watch(
   store,

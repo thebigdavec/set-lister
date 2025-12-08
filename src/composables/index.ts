@@ -10,3 +10,7 @@ export {
   usePreviewScaling,
   type PreviewScalingOptions,
 } from "./usePreviewScaling";
+export {
+  useEncoreHelpers,
+  type EncoreHelpersOptions,
+} from "./useEncoreHelpers";
