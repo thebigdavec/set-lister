@@ -9,6 +9,7 @@ import {
     store,
     updateMetadata,
 } from "./store";
+import { Users, MapPin, Calendar } from "lucide-vue-next";
 import Set from "./components/Set.vue";
 import SetPreview from "./components/SetPreview.vue";
 import MenuBar from "./components/MenuBar.vue";
@@ -403,6 +404,7 @@ watch(showPreview, async (value) => {
     <div v-if="!showPreview" class="app-container">
         <header class="no-print">
             <h1>Set Lister</h1>
+
             <MenuBar
                 :has-sets="previewSets.length > 0"
                 :is-dirty="store.isDirty"
@@ -413,17 +415,7 @@ watch(showPreview, async (value) => {
                 @add-set="addSet"
                 @export="togglePreview"
             />
-            <div class="header-top">
-                <div class="controls">
-                    <input
-                        type="file"
-                        ref="fileInput"
-                        @change="handleLegacyLoad"
-                        accept=".json"
-                        style="display: none"
-                    />
-                </div>
-            </div>
+
             <div class="header-metadata">
                 <div v-if="!isMetaExpanded" class="metadata-grid">
                     <div class="metadata-title">
@@ -485,21 +477,27 @@ watch(showPreview, async (value) => {
                 </div>
                 <div v-else class="metadata-details">
                     <!-- Show metadata in a compact, tidy, well laid-out, no form elements, just for display purposes -->
-                    <div class="metadata-title">
+                    <h2 class="metadata-title">
                         Setlist Details
                         <button @click="toggleMetaExpanded">Edit</button>
+                    </h2>
+                    <h3
+                        v-if="store.metadata.setListName"
+                        class="metadata-detail metadata-detail--heading"
+                    >
+                        {{ store.metadata.setListName }}
+                    </h3>
+                    <div v-if="store.metadata.actName" class="metadata-detail">
+                        <Users size="1rem" class="icon" />
+                        {{ store.metadata.actName }}
                     </div>
-                    <div class="metadata-detail">
-                        Set List: {{ store.metadata.setListName || "N/A" }}
+                    <div v-if="store.metadata.venue" class="metadata-detail">
+                        <MapPin size="1rem" class="icon" />
+                        {{ store.metadata.venue }}
                     </div>
-                    <div class="metadata-detail">
-                        Act Name: {{ store.metadata.actName || "N/A" }}
-                    </div>
-                    <div class="metadata-detail">
-                        Venue: {{ store.metadata.venue || "N/A" }}
-                    </div>
-                    <div class="metadata-detail">
-                        Date: {{ store.metadata.date || "N/A" }}
+                    <div v-if="store.metadata.date" class="metadata-detail">
+                        <Calendar size="1rem" class="icon" />
+                        {{ store.metadata.date }}
                     </div>
                 </div>
             </div>
@@ -737,13 +735,10 @@ footer {
     flex: 1;
     padding: 1rem;
     overflow-y: auto;
-    /* Enable scrolling */
     background-color: #525659;
-    /* Dark gray background like PDF viewers */
     display: flex;
     flex-direction: column;
     align-items: center;
-    /* Center pages */
     gap: 1rem;
     width: 100%;
     box-sizing: border-box;
@@ -774,10 +769,7 @@ footer {
 
 .preview-content .sets-wrapper {
     display: block;
-    /* Allow normal flow for page breaks */
 }
-
-/* Hide delete buttons in preview */
 
 @media print {
     .print-preview {
@@ -871,13 +863,17 @@ footer {
 .metadata-details {
     display: flex;
     flex-direction: column;
-    gap: 0.5rem;
+    > * {
+        margin: 0;
+        padding: 0;
+    }
 }
+
 .metadata-title {
     display: flex;
-    gap: 0.5rem;
     justify-content: space-between;
     align-items: center;
+    gap: 0.5rem;
     button {
         font-size: 0.8rem;
         background: #333;
@@ -887,5 +883,22 @@ footer {
             background: #444;
         }
     }
+}
+
+.metadata-detail {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+    color: #ddd;
+
+    &.metadata-detail--heading {
+        color: #e3e3e3;
+    }
+}
+.icon {
+    color: #cca;
+}
+h3.metadata-detail {
+    font-size: 1.2rem;
 }
 </style>
