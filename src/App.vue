@@ -23,7 +23,7 @@ const currentFileHandle = ref<FileSystemFileHandle | null>(null);
 const uppercasePreview = ref(false);
 const showGuides = ref(false);
 const previewScale = ref(1);
-const isMetaExpanded = ref(false);
+const isEditingMetadata = ref(false);
 
 const previewSets = computed(() =>
     store.sets.filter((set) => set.songs.length > 0),
@@ -31,8 +31,8 @@ const previewSets = computed(() =>
 const lastSetId = computed(() =>
     store.sets.length ? store.sets[store.sets.length - 1].id : null,
 );
-const toggleMetaExpanded = () => {
-    isMetaExpanded.value = !isMetaExpanded.value;
+const toggleEditingMetadata = () => {
+    isEditingMetadata.value = !isEditingMetadata.value;
 };
 
 const CM_TO_PX = 37.795275591; // 1 cm ≈ 37.795 px
@@ -285,33 +285,6 @@ async function loadFromDisk(): Promise<void> {
     }
 }
 
-function handleLegacyLoad(event: Event): void {
-    const input = event.target as HTMLInputElement | null;
-    const file = input?.files?.[0];
-    if (!file) return;
-
-    const reader = new FileReader();
-    reader.onload = (e: ProgressEvent<FileReader>) => {
-        try {
-            const text =
-                typeof e.target?.result === "string" ? e.target.result : "";
-            const data = JSON.parse(text);
-            if (loadStore(data)) {
-                currentFileHandle.value = null;
-                if (input) {
-                    input.value = "";
-                }
-            } else {
-                alert("Invalid set list file.");
-            }
-        } catch (error) {
-            console.error(error);
-            alert("Error reading file.");
-        }
-    };
-    reader.readAsText(file);
-}
-
 function handleBeforeUnload(event: BeforeUnloadEvent): void {
     if (store.isDirty) {
         event.preventDefault();
@@ -417,12 +390,13 @@ watch(showPreview, async (value) => {
             />
 
             <div class="header-metadata">
-                <div v-if="!isMetaExpanded" class="metadata-grid">
-                    <div class="metadata-title">
-                        Setlist Details
-                        <button @click="toggleMetaExpanded">Close</button>
-                    </div>
-
+                <div class="metadata-title">
+                    Setlist Details
+                    <button @click="toggleEditingMetadata">
+                        {{ isEditingMetadata ? "Close" : "Edit" }}
+                    </button>
+                </div>
+                <div v-if="isEditingMetadata" class="metadata-grid">
                     <div class="input-group">
                         <label>Set List Name</label>
                         <input
@@ -476,11 +450,6 @@ watch(showPreview, async (value) => {
                     </div>
                 </div>
                 <div v-else class="metadata-details">
-                    <!-- Show metadata in a compact, tidy, well laid-out, no form elements, just for display purposes -->
-                    <h2 class="metadata-title">
-                        Setlist Details
-                        <button @click="toggleMetaExpanded">Edit</button>
-                    </h2>
                     <h3
                         v-if="store.metadata.setListName"
                         class="metadata-detail metadata-detail--heading"
@@ -874,8 +843,11 @@ footer {
     justify-content: space-between;
     align-items: center;
     gap: 0.5rem;
+    font-size: 1.2rem;
+    color: #ddd;
+
     button {
-        font-size: 0.8rem;
+        font-size: 0.8em;
         background: #333;
         transition: background-color 0.2s ease;
         &:hover,
