@@ -1,3 +1,11 @@
+import {
+  BASE_FONT_SIZE_PX,
+  CM_TO_PX,
+  DEFAULT_FONT_FAMILY,
+  MAX_LINE_HEIGHT,
+  MIN_FONT_SIZE_PX,
+  MIN_LINE_HEIGHT,
+} from "../constants";
 import { formatSongLabel } from "./textMetrics";
 
 /**
@@ -21,12 +29,6 @@ export function fitStringsToBox(
   fontSizePx: number;
   lineHeight: number;
 } {
-  const BASE_FONT_SIZE_PX = 16;
-  const MIN_FONT_SIZE_PX = 10;
-  const MIN_LINE_HEIGHT = 1.0;
-  const MAX_LINE_HEIGHT = 1.8;
-  const CM_TO_PX = 37.795275591;
-
   const boxWidthPx = boxWidthCm * CM_TO_PX;
   const boxHeightPx = boxHeightCm * CM_TO_PX;
 
@@ -44,8 +46,7 @@ export function fitStringsToBox(
   const measureSpan = document.createElement("span");
   measureSpan.style.fontSize = `${BASE_FONT_SIZE_PX}px`;
   measureSpan.style.fontWeight = "600";
-  measureSpan.style.fontFamily =
-    "Inter, system-ui, Avenir, Helvetica, Arial, sans-serif";
+  measureSpan.style.fontFamily = DEFAULT_FONT_FAMILY;
   measureSpan.style.lineHeight = String(MIN_LINE_HEIGHT);
   measureSpan.style.visibility = "hidden";
   measureSpan.style.position = "absolute";

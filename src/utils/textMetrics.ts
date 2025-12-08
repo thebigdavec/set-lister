@@ -1,6 +1,6 @@
-const DEFAULT_FONT_FAMILY =
-  "Inter, system-ui, Avenir, Helvetica, Arial, sans-serif";
-export const BASE_FONT_SIZE_PX = 16;
+import { BASE_FONT_SIZE_PX, DEFAULT_FONT_FAMILY } from "../constants";
+
+export { BASE_FONT_SIZE_PX };
 
 let cachedCanvas: HTMLCanvasElement | null = null;
 let cachedContext: CanvasRenderingContext2D | null = null;
