@@ -1,7 +1,6 @@
 import { reactive, watch } from "vue";
+import { STORAGE_KEYS } from "./constants";
 import { formatSongLabel, measureSongLabelWidth } from "./utils/textMetrics";
-
-const STORAGE_KEY = "set-lister-data";
 
 export interface Song {
   id: string;
@@ -209,7 +208,7 @@ export function hasEncoreMarker(set: SetItem): boolean {
 export { isEncoreMarkerSong };
 
 function buildInitialState(): StoreState {
-  const savedState = parseSavedState(localStorage.getItem(STORAGE_KEY));
+  const savedState = parseSavedState(localStorage.getItem(STORAGE_KEYS.DATA));
   const defaults = createDefaultState();
 
   return {
@@ -230,7 +229,7 @@ export const store = reactive<StoreState>(buildInitialState());
 watch(
   store,
   (state) => {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    localStorage.setItem(STORAGE_KEYS.DATA, JSON.stringify(state));
   },
   { deep: true },
 );

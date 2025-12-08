@@ -7,6 +7,13 @@ import SetPreview from "./components/SetPreview.vue";
 import MenuBar from "./components/MenuBar.vue";
 import { fitStringsToBox } from "./utils/fitStringsToBox";
 import { formatSongLabel } from "./utils/textMetrics";
+import {
+    BOX_HEIGHT_CM,
+    BOX_WIDTH_CM,
+    STORAGE_KEYS,
+    TARGET_HEIGHT_PX,
+    TARGET_WIDTH_PX,
+} from "./constants";
 
 const showPreview = ref(false);
 const previewRef = ref<HTMLDivElement | null>(null);
@@ -22,22 +29,6 @@ const previewSets = computed(() =>
 const lastSetId = computed(() =>
     store.sets.length ? store.sets[store.sets.length - 1].id : null,
 );
-
-const CM_TO_PX = 37.795275591; // 1 cm ≈ 37.795 px
-const TARGET_HEIGHT_CM = 29.7;
-const TARGET_WIDTH_CM = 21.0;
-const MARGINS_CM = {
-    top: 1,
-    bottom: 1,
-    left: 1,
-    right: 1,
-};
-
-const BOX_HEIGHT_CM = TARGET_HEIGHT_CM - MARGINS_CM.top - MARGINS_CM.bottom;
-const BOX_WIDTH_CM = TARGET_WIDTH_CM - MARGINS_CM.left - MARGINS_CM.right;
-const TARGET_WIDTH_PX = TARGET_WIDTH_CM * CM_TO_PX;
-const TARGET_HEIGHT_PX = TARGET_HEIGHT_CM * CM_TO_PX;
-const PREVIEW_UPPERCASE_KEY = "set-lister-preview-uppercase";
 
 const previewSheetStyle = computed(() => ({
     width: `${TARGET_WIDTH_PX}px`,
@@ -325,7 +316,7 @@ function handleKeyUp(event: KeyboardEvent): void {
 }
 
 onMounted(() => {
-    const savedUppercase = localStorage.getItem(PREVIEW_UPPERCASE_KEY);
+    const savedUppercase = localStorage.getItem(STORAGE_KEYS.PREVIEW_UPPERCASE);
     uppercasePreview.value = savedUppercase === "true";
     window.addEventListener("beforeunload", handleBeforeUnload);
     window.addEventListener("resize", handlePreviewResize);
@@ -339,7 +330,7 @@ onUnmounted(() => {
 });
 
 watch(uppercasePreview, async (value) => {
-    localStorage.setItem(PREVIEW_UPPERCASE_KEY, String(value));
+    localStorage.setItem(STORAGE_KEYS.PREVIEW_UPPERCASE, String(value));
     if (showPreview.value) {
         await applyPreviewSizing();
         updatePreviewScale();
