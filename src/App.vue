@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, nextTick, onMounted, onUnmounted, ref, watch } from "vue";
-import { addSet, resetStore, store } from "./store";
+import { addSet, lastSetId, resetStore, store } from "./store";
 import SetList from "./components/SetList.vue";
 import SetlistMetadata from "./components/SetlistMetadata.vue";
 import SetPreview from "./components/SetPreview.vue";
@@ -31,9 +31,6 @@ const showNewDialog = ref(false);
 
 const previewSets = computed(() =>
     store.sets.filter((set) => set.songs.length > 0),
-);
-const lastSetId = computed(() =>
-    store.sets.length ? store.sets[store.sets.length - 1].id : null,
 );
 
 // =============================================================================

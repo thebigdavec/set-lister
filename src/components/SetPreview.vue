@@ -1,6 +1,7 @@
 <script setup lang="ts">
-import { computed, toRefs } from "vue";
-import { isEncoreMarkerSong, store, type SetItem, type Song } from "../store";
+import { computed, toRef, toRefs } from "vue";
+import { store, type SetItem } from "../store";
+import { useEncoreHelpers } from "../composables";
 
 const props = withDefaults(
     defineProps<{
@@ -18,6 +19,17 @@ const props = withDefaults(
 
 const { set, uppercase, showGuides, isLast } = toRefs(props);
 
+// Use the consolidated encore helpers
+const {
+    markerIndex,
+    firstEncoreSongId,
+    songsWithoutMarker: previewSongs,
+    isEncoreSong,
+} = useEncoreHelpers({
+    set: toRef(props, "set"),
+    isLast: toRef(props, "isLast"),
+});
+
 // Determine whether any optional metadata exists to show the left-hand header block
 const hasMetadata = computed(() => {
     const m = store.metadata;
@@ -28,33 +40,6 @@ const hasMetadata = computed(() => {
 const showHeader = computed(
     () => hasMetadata.value || Boolean(set.value?.name),
 );
-
-// Encore markers only matter on the final set; find their index or return -1 when absent
-const markerIndex = computed(() => {
-    if (!isLast.value) return -1;
-    return set.value.songs.findIndex(isEncoreMarkerSong);
-});
-
-// Used to insert a visual divider before the first encore song
-const firstEncoreSongId = computed(() => {
-    const idx = markerIndex.value;
-    if (idx === -1) return null;
-    return set.value.songs[idx + 1]?.id ?? null;
-});
-
-// Filter out the artificial encore marker entries so only real songs render
-const previewSongs = computed(() =>
-    set.value.songs.filter((song) => !isEncoreMarkerSong(song)),
-);
-
-// Helper to flag encore songs so they can be styled differently in the list
-function isEncoreSong(song: Song): boolean {
-    if (!isLast.value) return false;
-    const idx = markerIndex.value;
-    if (idx === -1) return false;
-    const originalIndex = set.value.songs.findIndex((s) => s.id === song.id);
-    return originalIndex > idx;
-}
 
 // Present dates in a long, locale-aware format so printed set lists read naturally
 function formatDate(dateStr: string | undefined): string {
