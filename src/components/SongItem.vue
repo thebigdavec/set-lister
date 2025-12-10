@@ -56,6 +56,28 @@ function cancel(): void {
     isEditing.value = false;
 }
 
+const showDeleteConfirm = ref(false);
+const isDeleting = ref(false);
+const songItemRef = ref<HTMLDivElement | null>(null);
+
+function confirmRemove(): void {
+    showDeleteConfirm.value = true;
+}
+
+function handleDeleteConfirm(): void {
+    showDeleteConfirm.value = false;
+    isDeleting.value = true;
+
+    // Wait for animation to complete before emitting remove
+    setTimeout(() => {
+        emit("remove");
+    }, 300);
+}
+
+function handleDeleteCancel(): void {
+    showDeleteConfirm.value = false;
+}
+
 // Pointer handling for tap-to-edit vs hold-to-drag
 const pointerState = ref<{
     startX: number;
@@ -123,10 +145,15 @@ function handlePointerCancel(): void {
 
 <template>
     <div
+        ref="songItemRef"
         class="song-item card"
         :data-id="song.id"
         :data-encore-marker="isEncoreMarker ? 'true' : undefined"
-        :class="{ 'is-encore': isEncore, 'is-marker': isEncoreMarker }"
+        :class="{
+            'is-encore': isEncore,
+            'is-marker': isEncoreMarker,
+            'is-deleting': isDeleting,
+        }"
     >
         <div v-if="isMarker" class="marker-mode">
             <span class="marker-pill">&lt;Encores from here&gt;</span>
@@ -165,11 +192,7 @@ function handlePointerCancel(): void {
                         <Button @click="isEditing = true" size="sm">
                             <Pencil class="icon" />
                         </Button>
-                        <Button
-                            @click="$emit('remove')"
-                            size="sm"
-                            class="delete"
-                        >
+                        <Button @click="confirmRemove" size="sm" class="delete">
                             <X class="icon" />
                         </Button>
                     </div>
@@ -197,6 +220,16 @@ function handlePointerCancel(): void {
                 </Button>
             </div>
         </template>
+
+        <ConfirmDialog
+            :show="showDeleteConfirm"
+            title="Delete Song"
+            :message="`Are you sure you want to delete &quot;${song.title}&quot;?`"
+            confirm-text="Delete"
+            :danger="true"
+            @confirm="handleDeleteConfirm"
+            @cancel="handleDeleteCancel"
+        />
     </div>
 </template>
 
@@ -207,6 +240,14 @@ function handlePointerCancel(): void {
     display: flex;
     align-items: center;
     background-color: #2a2a2a;
+    transition:
+        transform 0.3s ease,
+        opacity 0.3s ease,
+        max-height 0.3s ease,
+        margin 0.3s ease,
+        padding 0.3s ease;
+    max-height: 100px;
+    overflow: hidden;
 
     &:is(:nth-child(even)) {
         background-color: #242424;
@@ -215,6 +256,14 @@ function handlePointerCancel(): void {
     @media (min-width: 768px) {
         padding-block: 0.5rem;
     }
+}
+
+.song-item.is-deleting {
+    transform: translateX(100%);
+    opacity: 0;
+    max-height: 0;
+    margin-block-end: 0;
+    padding-block: 0;
 }
 
 .song-item.is-encore {

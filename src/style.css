@@ -44,6 +44,39 @@ body {
     width: 1em;
 }
 
+/* Responsive header font sizes */
+/* using clamp */
+
+h1 {
+    font-size: clamp(1.7rem, 1.7vw + 0.85rem, 3.4rem);
+}
+
+h2 {
+    font-size: clamp(1.275rem, 1.275vw + 0.85rem, 2.55rem);
+}
+
+h3 {
+    font-size: clamp(0.85rem, 0.85vw + 0.85rem, 1.7rem);
+}
+
+h4 {
+    font-size: clamp(0.68rem, 0.68vw + 0.68rem, 1.02rem);
+}
+
+h5 {
+    font-size: clamp(0.51rem, 0.51vw + 0.51rem, 0.68rem);
+}
+
+h6 {
+    font-size: clamp(0.34rem, 0.34vw + 0.34rem, 0.51rem);
+}
+
+/*responsive body fontsize using clamp*/
+
+body {
+    font-size: clamp(0.68rem, 0.85vw + 0.85rem, 1.02rem);
+}
+
 input {
     background-color: var(--card-bg);
     border: 1px solid var(--border-color);

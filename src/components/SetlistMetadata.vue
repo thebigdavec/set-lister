@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref } from "vue";
+import { ref, computed } from "vue";
 import { Users, MapPin, Calendar, Pencil, X } from "lucide-vue-next";
 import { store, updateMetadata } from "../store";
 
@@ -13,12 +13,25 @@ function blurInputOnEnter(e: KeyboardEvent) {
     const target = e.target as HTMLInputElement;
     target.blur();
 }
+
+const noDetailsExist = computed(() => {
+    return (
+        !store.metadata.setListName &&
+        !store.metadata.venue &&
+        !store.metadata.actName &&
+        !store.metadata.date
+    );
+});
 </script>
 
 <template>
     <div class="setlist-metadata">
         <div class="metadata-title">
-            Setlist Details
+            <h2 v-if="noDetailsExist">Enter Setlist Details</h2>
+            <h2 v-else-if="store.metadata.setListName">
+                {{ store.metadata.setListName }}
+            </h2>
+            <h2 v-else>Untitled Setlist</h2>
             <Button
                 v-if="isEditingMetadata"
                 class="danger"
@@ -81,12 +94,6 @@ function blurInputOnEnter(e: KeyboardEvent) {
             </div>
         </div>
         <div v-else class="metadata-details">
-            <h3
-                v-if="store.metadata.setListName"
-                class="metadata-detail metadata-detail--heading"
-            >
-                {{ store.metadata.setListName }}
-            </h3>
             <div v-if="store.metadata.actName" class="metadata-detail">
                 <Users class="icon" />
                 {{ store.metadata.actName }}
@@ -184,9 +191,5 @@ function blurInputOnEnter(e: KeyboardEvent) {
 
 .icon {
     color: #cca;
-}
-
-h3.metadata-detail {
-    font-size: 1.2rem;
 }
 </style>

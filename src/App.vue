@@ -262,7 +262,6 @@ header {
 
 h1 {
     margin: 0;
-    font-size: 2rem;
     background: linear-gradient(45deg, #646cff, #a164ff);
     background-clip: text;
     -webkit-background-clip: text;

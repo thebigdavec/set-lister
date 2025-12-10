@@ -213,29 +213,22 @@ onUnmounted(() => {
 }
 
 .action-item {
-    background: #333;
     box-shadow: 0 2px 4px -2px #000;
-    border: none;
     color: #ddd;
-    padding: 0.6rem 1rem;
-    text-align: left;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
-    width: 100%;
-    transition: background-color 0.2s;
-}
+    transition:
+        background-color 0.2s,
+        ease color 0.2s ease,
+        box-shadow 0.2s ease;
 
-.action-item:hover {
-    background: #444;
-    color: white;
-    box-shadow: 0 3px 6px -2px #000;
-}
+    &:hover {
+        color: white;
+        box-shadow: 0 3px 6px -2px #000;
+    }
 
-.action-item:disabled {
-    color: #666;
-    cursor: not-allowed;
+    &:disabled {
+        color: #666;
+        cursor: not-allowed;
+    }
 }
 
 .divider {
