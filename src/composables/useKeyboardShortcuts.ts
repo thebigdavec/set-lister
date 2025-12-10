@@ -1,221 +1,327 @@
-import { onMounted, onUnmounted, type Ref } from "vue";
+import { type Ref, computed } from "vue";
+import { onKeyStroke } from "@vueuse/core";
 
 /**
- * Key binding definition
+ * Keyboard shortcut definition
  */
-export interface KeyBinding {
-  /** The key code (e.g., "KeyS", "KeyN", "Escape") */
-  code: string;
+export interface KeyboardShortcut {
+  /** The key to listen for (e.g., "s", "z", "Escape", "Enter") */
+  key: string | string[];
   /** Handler function to execute */
-  handler: () => void;
-  /** Whether Ctrl/Cmd must be pressed (default: false) */
+  handler: (event: KeyboardEvent) => void;
+  /** Whether Ctrl (or Cmd on Mac) must be pressed */
   ctrl?: boolean;
-  /** Whether Alt must be pressed (default: false) */
+  /** Whether Alt must be pressed */
   alt?: boolean;
-  /** Whether Shift must be pressed (default: false) */
+  /** Whether Shift must be pressed */
   shift?: boolean;
-  /** Description of the shortcut (for documentation) */
+  /** Description of the shortcut (for documentation/tooltips) */
   description?: string;
+  /** Whether to prevent default browser behavior (default: true for ctrl shortcuts) */
+  preventDefault?: boolean;
 }
 
 /**
  * Options for useKeyboardShortcuts
  */
-export interface KeyboardShortcutsOptions {
-  /** Bindings active when preview mode is enabled */
-  previewBindings?: KeyBinding[];
-  /** Bindings active when in edit mode (preview disabled) */
-  editBindings?: KeyBinding[];
+export interface UseKeyboardShortcutsOptions {
+  /** Shortcuts active when in edit mode (default mode) */
+  shortcuts: KeyboardShortcut[];
+  /** Shortcuts active when in preview mode */
+  previewShortcuts?: KeyboardShortcut[];
+  /** Ref indicating if preview mode is active */
+  isPreviewMode?: Ref<boolean>;
 }
 
 /**
- * Composable for declarative keyboard shortcut handling.
- * Supports different bindings for preview mode vs edit mode.
+ * Check if the event target is an input field where we should be careful
+ * about triggering shortcuts
+ */
+function isInputField(event: KeyboardEvent): boolean {
+  const target = event.target as HTMLElement;
+  return (
+    target.tagName === "INPUT" ||
+    target.tagName === "TEXTAREA" ||
+    target.isContentEditable
+  );
+}
+
+/**
+ * Check if modifier keys match the shortcut requirements
+ */
+function modifiersMatch(
+  event: KeyboardEvent,
+  shortcut: KeyboardShortcut,
+): boolean {
+  const ctrlRequired = shortcut.ctrl ?? false;
+  const altRequired = shortcut.alt ?? false;
+  const shiftRequired = shortcut.shift ?? false;
+
+  // Check Ctrl/Cmd (metaKey for Mac compatibility)
+  const ctrlPressed = event.ctrlKey || event.metaKey;
+  if (ctrlRequired !== ctrlPressed) return false;
+
+  // Check Alt
+  if (altRequired !== event.altKey) return false;
+
+  // Check Shift
+  if (shiftRequired !== event.shiftKey) return false;
+
+  return true;
+}
+
+/**
+ * Composable for declarative keyboard shortcut handling using VueUse's onKeyStroke.
  *
- * @param showPreview - Ref indicating if preview mode is active
- * @param options - Key binding configurations
+ * @example
+ * ```ts
+ * useKeyboardShortcuts({
+ *   shortcuts: [
+ *     { key: "s", ctrl: true, handler: () => save(), description: "Save" },
+ *     { key: "z", ctrl: true, handler: () => undo(), description: "Undo" },
+ *     { key: ["y", "Z"], ctrl: true, handler: () => redo(), description: "Redo" },
+ *   ],
+ *   previewShortcuts: [
+ *     { key: "Escape", handler: () => closePreview(), description: "Close preview" },
+ *   ],
+ *   isPreviewMode: showPreview,
+ * });
+ * ```
  */
 export function useKeyboardShortcuts(
-  showPreview: Ref<boolean>,
-  options: KeyboardShortcutsOptions
-) {
-  const { previewBindings = [], editBindings = [] } = options;
+  options: UseKeyboardShortcutsOptions,
+): void {
+  const { shortcuts, previewShortcuts = [], isPreviewMode } = options;
+
+  // Determine which shortcuts are currently active
+  const activeShortcuts = computed(() => {
+    if (isPreviewMode?.value) {
+      return previewShortcuts;
+    }
+    return shortcuts;
+  });
 
   /**
-   * Check if a key binding matches the current keyboard event
+   * Check if the pressed key matches the shortcut's key definition
    */
-  function matchesBinding(event: KeyboardEvent, binding: KeyBinding): boolean {
-    // Check the key code
-    if (event.code !== binding.code) return false;
-
-    // Check modifiers
-    const ctrlRequired = binding.ctrl ?? false;
-    const altRequired = binding.alt ?? false;
-    const shiftRequired = binding.shift ?? false;
-
-    // For Ctrl bindings, we check on keyup of Control key
-    // The event.ctrlKey will be false when Control is the key being released
-    // So we need to handle this specially
-    const isCtrlKeyUp = event.key === "Control";
-    const ctrlPressed = isCtrlKeyUp || event.ctrlKey || event.metaKey;
-
-    if (ctrlRequired && !ctrlPressed) return false;
-    if (!ctrlRequired && ctrlPressed && !isCtrlKeyUp) return false;
-
-    if (altRequired !== event.altKey) return false;
-    if (shiftRequired !== event.shiftKey) return false;
-
-    return true;
+  function keyMatches(
+    event: KeyboardEvent,
+    shortcut: KeyboardShortcut,
+  ): boolean {
+    const keys = Array.isArray(shortcut.key) ? shortcut.key : [shortcut.key];
+    // event.key gives us the actual character pressed (e.g., "s", "S", "Escape")
+    // We do case-insensitive comparison for letter keys
+    return keys.some((k) => k.toLowerCase() === event.key.toLowerCase());
   }
 
-  /**
-   * Handle keyup events and dispatch to appropriate bindings
-   */
-  function handleKeyUp(event: KeyboardEvent): void {
-    if (!event.key) return;
+  // Create a handler that checks all active shortcuts
+  function handleKeyStroke(event: KeyboardEvent): void {
+    const currentShortcuts = activeShortcuts.value;
 
-    const bindings = showPreview.value ? previewBindings : editBindings;
+    for (const shortcut of currentShortcuts) {
+      // Check if the pressed key matches this shortcut's key
+      if (!keyMatches(event, shortcut)) continue;
 
-    // Special handling for Control key release with modifiers
-    // When Control is released, we check if any other modifiers were held
-    if (event.key === "Control") {
-      for (const binding of bindings) {
-        if (!binding.ctrl) continue;
+      // Check if modifiers match
+      if (!modifiersMatch(event, shortcut)) continue;
 
-        // Check if the binding's alt requirement matches
-        if ((binding.alt ?? false) !== event.altKey) continue;
-        if ((binding.shift ?? false) !== event.shiftKey) continue;
+      // For non-modifier shortcuts, skip if we're in an input field
+      if (!shortcut.ctrl && !shortcut.alt && isInputField(event)) continue;
 
-        // For ctrl bindings triggered on ctrl release, check the event.code
-        // The code will be the last key pressed before ctrl was released
-        // This matches the original behavior where ctrl+key shortcuts
-        // fire on ctrl keyup, checking event.code for the key
-        if (event.code === binding.code || binding.code === event.code) {
-          // We need to track which keys were pressed with ctrl
-          // For now, we'll rely on the original pattern where
-          // ctrl shortcuts check event.code inside the Control case
-        }
-      }
-    }
+      // Determine if we should prevent default
+      const shouldPreventDefault =
+        shortcut.preventDefault ?? shortcut.ctrl ?? false;
 
-    for (const binding of bindings) {
-      if (matchesBinding(event, binding)) {
+      if (shouldPreventDefault) {
         event.preventDefault();
-        binding.handler();
-        return;
       }
+
+      shortcut.handler(event);
+      return; // Only handle first matching shortcut
     }
   }
 
-  /**
-   * Alternative handler for the original keyup pattern
-   * This matches the existing App.vue behavior more closely
-   */
-  function handleKeyUpLegacy(event: KeyboardEvent): void {
-    if (!event.key) return;
-
-    if (showPreview.value) {
-      // Preview mode bindings
-      for (const binding of previewBindings) {
-        if (binding.code === "Escape" && event.key === "Escape") {
-          binding.handler();
-          return;
-        }
-      }
-    } else {
-      // Edit mode bindings - handle Control key release
-      if (event.key === "Control") {
-        for (const binding of editBindings) {
-          if (!binding.ctrl) continue;
-
-          const altRequired = binding.alt ?? false;
-          if (altRequired !== event.altKey) continue;
-
-          if (event.code === binding.code) {
-            binding.handler();
-            return;
-          }
-        }
-      }
-    }
+  // Collect all unique keys from all shortcuts
+  const allKeys = new Set<string>();
+  for (const shortcut of [...shortcuts, ...previewShortcuts]) {
+    const keys = Array.isArray(shortcut.key) ? shortcut.key : [shortcut.key];
+    keys.forEach((k) => allKeys.add(k));
   }
 
-  onMounted(() => {
-    window.addEventListener("keyup", handleKeyUpLegacy);
-  });
+  // Register a listener for each unique key
+  for (const key of allKeys) {
+    onKeyStroke(key, handleKeyStroke);
+  }
+}
 
-  onUnmounted(() => {
-    window.removeEventListener("keyup", handleKeyUpLegacy);
-  });
+// =============================================================================
+// Shortcut Presets / Factories
+// =============================================================================
 
-  return {
-    handleKeyUp: handleKeyUpLegacy,
-  };
+/**
+ * Handlers for common edit mode operations
+ */
+export interface EditModeHandlers {
+  /** Start a new document */
+  newDocument?: () => void;
+  /** Save the current document */
+  save?: () => void;
+  /** Save the current document with a new name */
+  saveAs?: () => void;
+  /** Open/load a document */
+  open?: () => void;
+  /** Toggle preview mode */
+  togglePreview?: () => void;
+  /** Add a new set */
+  addSet?: () => void;
+  /** Undo the last action */
+  undo?: () => void;
+  /** Redo the last undone action */
+  redo?: () => void;
+  /** Print the document */
+  print?: () => void;
 }
 
 /**
- * Create common edit mode keyboard shortcuts
+ * Create standard edit mode keyboard shortcuts.
+ * Only includes shortcuts for handlers that are provided.
  */
-export function createEditBindings(handlers: {
-  startNew: () => void;
-  saveToDisk: (event?: { altKey?: boolean }) => void;
-  loadFromDisk: () => void;
-  togglePreview: () => void;
-  addSet: () => void;
-}): KeyBinding[] {
-  return [
-    {
-      code: "KeyN",
+export function createEditShortcuts(
+  handlers: EditModeHandlers,
+): KeyboardShortcut[] {
+  const shortcuts: KeyboardShortcut[] = [];
+
+  if (handlers.newDocument) {
+    shortcuts.push({
+      key: "Enter",
       ctrl: true,
-      handler: handlers.startNew,
-      description: "Start new set list",
-    },
-    {
-      code: "KeyS",
+      handler: handlers.newDocument,
+      description: "New Document (Ctrl+Enter)",
+    });
+  }
+
+  if (handlers.save) {
+    shortcuts.push({
+      key: "s",
       ctrl: true,
-      handler: () => handlers.saveToDisk(),
-      description: "Save set list",
-    },
-    {
-      code: "KeyS",
+      handler: handlers.save,
+      description: "Save (Ctrl+S)",
+    });
+  }
+
+  if (handlers.saveAs) {
+    shortcuts.push({
+      key: "s",
       ctrl: true,
-      alt: true,
-      handler: () => handlers.saveToDisk({ altKey: true }),
-      description: "Save set list as...",
-    },
-    {
-      code: "KeyO",
+      shift: true,
+      handler: handlers.saveAs,
+      description: "Save As (Ctrl+Shift+S)",
+    });
+  }
+
+  if (handlers.open) {
+    shortcuts.push({
+      key: "o",
       ctrl: true,
-      handler: handlers.loadFromDisk,
-      description: "Open set list",
-    },
-    {
-      code: "KeyE",
+      handler: handlers.open,
+      description: "Open (Ctrl+O)",
+    });
+  }
+
+  if (handlers.togglePreview) {
+    shortcuts.push({
+      key: "p",
       ctrl: true,
       handler: handlers.togglePreview,
-      description: "Toggle print preview",
-    },
-    {
-      code: "KeyN",
+      description: "Toggle Preview (Ctrl+P)",
+    });
+  }
+
+  if (handlers.addSet) {
+    shortcuts.push({
+      key: "a",
       ctrl: true,
-      alt: true,
+      shift: true,
       handler: handlers.addSet,
-      description: "Add new set",
-    },
-  ];
+      description: "Add Set (Ctrl+Shift+A)",
+    });
+  }
+
+  if (handlers.undo) {
+    shortcuts.push({
+      key: "z",
+      ctrl: true,
+      handler: handlers.undo,
+      description: "Undo (Ctrl+Z)",
+    });
+  }
+
+  if (handlers.redo) {
+    shortcuts.push(
+      {
+        key: "y",
+        ctrl: true,
+        handler: handlers.redo,
+        description: "Redo (Ctrl+Y)",
+      },
+      {
+        key: "z",
+        ctrl: true,
+        shift: true,
+        handler: handlers.redo,
+        description: "Redo (Ctrl+Shift+Z)",
+      },
+    );
+  }
+
+  if (handlers.print) {
+    shortcuts.push({
+      key: "p",
+      ctrl: true,
+      shift: true,
+      handler: handlers.print,
+      description: "Print (Ctrl+Shift+P)",
+    });
+  }
+
+  return shortcuts;
 }
 
 /**
- * Create common preview mode keyboard shortcuts
+ * Handlers for preview mode operations
  */
-export function createPreviewBindings(handlers: {
-  closePreview: () => void;
-}): KeyBinding[] {
-  return [
-    {
-      code: "Escape",
+export interface PreviewModeHandlers {
+  /** Close/exit preview mode */
+  closePreview?: () => void;
+  /** Print from preview */
+  print?: () => void;
+}
+
+/**
+ * Create standard preview mode keyboard shortcuts.
+ * Only includes shortcuts for handlers that are provided.
+ */
+export function createPreviewShortcuts(
+  handlers: PreviewModeHandlers,
+): KeyboardShortcut[] {
+  const shortcuts: KeyboardShortcut[] = [];
+
+  if (handlers.closePreview) {
+    shortcuts.push({
+      key: "Escape",
       handler: handlers.closePreview,
-      description: "Close preview",
-    },
-  ];
+      description: "Close Preview (Escape)",
+    });
+  }
+
+  if (handlers.print) {
+    shortcuts.push({
+      key: "p",
+      ctrl: true,
+      handler: handlers.print,
+      description: "Print (Ctrl+P)",
+    });
+  }
+
+  return shortcuts;
 }

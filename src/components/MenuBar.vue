@@ -6,23 +6,38 @@ import {
     FolderOpen,
     Menu,
     PlusCircle,
+    Redo2,
     Save,
     SaveAll,
+    Undo2,
     X,
 } from "lucide-vue-next";
+import { shortcuts } from "../utils/keyboardShortcuts";
 
 withDefaults(
     defineProps<{
         hasSets?: boolean;
         isDirty?: boolean;
+        canUndo?: boolean;
+        canRedo?: boolean;
     }>(),
     {
         hasSets: false,
         isDirty: false,
+        canUndo: false,
+        canRedo: false,
     },
 );
 
-type MenuAction = "new" | "load" | "save" | "save-as" | "add-set" | "export";
+type MenuAction =
+    | "new"
+    | "load"
+    | "save"
+    | "save-as"
+    | "add-set"
+    | "export"
+    | "undo"
+    | "redo";
 
 const emit = defineEmits<{
     (e: MenuAction): void;
@@ -89,7 +104,7 @@ onUnmounted(() => {
             <div class="menu-items">
                 <Button
                     @click="handleAction('new')"
-                    title="Start New Set List"
+                    :title="`New Set List (${shortcuts.newDocument})`"
                     nowrap
                     class="action-item"
                 >
@@ -97,7 +112,7 @@ onUnmounted(() => {
                 </Button>
                 <Button
                     @click="handleAction('load')"
-                    title="Load Set List"
+                    :title="`Open Set List (${shortcuts.open})`"
                     nowrap
                     class="action-item"
                 >
@@ -107,7 +122,7 @@ onUnmounted(() => {
             <div class="menu-items">
                 <Button
                     @click="handleAction('save')"
-                    title="Save Set List"
+                    :title="`Save Set List (${shortcuts.save})`"
                     class="action-item"
                     nowrap
                     :class="{ 'dirty-indicator-text': isDirty }"
@@ -117,7 +132,7 @@ onUnmounted(() => {
                 </Button>
                 <Button
                     @click="handleAction('save-as')"
-                    title="Save Set List As"
+                    :title="`Save Set List As (${shortcuts.saveAs})`"
                     nowrap
                     class="action-item"
                 >
@@ -128,8 +143,28 @@ onUnmounted(() => {
         <div>
             <div class="menu-items">
                 <Button
+                    @click="handleAction('undo')"
+                    :title="`Undo (${shortcuts.undo})`"
+                    nowrap
+                    class="action-item"
+                    :disabled="!canUndo"
+                >
+                    <Undo2 class="icon" /> Undo
+                </Button>
+                <Button
+                    @click="handleAction('redo')"
+                    :title="`Redo (${shortcuts.redo})`"
+                    nowrap
+                    class="action-item"
+                    :disabled="!canRedo"
+                >
+                    <Redo2 class="icon" /> Redo
+                </Button>
+            </div>
+            <div class="menu-items">
+                <Button
                     @click="handleAction('add-set')"
-                    title="Add Set"
+                    :title="`Add Set (${shortcuts.addSet})`"
                     nowrap
                     class="action-item"
                 >
@@ -138,7 +173,7 @@ onUnmounted(() => {
                 <Button
                     @click="handleAction('export')"
                     class="action-item"
-                    title="Export Set List"
+                    :title="`Preview & Print (${shortcuts.print})`"
                     :disabled="!hasSets"
                     nowrap
                 >

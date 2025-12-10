@@ -1,10 +1,13 @@
 export { useFileOperations } from "./useFileOperations";
+export { useHistory, type UseHistoryReturn } from "./useHistory";
 export {
   useKeyboardShortcuts,
-  createEditBindings,
-  createPreviewBindings,
-  type KeyBinding,
-  type KeyboardShortcutsOptions,
+  createEditShortcuts,
+  createPreviewShortcuts,
+  type KeyboardShortcut,
+  type UseKeyboardShortcutsOptions,
+  type EditModeHandlers,
+  type PreviewModeHandlers,
 } from "./useKeyboardShortcuts";
 export {
   usePreviewScaling,

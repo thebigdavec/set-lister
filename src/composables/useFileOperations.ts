@@ -26,6 +26,12 @@ export interface FileOperationsOptions {
     message: string;
     okText?: string;
   }) => Promise<void>;
+
+  /**
+   * Callback invoked after successfully loading a file.
+   * Useful for clearing undo/redo history.
+   */
+  onLoad?: () => void;
 }
 
 /**
@@ -33,7 +39,7 @@ export interface FileOperationsOptions {
  * with fallbacks for browsers that don't support it.
  */
 export function useFileOperations(options: FileOperationsOptions = {}) {
-  const { showConfirm, showAlert } = options;
+  const { showConfirm, showAlert, onLoad } = options;
   const currentFileHandle = ref<FileSystemFileHandle | null>(null);
   const fileInput = ref<HTMLInputElement | null>(null);
 
@@ -158,6 +164,7 @@ export function useFileOperations(options: FileOperationsOptions = {}) {
 
         if (loadStore(data)) {
           currentFileHandle.value = handle;
+          onLoad?.();
         } else {
           if (showAlert) {
             await showAlert({
@@ -202,6 +209,7 @@ export function useFileOperations(options: FileOperationsOptions = {}) {
 
       if (loadStore(data)) {
         currentFileHandle.value = null;
+        onLoad?.();
       } else {
         if (showAlert) {
           await showAlert({

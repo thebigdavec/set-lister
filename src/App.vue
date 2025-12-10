@@ -9,11 +9,12 @@ import MenuBar from "./components/MenuBar.vue";
 import { STORAGE_KEYS } from "./constants";
 import {
     useFileOperations,
+    useHistory,
     useKeyboardShortcuts,
     usePreviewScaling,
     useDialogs,
-    createEditBindings,
-    createPreviewBindings,
+    createEditShortcuts,
+    createPreviewShortcuts,
 } from "./composables";
 
 // =============================================================================
@@ -50,6 +51,9 @@ const {
     handleAlertOk,
 } = useDialogs();
 
+// History management (undo/redo)
+const { undo, redo, canUndo, canRedo, clearHistory } = useHistory();
+
 // File operations (save, load, beforeunload)
 const {
     fileInput,
@@ -57,7 +61,7 @@ const {
     loadFromDisk,
     clearFileHandle,
     handleBeforeUnload,
-} = useFileOperations({ showConfirm, showAlert });
+} = useFileOperations({ showConfirm, showAlert, onLoad: clearHistory });
 
 // Preview scaling and sizing
 const {
@@ -90,6 +94,7 @@ function startNew(): void {
 function confirmNew(): void {
     resetStore();
     clearFileHandle();
+    clearHistory();
     showNewDialog.value = false;
 }
 
@@ -111,17 +116,22 @@ function closePreview(): void {
 // Keyboard Shortcuts
 // =============================================================================
 
-useKeyboardShortcuts(showPreview, {
-    editBindings: createEditBindings({
-        startNew,
-        saveToDisk,
-        loadFromDisk,
+useKeyboardShortcuts({
+    shortcuts: createEditShortcuts({
+        newDocument: startNew,
+        save: () => saveToDisk(),
+        saveAs: () => saveToDisk({ altKey: true }),
+        open: loadFromDisk,
         togglePreview,
         addSet,
+        undo,
+        redo,
     }),
-    previewBindings: createPreviewBindings({
+    previewShortcuts: createPreviewShortcuts({
         closePreview,
+        print: printSets,
     }),
+    isPreviewMode: showPreview,
 });
 
 // =============================================================================
@@ -166,12 +176,16 @@ watch(showPreview, async (value) => {
             <MenuBar
                 :has-sets="previewSets.length > 0"
                 :is-dirty="store.isDirty"
+                :can-undo="canUndo"
+                :can-redo="canRedo"
                 @new="startNew"
                 @load="loadFromDisk"
                 @save="saveToDisk"
                 @save-as="saveToDisk({ altKey: true })"
                 @add-set="addSet"
                 @export="togglePreview"
+                @undo="undo"
+                @redo="redo"
             />
 
             <SetlistMetadata />
