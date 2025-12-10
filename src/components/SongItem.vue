@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { computed, ref, watch } from "vue";
-import { X, RotateCcw, Pencil, Grab, GripVertical } from "lucide-vue-next";
+import { computed, nextTick, ref, watch } from "vue";
+import { X, RotateCcw, Pencil, GripVertical } from "lucide-vue-next";
 import type { Song } from "../store";
 
 const props = defineProps<{
@@ -55,6 +55,70 @@ function cancel(): void {
     editKey.value = props.song.key;
     isEditing.value = false;
 }
+
+// Pointer handling for tap-to-edit vs hold-to-drag
+const pointerState = ref<{
+    startX: number;
+    startY: number;
+    startTime: number;
+    pointerId: number;
+    hasMoved: boolean;
+} | null>(null);
+
+const MOVEMENT_THRESHOLD = 10; // pixels
+const TAP_DURATION_THRESHOLD = 300; // ms
+const titleInputRef = ref<HTMLInputElement | null>(null);
+
+function handlePointerDown(e: PointerEvent): void {
+    // Only handle primary button (left click / touch)
+    if (e.button !== 0) return;
+    // Don't handle if clicking on buttons, actions, or grip
+    const target = e.target as HTMLElement;
+    if (target.closest("button, .actions, .grip")) return;
+
+    pointerState.value = {
+        startX: e.clientX,
+        startY: e.clientY,
+        startTime: Date.now(),
+        pointerId: e.pointerId,
+        hasMoved: false,
+    };
+}
+
+function handlePointerMove(e: PointerEvent): void {
+    if (!pointerState.value) return;
+    if (e.pointerId !== pointerState.value.pointerId) return;
+
+    const dx = Math.abs(e.clientX - pointerState.value.startX);
+    const dy = Math.abs(e.clientY - pointerState.value.startY);
+
+    // Mark as moved if threshold exceeded
+    if (dx >= MOVEMENT_THRESHOLD || dy >= MOVEMENT_THRESHOLD) {
+        pointerState.value.hasMoved = true;
+    }
+}
+
+function handlePointerUp(e: PointerEvent): void {
+    if (!pointerState.value) return;
+    if (e.pointerId !== pointerState.value.pointerId) return;
+
+    const duration = Date.now() - pointerState.value.startTime;
+    const hasMoved = pointerState.value.hasMoved;
+
+    // If minimal movement and quick tap, enter edit mode
+    if (!hasMoved && duration < TAP_DURATION_THRESHOLD) {
+        isEditing.value = true;
+        nextTick(() => {
+            titleInputRef.value?.focus();
+        });
+    }
+
+    pointerState.value = null;
+}
+
+function handlePointerCancel(): void {
+    pointerState.value = null;
+}
 </script>
 
 <template>
@@ -75,13 +139,20 @@ function cancel(): void {
                 aria-label="Reset encore marker to end"
                 @click.stop.prevent="$emit('reset-encore')"
             >
-                <RotateCcw class="icon" class="icon" />
+                <RotateCcw class="icon" />
             </Button>
         </div>
 
         <template v-else>
-            <div v-if="!isEditing" class="view-mode">
-                <GripVertical class="icon" class="grip" />
+            <div
+                v-if="!isEditing"
+                class="view-mode"
+                @pointerdown="handlePointerDown"
+                @pointermove="handlePointerMove"
+                @pointerup="handlePointerUp"
+                @pointercancel="handlePointerCancel"
+            >
+                <GripVertical class="grip" />
                 <div class="song-content">
                     <span class="song-title">{{ song.title }}</span>
                     <span v-if="song.key" class="song-key"
@@ -92,14 +163,14 @@ function cancel(): void {
                     <span v-if="isEncore" class="encore-pill">Encores</span>
                     <div class="actions no-print">
                         <Button @click="isEditing = true" size="sm">
-                            <Pencil class="icon" class="icon" />
+                            <Pencil class="icon" />
                         </Button>
                         <Button
                             @click="$emit('remove')"
                             size="sm"
                             class="delete"
                         >
-                            <X class="icon" class="icon" />
+                            <X class="icon" />
                         </Button>
                     </div>
                 </div>
@@ -107,11 +178,11 @@ function cancel(): void {
 
             <div v-else class="edit-mode no-print">
                 <input
+                    ref="titleInputRef"
                     v-model="editTitle"
                     placeholder="Song Title"
                     @keyup.enter="save"
                     @blur="save"
-                    ref="titleInput"
                 />
                 <input
                     v-model="editKey"
@@ -136,7 +207,6 @@ function cancel(): void {
     display: flex;
     align-items: center;
     background-color: #2a2a2a;
-    cursor: grab;
 
     &:is(:nth-child(even)) {
         background-color: #242424;
@@ -145,10 +215,6 @@ function cancel(): void {
     @media (min-width: 768px) {
         padding-block: 0.5rem;
     }
-}
-
-.song-item:active {
-    cursor: grabbing;
 }
 
 .song-item.is-encore {
@@ -177,6 +243,7 @@ function cancel(): void {
     gap: 0.5rem;
     align-items: baseline;
     width: 100%;
+    cursor: pointer;
 }
 
 .song-title {
@@ -220,6 +287,11 @@ function cancel(): void {
     cursor: grab;
     opacity: 0;
     transition: opacity 0.2s ease;
+    flex-shrink: 0;
+
+    &:active {
+        cursor: grabbing;
+    }
 }
 
 .song-item:hover .grip {

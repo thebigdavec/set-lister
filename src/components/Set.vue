@@ -106,6 +106,8 @@ onMounted(() => {
         animation: 150,
         ghostClass: "sortable-ghost",
         draggable: ".song-item",
+        filter: "button, .actions, input",
+        preventOnFilter: false,
         onMove: handleSortMove,
         onEnd: handleSortEnd,
     });
