@@ -75,13 +75,13 @@ function cancel(): void {
                 aria-label="Reset encore marker to end"
                 @click.stop.prevent="$emit('reset-encore')"
             >
-                <RotateCcw size="1em" class="icon" />
+                <RotateCcw class="icon" class="icon" />
             </Button>
         </div>
 
         <template v-else>
             <div v-if="!isEditing" class="view-mode">
-                <GripVertical size="1em" class="grip" />
+                <GripVertical class="icon" class="grip" />
                 <div class="song-content">
                     <span class="song-title">{{ song.title }}</span>
                     <span v-if="song.key" class="song-key"
@@ -92,14 +92,14 @@ function cancel(): void {
                     <span v-if="isEncore" class="encore-pill">Encores</span>
                     <div class="actions no-print">
                         <Button @click="isEditing = true" size="sm">
-                            <Pencil size="1em" class="icon" />
+                            <Pencil class="icon" class="icon" />
                         </Button>
                         <Button
                             @click="$emit('remove')"
                             size="sm"
                             class="delete"
                         >
-                            <X size="1em" class="icon" />
+                            <X class="icon" class="icon" />
                         </Button>
                     </div>
                 </div>

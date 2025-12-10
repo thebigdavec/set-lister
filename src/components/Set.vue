@@ -125,7 +125,7 @@ onUnmounted(() => {
                 size="sm"
                 class="no-print danger"
             >
-                <Trash size="1em" />
+                <Trash class="icon" />
                 Delete
             </Button>
         </div>
@@ -158,7 +158,7 @@ onUnmounted(() => {
                 @keyup.enter="addSong"
             />
             <Button v-if="newSongTitle.length" @click="addSong">
-                <Plus size="1em" /> Save
+                <Plus class="icon" /> Save
             </Button>
         </div>
 
@@ -207,12 +207,8 @@ onUnmounted(() => {
     flex-wrap: wrap;
 }
 
-.add-song input {
+.add-song input:not(.key-input) {
     flex: 1;
-}
-
-.key-input {
-    flex: 0 0 60px;
 }
 
 .sortable-ghost {

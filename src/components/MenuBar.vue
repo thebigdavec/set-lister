@@ -71,8 +71,8 @@ onUnmounted(() => {
         aria-label="Toggle menu"
         :aria-expanded="isMobileMenuOpen"
     >
-        <Menu v-if="!isMobileMenuOpen" size="1em" class="menu-icon" />
-        <X v-else size="1em" />
+        <Menu v-if="!isMobileMenuOpen" class="icon" />
+        <X v-else class="icon" />
     </Button>
 
     <!-- Mobile menu overlay -->
@@ -93,7 +93,7 @@ onUnmounted(() => {
                     nowrap
                     class="action-item"
                 >
-                    <FilePlus size="1em" /> New
+                    <FilePlus class="icon" /> New
                 </Button>
                 <Button
                     @click="handleAction('load')"
@@ -101,7 +101,7 @@ onUnmounted(() => {
                     nowrap
                     class="action-item"
                 >
-                    <FolderOpen size="1em" /> Load
+                    <FolderOpen class="icon" /> Load
                 </Button>
             </div>
             <div class="menu-items">
@@ -112,7 +112,7 @@ onUnmounted(() => {
                     nowrap
                     :class="{ 'dirty-indicator-text': isDirty }"
                 >
-                    <Save size="1em" /> Save
+                    <Save class="icon" /> Save
                     <span v-if="isDirty" class="dirty-indicator">*</span>
                 </Button>
                 <Button
@@ -121,7 +121,7 @@ onUnmounted(() => {
                     nowrap
                     class="action-item"
                 >
-                    <SaveAll size="1em" /> Save As
+                    <SaveAll class="icon" /> Save As
                 </Button>
             </div>
         </div>
@@ -133,7 +133,7 @@ onUnmounted(() => {
                     nowrap
                     class="action-item"
                 >
-                    <PlusCircle size="1em" /> Add Set
+                    <PlusCircle class="icon" /> Add Set
                 </Button>
                 <Button
                     @click="handleAction('export')"
@@ -142,7 +142,7 @@ onUnmounted(() => {
                     :disabled="!hasSets"
                     nowrap
                 >
-                    <FileDown size="1em" /> Export PDF
+                    <FileDown class="icon" /> Export PDF
                 </Button>
             </div>
         </div>

@@ -92,8 +92,5 @@ button {
             border-color: oklch(from var(--error-color) calc(l * 0.8) c h);
         }
     }
-
-    /*background-color: var(--card-bg);*/
-    /*color: var(--text-color);*/
 }
 </style>

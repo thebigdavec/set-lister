@@ -40,6 +40,10 @@ body {
     padding: 0.5rem;
 }
 
+.icon {
+    width: 1em;
+}
+
 input {
     background-color: var(--card-bg);
     border: 1px solid var(--border-color);

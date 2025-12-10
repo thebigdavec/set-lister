@@ -192,10 +192,10 @@ watch(showPreview, async (value) => {
                     Uppercase titles
                 </label>
                 <Button @click="printSets" class="primary">
-                    <Printer size="1em" /> Print
+                    <Printer class="icon" /> Print
                 </Button>
                 <Button @click="closePreview" class="danger">
-                    <X size="1em" /> Close
+                    <X class="icon" /> Close
                 </Button>
             </div>
         </div>
