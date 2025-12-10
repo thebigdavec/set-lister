@@ -1,5 +1,7 @@
 <script setup lang="ts">
 import { computed, nextTick, onMounted, onUnmounted, ref, toRef } from "vue";
+
+import { Plus, Trash } from "lucide-vue-next";
 import Sortable, { MoveEvent, SortableEvent } from "sortablejs";
 import SongItem from "./SongItem.vue";
 import {
@@ -118,12 +120,14 @@ onUnmounted(() => {
     <div class="set-container card">
         <div class="set-header">
             <h2 contenteditable @blur="handleTitleBlur">{{ set.name }}</h2>
-            <button
+            <Button
                 @click="$emit('remove-set')"
-                class="icon-btn delete no-print"
+                size="sm"
+                class="no-print danger"
             >
-                Delete Set
-            </button>
+                <Trash size="1em" />
+                Delete
+            </Button>
         </div>
 
         <div ref="songListRef" class="song-list" :data-set-id="set.id">
@@ -144,16 +148,18 @@ onUnmounted(() => {
             <input
                 ref="titleInputRef"
                 v-model="newSongTitle"
-                placeholder="Add new song..."
+                placeholder="Song Title"
                 @keyup.enter="addSong"
             />
             <input
                 v-model="newSongKey"
-                placeholder="Key"
+                placeholder="Song Key"
                 class="key-input"
                 @keyup.enter="addSong"
             />
-            <button @click="addSong">+</button>
+            <Button v-if="newSongTitle.length" @click="addSong">
+                <Plus size="1em" /> Save
+            </Button>
         </div>
 
         <div v-if="isLast" class="encore-actions no-print">

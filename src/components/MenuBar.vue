@@ -64,15 +64,16 @@ onUnmounted(() => {
 
 <template>
     <!-- Burger menu button (mobile only) -->
-    <button
+    <Button
         class="burger-menu-button no-print"
+        :class="{ 'mobile-open': isMobileMenuOpen }"
         @click="toggleMobileMenu"
         aria-label="Toggle menu"
         :aria-expanded="isMobileMenuOpen"
     >
-        <Menu v-if="!isMobileMenuOpen" :size="24" />
-        <X v-else :size="24" />
-    </button>
+        <Menu v-if="!isMobileMenuOpen" size="1em" class="menu-icon" />
+        <X v-else size="1em" />
+    </Button>
 
     <!-- Mobile menu overlay -->
     <div
@@ -86,39 +87,63 @@ onUnmounted(() => {
     <div class="menu-bar no-print" :class="{ 'mobile-open': isMobileMenuOpen }">
         <div>
             <div class="menu-items">
-                <button @click="handleAction('new')" class="action-item">
-                    <FilePlus :size="16" /> New
-                </button>
-                <button @click="handleAction('load')" class="action-item">
-                    <FolderOpen :size="16" /> Load
-                </button>
+                <Button
+                    @click="handleAction('new')"
+                    title="Start New Set List"
+                    nowrap
+                    class="action-item"
+                >
+                    <FilePlus size="1em" /> New
+                </Button>
+                <Button
+                    @click="handleAction('load')"
+                    title="Load Set List"
+                    nowrap
+                    class="action-item"
+                >
+                    <FolderOpen size="1em" /> Load
+                </Button>
             </div>
             <div class="menu-items">
-                <button
+                <Button
                     @click="handleAction('save')"
+                    title="Save Set List"
                     class="action-item"
+                    nowrap
                     :class="{ 'dirty-indicator-text': isDirty }"
                 >
-                    <Save :size="16" /> Save
+                    <Save size="1em" /> Save
                     <span v-if="isDirty" class="dirty-indicator">*</span>
-                </button>
-                <button @click="handleAction('save-as')" class="action-item">
-                    <SaveAll :size="16" /> Save As...
-                </button>
+                </Button>
+                <Button
+                    @click="handleAction('save-as')"
+                    title="Save Set List As"
+                    nowrap
+                    class="action-item"
+                >
+                    <SaveAll size="1em" /> Save As
+                </Button>
             </div>
         </div>
         <div>
             <div class="menu-items">
-                <button @click="handleAction('add-set')" class="action-item">
-                    <PlusCircle :size="16" /> Add Set
-                </button>
-                <button
+                <Button
+                    @click="handleAction('add-set')"
+                    title="Add Set"
+                    nowrap
+                    class="action-item"
+                >
+                    <PlusCircle size="1em" /> Add Set
+                </Button>
+                <Button
                     @click="handleAction('export')"
                     class="action-item"
+                    title="Export Set List"
                     :disabled="!hasSets"
+                    nowrap
                 >
-                    <FileDown :size="16" /> Export PDF
-                </button>
+                    <FileDown size="1em" /> Export PDF
+                </Button>
             </div>
         </div>
     </div>
@@ -128,7 +153,7 @@ onUnmounted(() => {
 /* Burger menu button - hidden on desktop */
 .burger-menu-button {
     display: none;
-    background: #333;
+    background-color: #333;
     border: none;
     color: #ddd;
     padding: 0.6rem;
@@ -136,13 +161,20 @@ onUnmounted(() => {
     border-radius: 6px;
     box-shadow: 0 2px 4px -2px #000;
     transition: background-color 0.2s;
-    position: relative;
+    position: absolute;
+    top: 1rem;
+    left: calc(100% - 1rem);
+    transform: translateX(-100%);
     z-index: 1001;
-}
+    transition:
+        left 0.25s ease,
+        transform 0.25s ease;
 
-.burger-menu-button:hover {
-    background: #444;
-    color: white;
+    &.mobile-open {
+        background-color: #400;
+        left: 1rem;
+        transform: translateX(0);
+    }
 }
 
 /* Mobile menu overlay */

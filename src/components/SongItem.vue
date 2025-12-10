@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, ref, watch } from "vue";
+import { X, RotateCcw, Pencil, Grab, GripVertical } from "lucide-vue-next";
 import type { Song } from "../store";
 
 const props = defineProps<{
@@ -18,7 +19,6 @@ const emit = defineEmits<{
 const isEditing = ref(false);
 const editTitle = ref(props.song.title);
 const editKey = ref(props.song.key);
-const titleInput = ref<HTMLInputElement | null>(null);
 const isCancelling = ref(false);
 const isMarker = computed(() => props.isEncoreMarker === true);
 const markerIsLast = computed(() => props.markerIsLast === true);
@@ -66,20 +66,22 @@ function cancel(): void {
     >
         <div v-if="isMarker" class="marker-mode">
             <span class="marker-pill">&lt;encore&gt;</span>
-            <button
+            <Button
                 v-if="!markerIsLast"
-                class="icon-btn delete no-print marker-reset-btn"
+                size="sm"
+                class="icon-btn no-print marker-reset-btn"
                 type="button"
                 title="Reset encore marker to end"
                 aria-label="Reset encore marker to end"
                 @click.stop.prevent="$emit('reset-encore')"
             >
-                ×
-            </button>
+                <RotateCcw size="1em" class="icon" />
+            </Button>
         </div>
 
         <template v-else>
             <div v-if="!isEditing" class="view-mode">
+                <GripVertical size="1em" class="grip" />
                 <div class="song-content">
                     <span class="song-title">{{ song.title }}</span>
                     <span v-if="song.key" class="song-key"
@@ -89,15 +91,20 @@ function cancel(): void {
                 <div class="song-meta">
                     <span v-if="isEncore" class="encore-pill">Encore</span>
                     <div class="actions no-print">
-                        <button @click="isEditing = true" class="icon-btn">
-                            ✎
-                        </button>
-                        <button
+                        <Button
+                            @click="isEditing = true"
+                            size="sm"
+                            class="icon-btn"
+                        >
+                            <Pencil size="1em" class="icon" />
+                        </Button>
+                        <Button
                             @click="$emit('remove')"
+                            size="sm"
                             class="icon-btn delete"
                         >
-                            ×
-                        </button>
+                            <X size="1em" class="icon" />
+                        </Button>
                     </div>
                 </div>
             </div>
@@ -112,15 +119,15 @@ function cancel(): void {
                 />
                 <input
                     v-model="editKey"
-                    placeholder="Key"
+                    placeholder="Song Key"
                     class="key-input"
                     @keyup.enter="save"
                     @blur="save"
                 />
-                <button @click="save">Save</button>
-                <button @mousedown="isCancelling = true" @click="cancel">
+                <Button @click="save">Save</Button>
+                <Button @mousedown="isCancelling = true" @click="cancel">
                     Cancel
-                </button>
+                </Button>
             </div>
         </template>
     </div>
@@ -128,7 +135,6 @@ function cancel(): void {
 
 <style scoped>
 .song-item {
-    /*margin-bottom: 0.15rem;*/
     padding: 0.25rem 0.75rem;
     margin-block-end: 0.15rem;
     display: flex;
@@ -214,9 +220,27 @@ function cancel(): void {
     opacity: 1;
 }
 
+.grip {
+    cursor: grab;
+    opacity: 0;
+    transition: opacity 0.2s;
+}
+
+.song-item:hover .grip {
+    opacity: 0.5;
+
+    &:hover {
+        opacity: 1;
+    }
+}
+
 @media (hover: none) {
     .actions {
         opacity: 1;
+    }
+
+    .grip {
+        opacity: 0.5;
     }
 }
 
@@ -263,6 +287,4 @@ function cancel(): void {
 .marker-reset-btn {
     margin-left: auto;
 }
-
-/* Print styles removed */
 </style>

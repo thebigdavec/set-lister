@@ -9,15 +9,15 @@ const props = withDefaults(
         title: string;
         /** Dialog message/description */
         message: string;
-        /** Text for the cancel button */
+        /** Text for the cancel Button */
         cancelText?: string;
-        /** Text for the confirm button */
+        /** Text for the confirm Button */
         confirmText?: string;
-        /** Whether the confirm action is destructive (styles button as danger) */
+        /** Whether the confirm action is destructive (styles Button as danger) */
         danger?: boolean;
-        /** Alert mode - shows only a single OK button instead of cancel/confirm */
+        /** Alert mode - shows only a single OK Button instead of cancel/confirm */
         alertMode?: boolean;
-        /** Text for the OK button in alert mode */
+        /** Text for the OK Button in alert mode */
         okText?: string;
     }>(),
     {
@@ -60,7 +60,7 @@ function handleKeyDown(event: KeyboardEvent): void {
 }
 
 /**
- * Handle OK button click in alert mode
+ * Handle OK Button click in alert mode
  */
 function handleOk(): void {
     emit("ok");
@@ -92,23 +92,23 @@ onUnmounted(() => {
                     <p>{{ message }}</p>
                     <slot></slot>
                     <div class="modal-actions">
-                        <!-- Alert mode: single OK button -->
+                        <!-- Alert mode: single OK Button -->
                         <template v-if="alertMode">
-                            <button @click="handleOk" class="confirm-btn">
+                            <Button @click="handleOk" class="confirm-btn">
                                 {{ okText }}
-                            </button>
+                            </Button>
                         </template>
-                        <!-- Confirm mode: cancel and confirm buttons -->
+                        <!-- Confirm mode: cancel and confirm Buttons -->
                         <template v-else>
-                            <button @click="emit('cancel')" class="cancel-btn">
+                            <Button @click="emit('cancel')" class="cancel-btn">
                                 {{ cancelText }}
-                            </button>
-                            <button
+                            </Button>
+                            <Button
                                 @click="emit('confirm')"
                                 :class="['confirm-btn', { danger }]"
                             >
                                 {{ confirmText }}
-                            </button>
+                            </Button>
                         </template>
                     </div>
                 </div>

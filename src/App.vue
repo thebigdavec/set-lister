@@ -1,11 +1,11 @@
 <script setup lang="ts">
 import { computed, nextTick, onMounted, onUnmounted, ref, watch } from "vue";
+import { Printer, X } from "lucide-vue-next";
 import { addSet, lastSetId, resetStore, store } from "./store";
 import SetList from "./components/SetList.vue";
 import SetlistMetadata from "./components/SetlistMetadata.vue";
 import SetPreview from "./components/SetPreview.vue";
 import MenuBar from "./components/MenuBar.vue";
-import ConfirmDialog from "./components/ConfirmDialog.vue";
 import { STORAGE_KEYS } from "./constants";
 import {
     useFileOperations,
@@ -191,12 +191,12 @@ watch(showPreview, async (value) => {
                     <input type="checkbox" v-model="uppercasePreview" />
                     Uppercase titles
                 </label>
-                <button @click="printSets" class="preview-btn primary">
-                    Print
-                </button>
-                <button @click="closePreview" class="preview-btn danger">
-                    X
-                </button>
+                <Button @click="printSets" class="primary">
+                    <Printer size="1em" /> Print
+                </Button>
+                <Button @click="closePreview" class="danger">
+                    <X size="1em" /> Close
+                </Button>
             </div>
         </div>
 
@@ -274,16 +274,6 @@ h1 {
     gap: 1rem;
 }
 
-.primary {
-    background-color: var(--accent-color);
-    color: white;
-}
-
-.primary:hover {
-    background-color: #535bf2;
-    border-color: #535bf2;
-}
-
 footer {
     margin-top: 3rem;
     text-align: center;
@@ -320,31 +310,6 @@ footer {
     display: flex;
     gap: 0.5rem;
     align-items: center;
-}
-
-.preview-btn {
-    background: #333;
-    border: none;
-    color: #ddd;
-    padding: 0.6rem 1rem;
-    cursor: pointer;
-    border-radius: 6px;
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    font-size: 0.9rem;
-    box-shadow: 0 2px 4px -2px #000;
-    transition: background-color 0.1s ease;
-}
-
-.preview-btn:hover {
-    background: #444;
-    color: #fff;
-}
-
-.preview-btn.primary {
-    background: var(--accent-color);
-    color: white;
 }
 
 .preview-settings {

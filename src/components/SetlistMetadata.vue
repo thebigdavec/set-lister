@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref } from "vue";
-import { Users, MapPin, Calendar } from "lucide-vue-next";
+import { Users, MapPin, Calendar, Pencil, X } from "lucide-vue-next";
 import { store, updateMetadata } from "../store";
 
 const isEditingMetadata = ref(false);
@@ -19,9 +19,17 @@ function blurInputOnEnter(e: KeyboardEvent) {
     <div class="setlist-metadata">
         <div class="metadata-title">
             Setlist Details
-            <button @click="toggleEditingMetadata">
-                {{ isEditingMetadata ? "Close" : "Edit" }}
-            </button>
+            <Button
+                v-if="isEditingMetadata"
+                class="danger"
+                @click="toggleEditingMetadata"
+                title="Stop editing metadata"
+            >
+                <X size="1em" /> Close
+            </Button>
+            <Button v-else @click="toggleEditingMetadata" title="Edit metadata">
+                <Pencil size="1em" /> Edit
+            </Button>
         </div>
         <div v-if="isEditingMetadata" class="metadata-grid">
             <div class="input-group">
@@ -80,15 +88,15 @@ function blurInputOnEnter(e: KeyboardEvent) {
                 {{ store.metadata.setListName }}
             </h3>
             <div v-if="store.metadata.actName" class="metadata-detail">
-                <Users :size="16" class="icon" />
+                <Users size="1em" class="icon" />
                 {{ store.metadata.actName }}
             </div>
             <div v-if="store.metadata.venue" class="metadata-detail">
-                <MapPin :size="16" class="icon" />
+                <MapPin size="1em" class="icon" />
                 {{ store.metadata.venue }}
             </div>
             <div v-if="store.metadata.date" class="metadata-detail">
-                <Calendar :size="16" class="icon" />
+                <Calendar size="1em" class="icon" />
                 {{ store.metadata.date }}
             </div>
         </div>
