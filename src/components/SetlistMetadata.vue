@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed } from "vue";
+import { ref, computed, onMounted } from "vue";
 import { Users, MapPin, Calendar, Pencil, X } from "lucide-vue-next";
 import { store, updateMetadata } from "../store";
 
@@ -21,6 +21,12 @@ const noDetailsExist = computed(() => {
         !store.metadata.actName &&
         !store.metadata.date
     );
+});
+
+onMounted(() => {
+    if (noDetailsExist.value) {
+        isEditingMetadata.value = true;
+    }
 });
 </script>
 
