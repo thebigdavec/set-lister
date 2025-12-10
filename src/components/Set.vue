@@ -173,32 +173,31 @@ onUnmounted(() => {
     background-color: #1e1e1e;
     display: flex;
     flex-direction: column;
-    gap: 0.5rem;
 }
 
 .set-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    border-bottom: 1px solid #333;
     padding-bottom: 0.5rem;
 }
 
 .set-header h2 {
     margin: 0;
-    font-size: 1.5em;
     outline: none;
+    border-bottom: 2px solid transparent;
+    transition: border-bottom-color 0.3s ease;
 }
 
 .set-header h2:focus {
-    border-bottom: 1px solid var(--accent-color);
+    border-bottom-color: var(--accent-color);
 }
 
 .song-list {
     min-height: 50px;
     display: flex;
     flex-direction: column;
-    gap: 0.05rem;
+    gap: 0.1rem;
 }
 
 .add-song {

@@ -65,11 +65,11 @@ function cancel(): void {
         :class="{ 'is-encore': isEncore, 'is-marker': isEncoreMarker }"
     >
         <div v-if="isMarker" class="marker-mode">
-            <span class="marker-pill">&lt;encore&gt;</span>
+            <span class="marker-pill">&lt;Encores from here&gt;</span>
             <Button
                 v-if="!markerIsLast"
                 size="sm"
-                class="icon-btn no-print marker-reset-btn"
+                class="icon-btn no-print marker-reset-btn delete"
                 type="button"
                 title="Reset encore marker to end"
                 aria-label="Reset encore marker to end"
@@ -89,19 +89,15 @@ function cancel(): void {
                     >
                 </div>
                 <div class="song-meta">
-                    <span v-if="isEncore" class="encore-pill">Encore</span>
+                    <span v-if="isEncore" class="encore-pill">Encores</span>
                     <div class="actions no-print">
-                        <Button
-                            @click="isEditing = true"
-                            size="sm"
-                            class="icon-btn"
-                        >
+                        <Button @click="isEditing = true" size="sm">
                             <Pencil size="1em" class="icon" />
                         </Button>
                         <Button
                             @click="$emit('remove')"
                             size="sm"
-                            class="icon-btn delete"
+                            class="delete"
                         >
                             <X size="1em" class="icon" />
                         </Button>
@@ -135,7 +131,7 @@ function cancel(): void {
 
 <style scoped>
 .song-item {
-    padding: 0.25rem 0.75rem;
+    padding-inline: 0.75rem;
     margin-block-end: 0.15rem;
     display: flex;
     align-items: center;
@@ -180,16 +176,16 @@ function cancel(): void {
     display: flex;
     gap: 0.5rem;
     align-items: baseline;
+    width: 100%;
 }
 
 .song-title {
-    font-weight: 600;
-    font-size: 1.1em;
+    font-weight: 500;
 }
 
 .song-key {
-    color: #888;
-    font-size: 0.9em;
+    color: #aaa;
+    font-size: 0.8em;
 }
 
 .song-meta {
@@ -223,7 +219,7 @@ function cancel(): void {
 .grip {
     cursor: grab;
     opacity: 0;
-    transition: opacity 0.2s;
+    transition: opacity 0.2s ease;
 }
 
 .song-item:hover .grip {
@@ -244,13 +240,7 @@ function cancel(): void {
     }
 }
 
-.icon-btn {
-    padding: 0.25rem 0.5rem;
-    font-size: 0.9em;
-    background: transparent;
-}
-
-.icon-btn.delete:hover {
+.delete:hover {
     color: #ff4444;
     border-color: #ff4444;
 }
