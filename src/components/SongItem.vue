@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, nextTick, ref, watch } from "vue";
+import { computed, nextTick, onMounted, onUnmounted, ref, watch } from "vue";
 import { X, RotateCcw, Pencil, GripVertical } from "lucide-vue-next";
 import type { Song } from "../store";
 
@@ -46,15 +46,36 @@ function save(): void {
 }
 
 function cancel(): void {
-    isCancelling.value = false;
+    isCancelling.value = true;
     if (isMarker.value) {
         isEditing.value = false;
+        isCancelling.value = false;
         return;
     }
     editTitle.value = props.song.title;
     editKey.value = props.song.key;
     isEditing.value = false;
+    isCancelling.value = false;
 }
+
+function handleKeyDown(e: KeyboardEvent): void {
+    if (e.key === "Escape" && isEditing.value) {
+        isCancelling.value = true;
+        // Blur the active element first to prevent save from firing
+        if (document.activeElement instanceof HTMLElement) {
+            document.activeElement.blur();
+        }
+        cancel();
+    }
+}
+
+onMounted(() => {
+    window.addEventListener("keydown", handleKeyDown);
+});
+
+onUnmounted(() => {
+    window.removeEventListener("keydown", handleKeyDown);
+});
 
 const showDeleteConfirm = ref(false);
 const isDeleting = ref(false);
