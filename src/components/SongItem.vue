@@ -116,6 +116,9 @@ function handleNavigationEdit(): void {
     window.addEventListener("keyup", handleKeyUp);
 }
 
+// Track the songIndex we registered with, so we can unregister correctly
+const registeredSongIndex = ref<number | null>(null);
+
 onMounted(() => {
     window.addEventListener("keydown", handleKeyDown);
     if (navigation && songItemFocusRef.value && !props.isEncoreMarker) {
@@ -125,6 +128,7 @@ onMounted(() => {
             songItemFocusRef.value,
             props.songIndex,
         );
+        registeredSongIndex.value = props.songIndex;
         // Listen for custom event from navigation handler
         songItemFocusRef.value.addEventListener(
             "navigationEdit",
@@ -133,10 +137,47 @@ onMounted(() => {
     }
 });
 
+// Re-register element when songIndex changes (e.g., after reordering)
+watch(
+    () => props.songIndex,
+    (newIndex, oldIndex) => {
+        if (
+            navigation &&
+            songItemFocusRef.value &&
+            !props.isEncoreMarker &&
+            newIndex !== oldIndex &&
+            registeredSongIndex.value !== null
+        ) {
+            // Unregister old position
+            navigation.unregisterElement(
+                props.setIndex,
+                "song",
+                registeredSongIndex.value,
+            );
+            // Register new position
+            navigation.registerElement(
+                props.setIndex,
+                "song",
+                songItemFocusRef.value,
+                newIndex,
+            );
+            registeredSongIndex.value = newIndex;
+        }
+    },
+);
+
 onUnmounted(() => {
     window.removeEventListener("keydown", handleKeyDown);
-    if (navigation && !props.isEncoreMarker) {
-        navigation.unregisterElement(props.setIndex, "song", props.songIndex);
+    if (
+        navigation &&
+        !props.isEncoreMarker &&
+        registeredSongIndex.value !== null
+    ) {
+        navigation.unregisterElement(
+            props.setIndex,
+            "song",
+            registeredSongIndex.value,
+        );
     }
     // Clean up custom event listener
     if (songItemFocusRef.value) {
@@ -170,11 +211,14 @@ watch(
 // Handle focus events to update navigation state
 function handleSongFocus(): void {
     if (navigation && !props.isEncoreMarker) {
-        navigation.setFocus({
-            setIndex: props.setIndex,
-            type: "song",
-            songIndex: props.songIndex,
-        });
+        // Guard against infinite loop: only call setFocus if not already focused on this item
+        if (!navigation.isFocused(props.setIndex, "song", props.songIndex)) {
+            navigation.setFocus({
+                setIndex: props.setIndex,
+                type: "song",
+                songIndex: props.songIndex,
+            });
+        }
     }
 }
 

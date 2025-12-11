@@ -324,6 +324,10 @@ onUnmounted(() => {
     flex-wrap: wrap;
 }
 
+.add-song input {
+    border-color: var(--accent-color);
+}
+
 .add-song input:not(.key-input) {
     flex: 1;
 }

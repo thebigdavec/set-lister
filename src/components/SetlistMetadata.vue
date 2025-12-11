@@ -8,6 +8,7 @@ import {
     Calendar,
     Pencil,
     X,
+    Plus,
 } from "lucide-vue-next";
 import { store, updateMetadata } from "../store";
 import { shortcuts } from "../utils/keyboardShortcuts";
@@ -59,23 +60,6 @@ onMounted(() => {
 
             <div class="set-list-actions">
                 <Button
-                    @click="emit('add-set')"
-                    :title="`Add Set (${shortcuts.addSet})`"
-                    nowrap
-                    class="action-item"
-                >
-                    <PlusCircle class="icon" /> Add Set
-                </Button>
-                <Button
-                    @click="emit('export')"
-                    class="action-item"
-                    :title="`Preview & Print (${shortcuts.print})`"
-                    :disabled="!hasSets"
-                    nowrap
-                >
-                    <FileDown class="icon" style="color: inherit" /> Export PDF
-                </Button>
-                <Button
                     v-if="isEditingMetadata"
                     class="danger"
                     @click="toggleEditingMetadata"
@@ -89,6 +73,23 @@ onMounted(() => {
                     title="Start editing details"
                 >
                     <Pencil class="icon" /> Edit Details
+                </Button>
+                <Button
+                    @click="emit('export')"
+                    class="action-item"
+                    :title="`Preview & Print (${shortcuts.print})`"
+                    :disabled="!hasSets"
+                    nowrap
+                >
+                    <FileDown class="icon" style="color: inherit" /> Export PDF
+                </Button>
+                <Button
+                    @click="emit('add-set')"
+                    :title="`Add Set (${shortcuts.addSet})`"
+                    nowrap
+                    class="action-item primary"
+                >
+                    <Plus class="icon" /> Add Set
                 </Button>
             </div>
         </div>
