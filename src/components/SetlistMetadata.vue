@@ -1,9 +1,27 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from "vue";
-import { Users, MapPin, Calendar, Pencil, X } from "lucide-vue-next";
+import {
+    FileDown,
+    PlusCircle,
+    Users,
+    MapPin,
+    Calendar,
+    Pencil,
+    X,
+} from "lucide-vue-next";
 import { store, updateMetadata } from "../store";
+import { shortcuts } from "../utils/keyboardShortcuts";
 
 const isEditingMetadata = ref(false);
+
+const emit = defineEmits(["add-set", "export"]);
+
+defineProps({
+    hasSets: {
+        type: Boolean,
+        default: false,
+    },
+});
 
 const toggleEditingMetadata = () => {
     isEditingMetadata.value = !isEditingMetadata.value;
@@ -38,17 +56,41 @@ onMounted(() => {
                 {{ store.metadata.setListName }}
             </h2>
             <h2 v-else>Untitled Setlist</h2>
-            <Button
-                v-if="isEditingMetadata"
-                class="danger"
-                @click="toggleEditingMetadata"
-                title="Stop editing metadata"
-            >
-                <X class="icon" /> Close
-            </Button>
-            <Button v-else @click="toggleEditingMetadata" title="Edit metadata">
-                <Pencil class="icon" /> Edit
-            </Button>
+
+            <div class="set-list-actions">
+                <Button
+                    @click="emit('add-set')"
+                    :title="`Add Set (${shortcuts.addSet})`"
+                    nowrap
+                    class="action-item"
+                >
+                    <PlusCircle class="icon" /> Add Set
+                </Button>
+                <Button
+                    @click="emit('export')"
+                    class="action-item"
+                    :title="`Preview & Print (${shortcuts.print})`"
+                    :disabled="!hasSets"
+                    nowrap
+                >
+                    <FileDown class="icon" style="color: inherit" /> Export PDF
+                </Button>
+                <Button
+                    v-if="isEditingMetadata"
+                    class="danger"
+                    @click="toggleEditingMetadata"
+                    title="Stop editing metadata"
+                >
+                    <X class="icon" /> Close
+                </Button>
+                <Button
+                    v-else
+                    @click="toggleEditingMetadata"
+                    title="Edit metadata"
+                >
+                    <Pencil class="icon" /> Edit
+                </Button>
+            </div>
         </div>
         <div v-if="isEditingMetadata" class="metadata-grid">
             <div class="input-group">
@@ -122,7 +164,12 @@ onMounted(() => {
     grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
     gap: 1rem;
 }
-
+.set-list-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5em;
+    align-items: center;
+}
 .input-group {
     display: flex;
     flex-direction: column;

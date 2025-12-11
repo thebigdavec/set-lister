@@ -73,6 +73,11 @@ button {
         border-color: var(--accent-color);
     }
 
+    &:disabled {
+        color: #666;
+        cursor: not-allowed;
+    }
+
     &.primary {
         background-color: var(--accent-color);
         color: white;

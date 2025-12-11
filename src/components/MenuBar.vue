@@ -1,11 +1,9 @@
 <script setup lang="ts">
 import { onMounted, onUnmounted, ref } from "vue";
 import {
-    FileDown,
     FilePlus,
     FolderOpen,
     Menu,
-    PlusCircle,
     Redo2,
     Save,
     SaveAll,
@@ -16,28 +14,18 @@ import { shortcuts } from "../utils/keyboardShortcuts";
 
 withDefaults(
     defineProps<{
-        hasSets?: boolean;
         isDirty?: boolean;
         canUndo?: boolean;
         canRedo?: boolean;
     }>(),
     {
-        hasSets: false,
         isDirty: false,
         canUndo: false,
         canRedo: false,
     },
 );
 
-type MenuAction =
-    | "new"
-    | "load"
-    | "save"
-    | "save-as"
-    | "add-set"
-    | "export"
-    | "undo"
-    | "redo";
+type MenuAction = "new" | "load" | "save" | "save-as" | "undo" | "redo";
 
 const emit = defineEmits<{
     (e: MenuAction): void;
@@ -159,25 +147,6 @@ onUnmounted(() => {
                     :disabled="!canRedo"
                 >
                     <Redo2 class="icon" /> Redo
-                </Button>
-            </div>
-            <div class="menu-items">
-                <Button
-                    @click="handleAction('add-set')"
-                    :title="`Add Set (${shortcuts.addSet})`"
-                    nowrap
-                    class="action-item"
-                >
-                    <PlusCircle class="icon" /> Add Set
-                </Button>
-                <Button
-                    @click="handleAction('export')"
-                    class="action-item"
-                    :title="`Preview & Print (${shortcuts.print})`"
-                    :disabled="!hasSets"
-                    nowrap
-                >
-                    <FileDown class="icon" /> Export PDF
                 </Button>
             </div>
         </div>

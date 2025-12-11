@@ -174,7 +174,6 @@ watch(showPreview, async (value) => {
             <h1>Set Lister</h1>
 
             <MenuBar
-                :has-sets="previewSets.length > 0"
                 :is-dirty="store.isDirty"
                 :can-undo="canUndo"
                 :can-redo="canRedo"
@@ -182,13 +181,15 @@ watch(showPreview, async (value) => {
                 @load="loadFromDisk"
                 @save="saveToDisk"
                 @save-as="saveToDisk({ altKey: true })"
-                @add-set="addSet"
-                @export="togglePreview"
                 @undo="undo"
                 @redo="redo"
             />
 
-            <SetlistMetadata />
+            <SetlistMetadata
+                :has-sets="previewSets.length > 0"
+                @add-set="addSet"
+                @export="togglePreview"
+            />
         </header>
 
         <SetList />
