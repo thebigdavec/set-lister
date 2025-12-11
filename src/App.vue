@@ -218,13 +218,14 @@ watch(showPreview, async (value) => {
         <div ref="previewRef" class="preview-content">
             <div class="sets-wrapper">
                 <div
-                    v-for="set in previewSets"
+                    v-for="(set, index) in previewSets"
                     :key="set.id"
                     class="preview-page"
                     :style="previewWrapperStyle"
                 >
                     <SetPreview
                         :set="set"
+                        :set-index="index"
                         :metadata="store.metadata"
                         :uppercase="uppercasePreview"
                         :show-guides="showGuides"

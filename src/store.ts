@@ -18,7 +18,7 @@ export interface SetMetrics {
 
 export interface SetItem {
   id: string;
-  name: string;
+  name?: string;
   songs: Song[];
   metrics: SetMetrics;
 }
@@ -50,7 +50,7 @@ interface ComparableSong {
  */
 interface ComparableSet {
   id: string;
-  name: string;
+  name?: string;
   songs: ComparableSong[];
 }
 
@@ -137,10 +137,9 @@ function refreshSetMetrics(set: SetItem): void {
   set.metrics = buildSetMetrics(set.songs);
 }
 
-function createEmptySet(name: string): SetItem {
+function createEmptySet(): SetItem {
   return {
     id: crypto.randomUUID(),
-    name,
     songs: [],
     metrics: cloneEmptyMetrics(),
   };
@@ -154,7 +153,7 @@ function createDefaultState(): StoreState {
       date: "",
       actName: "",
     },
-    sets: [createEmptySet("Set 1")],
+    sets: [createEmptySet()],
   };
 }
 
@@ -192,14 +191,15 @@ function normalizeSets(sets?: SetItem[]): SetItem[] {
     return [];
   }
 
-  return sets.map((set, index) => {
+  return sets.map((set) => {
     const songs = normalizeSongs(set?.songs);
     return {
       id: typeof set?.id === "string" ? set.id : crypto.randomUUID(),
+      // Keep name optional - only set if provided and non-empty
       name:
         typeof set?.name === "string" && set.name.trim().length > 0
           ? set.name
-          : `Set ${index + 1}`,
+          : undefined,
       songs,
       metrics: buildSetMetrics(songs),
     };
@@ -370,7 +370,7 @@ watch(
 );
 
 export function addSet(): void {
-  store.sets.push(createEmptySet(`Set ${store.sets.length + 1}`));
+  store.sets.push(createEmptySet());
   sanitizeEncoreMarkers();
 }
 
@@ -382,11 +382,20 @@ export function removeSet(setId: string): void {
   }
 }
 
-export function renameSet(setId: string, newName: string): void {
+export function renameSet(setId: string, newName: string | undefined): void {
   const set = store.sets.find((s) => s.id === setId);
   if (set) {
-    set.name = newName;
+    // Treat empty, undefined, or whitespace-only names as "no name" (use dynamic default)
+    const trimmed = newName?.trim();
+    set.name = trimmed || undefined;
   }
+}
+
+export function getSetDisplayName(setId: string): string {
+  const index = store.sets.findIndex((s) => s.id === setId);
+  if (index === -1) return "";
+  const set = store.sets[index];
+  return set.name || `Set ${index + 1}`;
 }
 
 export function addSongToSet(

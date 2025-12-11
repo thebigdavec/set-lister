@@ -15,6 +15,7 @@ import Sortable, { MoveEvent, SortableEvent } from "sortablejs";
 import SongItem from "./SongItem.vue";
 import {
     addSongToSet,
+    getSetDisplayName,
     moveSong,
     removeSongFromSet,
     renameSet,
@@ -42,6 +43,9 @@ const { markerIndex, hasEncoreMarker, markerIsLast, isEncoreSongByIndex } =
     });
 
 defineEmits<{ (e: "remove-set"): void }>();
+
+// Compute the display name (custom name or dynamic "Set #")
+const displayName = computed(() => getSetDisplayName(props.set.id));
 
 // Inject navigation context from SetList
 const navigation = inject<UseSetlistNavigationReturn>("setlistNavigation");
@@ -222,7 +226,7 @@ onUnmounted(() => {
                 @focus="handleSetNameFocus"
                 @keydown="handleSetNameKeyDown"
             >
-                {{ set.name }}
+                {{ displayName }}
             </h2>
             <Button
                 @click="$emit('remove-set')"

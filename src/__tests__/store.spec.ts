@@ -19,6 +19,7 @@ import {
   isLastSet,
   hasEncoreMarker,
   isEncoreMarkerSong,
+  getSetDisplayName,
   type SetItem,
   type Song,
 } from "../store";
@@ -62,7 +63,8 @@ describe("store", () => {
 
     it("should start with one empty set", () => {
       expect(store.sets.length).toBe(1);
-      expect(store.sets[0].name).toBe("Set 1");
+      expect(store.sets[0].name).toBeUndefined();
+      expect(getSetDisplayName(store.sets[0].id)).toBe("Set 1");
       expect(store.sets[0].songs.length).toBe(0);
     });
 
@@ -78,11 +80,13 @@ describe("store", () => {
       expect(store.sets.length).toBe(initialCount + 1);
     });
 
-    it("should name new sets sequentially", () => {
+    it("should create sets without names (dynamic naming)", () => {
       addSet();
-      expect(store.sets[store.sets.length - 1].name).toBe("Set 2");
+      expect(store.sets[store.sets.length - 1].name).toBeUndefined();
+      expect(getSetDisplayName(store.sets[1].id)).toBe("Set 2");
       addSet();
-      expect(store.sets[store.sets.length - 1].name).toBe("Set 3");
+      expect(store.sets[store.sets.length - 1].name).toBeUndefined();
+      expect(getSetDisplayName(store.sets[2].id)).toBe("Set 3");
     });
 
     it("should mark store as dirty", () => {
@@ -128,6 +132,57 @@ describe("store", () => {
       removeSet(store.sets[0].id);
       expect(isDirty.value).toBe(true);
     });
+
+    it("should dynamically renumber display names after deletion", () => {
+      addSet(); // displayed as "Set 2"
+      addSet(); // displayed as "Set 3"
+      expect(store.sets.map((s) => getSetDisplayName(s.id))).toEqual([
+        "Set 1",
+        "Set 2",
+        "Set 3",
+      ]);
+      removeSet(store.sets[0].id); // Remove first set
+      // Remaining sets now display as "Set 1" and "Set 2"
+      expect(store.sets.map((s) => getSetDisplayName(s.id))).toEqual([
+        "Set 1",
+        "Set 2",
+      ]);
+    });
+
+    it("should preserve custom names after deletion", () => {
+      addSet();
+      addSet();
+      renameSet(store.sets[1].id, "Custom Name");
+      expect(store.sets.map((s) => getSetDisplayName(s.id))).toEqual([
+        "Set 1",
+        "Custom Name",
+        "Set 3",
+      ]);
+      removeSet(store.sets[0].id); // Remove first set
+      // Custom name preserved, unnamed set now displays as "Set 2"
+      expect(store.sets.map((s) => getSetDisplayName(s.id))).toEqual([
+        "Custom Name",
+        "Set 2",
+      ]);
+    });
+
+    it("should keep explicit 'Set #' names unchanged", () => {
+      addSet();
+      addSet();
+      // User explicitly names a set "Set 5" - this should be preserved
+      renameSet(store.sets[2].id, "Set 5");
+      expect(store.sets.map((s) => getSetDisplayName(s.id))).toEqual([
+        "Set 1",
+        "Set 2",
+        "Set 5",
+      ]);
+      removeSet(store.sets[1].id); // Remove second set
+      // "Set 5" stays as "Set 5" because it's a custom name
+      expect(store.sets.map((s) => getSetDisplayName(s.id))).toEqual([
+        "Set 1",
+        "Set 5",
+      ]);
+    });
   });
 
   describe("renameSet", () => {
@@ -135,6 +190,24 @@ describe("store", () => {
       const set = store.sets[0];
       renameSet(set.id, "New Name");
       expect(store.sets[0].name).toBe("New Name");
+      expect(getSetDisplayName(set.id)).toBe("New Name");
+    });
+
+    it("should clear name when set to empty string", () => {
+      const set = store.sets[0];
+      renameSet(set.id, "Custom Name");
+      expect(store.sets[0].name).toBe("Custom Name");
+      renameSet(set.id, "");
+      expect(store.sets[0].name).toBeUndefined();
+      expect(getSetDisplayName(set.id)).toBe("Set 1");
+    });
+
+    it("should clear name when set to whitespace only", () => {
+      const set = store.sets[0];
+      renameSet(set.id, "Custom Name");
+      renameSet(set.id, "   ");
+      expect(store.sets[0].name).toBeUndefined();
+      expect(getSetDisplayName(set.id)).toBe("Set 1");
     });
 
     it("should do nothing for non-existent ID", () => {
@@ -427,7 +500,9 @@ describe("store", () => {
       };
       loadStore(data);
       expect(store.metadata.setListName).toBe("");
-      expect(store.sets[0].name).toBe("Set 1"); // Default name
+      // Name is undefined, but display name shows dynamic default
+      expect(store.sets[0].name).toBeUndefined();
+      expect(getSetDisplayName(store.sets[0].id)).toBe("Set 1");
       expect(store.sets[0].songs[0].id).toBeDefined();
     });
   });
@@ -615,7 +690,8 @@ describe("store", () => {
     });
 
     it("should track set name edits and reverts", () => {
-      const originalSetName = store.sets[0].name;
+      // Original name is undefined (dynamic naming)
+      expect(store.sets[0].name).toBeUndefined();
       markClean();
       expect(isDirty.value).toBe(false);
 
@@ -623,8 +699,8 @@ describe("store", () => {
       renameSet(store.sets[0].id, "New Set Name");
       expect(isDirty.value).toBe(true);
 
-      // Revert name
-      renameSet(store.sets[0].id, originalSetName);
+      // Revert name by clearing it (back to undefined/dynamic)
+      renameSet(store.sets[0].id, "");
       expect(isDirty.value).toBe(false);
     });
 

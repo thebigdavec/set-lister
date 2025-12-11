@@ -6,6 +6,7 @@ import { useEncoreHelpers } from "../composables";
 const props = withDefaults(
     defineProps<{
         set: SetItem;
+        setIndex: number;
         metadata: SetListMetadata;
         uppercase?: boolean;
         showGuides?: boolean;
@@ -16,6 +17,11 @@ const props = withDefaults(
         showGuides: false,
         isLast: false,
     },
+);
+
+// Compute the display name (custom name or dynamic "Set #")
+const displayName = computed(
+    () => props.set.name || `Set ${props.setIndex + 1}`,
 );
 
 const { set, metadata, uppercase, showGuides, isLast } = toRefs(props);
@@ -37,10 +43,8 @@ const hasMetadata = computed(() => {
     return Boolean(m.setListName || m.venue || m.date || m.actName);
 });
 
-// Only render the header section when there is either metadata or a set name defined
-const showHeader = computed(
-    () => hasMetadata.value || Boolean(set.value?.name),
-);
+// Always show header since we always have a display name (dynamic "Set #" fallback)
+const showHeader = true;
 
 // Present dates in a long, locale-aware format so printed set lists read naturally
 function formatDate(dateStr: string | undefined): string {
@@ -78,9 +82,9 @@ function formatDate(dateStr: string | undefined): string {
                         }}</span>
                     </div>
                 </div>
-                <div v-if="set.name" class="meta-right">
+                <div class="meta-right">
                     <div>&nbsp;</div>
-                    <div class="set-name">{{ set.name }}</div>
+                    <div class="set-name">{{ displayName }}</div>
                 </div>
             </div>
 
