@@ -31,7 +31,7 @@ onMounted(() => {
 </script>
 
 <template>
-    <div class="card">
+    <Card>
         <div class="metadata-title">
             <h2 v-if="noDetailsExist">Enter Setlist Details</h2>
             <h2 v-else-if="store.metadata.setListName">
@@ -113,7 +113,7 @@ onMounted(() => {
                 {{ store.metadata.date }}
             </div>
         </div>
-    </div>
+    </Card>
 </template>
 
 <style scoped>

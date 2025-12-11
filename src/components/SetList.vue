@@ -4,7 +4,7 @@ import Set from "./Set.vue";
 </script>
 
 <template>
-    <div class="sets-wrapper">
+    <Card class="sets-wrapper">
         <Set
             v-for="set in store.sets"
             :key="set.id"
@@ -12,7 +12,7 @@ import Set from "./Set.vue";
             :is-last="set.id === lastSetId"
             @remove-set="removeSet(set.id)"
         />
-    </div>
+    </Card>
 </template>
 
 <style scoped>
