@@ -204,6 +204,18 @@ export function useSetlistNavigation(
     focusedItem.value = item;
     if (item) {
       nextTick(() => {
+        // Check if focusedItem still matches what we intended to focus
+        // This prevents stale callbacks from focusing wrong elements during rapid navigation
+        const current = focusedItem.value;
+        if (
+          !current ||
+          current.setIndex !== item.setIndex ||
+          current.type !== item.type ||
+          current.songIndex !== item.songIndex
+        ) {
+          return; // State has changed, skip this focus call
+        }
+
         const key = getElementKey(item.setIndex, item.type, item.songIndex);
         const element = elementRegistry.get(key);
         if (element) {
