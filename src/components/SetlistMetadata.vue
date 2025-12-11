@@ -79,16 +79,16 @@ onMounted(() => {
                     v-if="isEditingMetadata"
                     class="danger"
                     @click="toggleEditingMetadata"
-                    title="Stop editing metadata"
+                    title="Finish editing details"
                 >
-                    <X class="icon" /> Close
+                    <X class="icon" /> Finish Editing
                 </Button>
                 <Button
                     v-else
                     @click="toggleEditingMetadata"
-                    title="Edit metadata"
+                    title="Start editing details"
                 >
-                    <Pencil class="icon" /> Edit
+                    <Pencil class="icon" /> Edit Details
                 </Button>
             </div>
         </div>
