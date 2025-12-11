@@ -31,7 +31,7 @@ onMounted(() => {
 </script>
 
 <template>
-    <div class="setlist-metadata">
+    <div class="card">
         <div class="metadata-title">
             <h2 v-if="noDetailsExist">Enter Setlist Details</h2>
             <h2 v-else-if="store.metadata.setListName">
@@ -117,13 +117,6 @@ onMounted(() => {
 </template>
 
 <style scoped>
-.setlist-metadata {
-    background-color: #1e1e1e;
-    padding: 1rem;
-    border-radius: 8px;
-    border: 1px solid #333;
-}
-
 .metadata-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
@@ -172,6 +165,11 @@ onMounted(() => {
     gap: 0.5rem;
     font-size: 1.6rem;
     color: #ddd;
+
+    h2 {
+        margin: 0;
+        padding: 0;
+    }
 
     button {
         font-size: 1rem;
