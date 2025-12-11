@@ -3,6 +3,7 @@ import { nextTick } from "vue";
 import { useHistory } from "../useHistory";
 import {
   store,
+  isDirty,
   resetStore,
   addSet,
   addSongToSet,
@@ -11,6 +12,7 @@ import {
   removeSet,
   renameSet,
   updateMetadata,
+  markClean,
 } from "../../store";
 
 describe("useHistory", () => {
@@ -173,17 +175,40 @@ describe("useHistory", () => {
       expect(store.sets.length).toBe(initialSetsLength);
     });
 
-    it("should set isDirty to true after undo", async () => {
+    it("should update isDirty based on comparison to original state", async () => {
       const { undo } = useHistory();
 
+      // After reset, isDirty should be false
+      expect(isDirty.value).toBe(false);
+
+      // Make a change - isDirty should become true
       addSongToSet(store.sets[0].id, { title: "Test Song" });
       await nextTick();
+      expect(isDirty.value).toBe(true);
 
-      store.isDirty = false;
+      // Undo the change - isDirty should become false (back to original)
+      undo();
+      await nextTick();
+      expect(isDirty.value).toBe(false);
+    });
+
+    it("should stay dirty after undo if there are still differences from original", async () => {
+      const { undo } = useHistory();
+
+      // Make two changes
+      addSongToSet(store.sets[0].id, { title: "Song 1" });
+      await nextTick();
+      addSongToSet(store.sets[0].id, { title: "Song 2" });
+      await nextTick();
+
+      expect(isDirty.value).toBe(true);
+
+      // Undo only the second change
       undo();
       await nextTick();
 
-      expect(store.isDirty).toBe(true);
+      // Should still be dirty because Song 1 is still there
+      expect(isDirty.value).toBe(true);
     });
   });
 
@@ -264,20 +289,51 @@ describe("useHistory", () => {
       expect(store.sets.length).toBe(initialSetsLength);
     });
 
-    it("should set isDirty to true after redo", async () => {
+    it("should update isDirty based on comparison to original state after redo", async () => {
       const { undo, redo } = useHistory();
 
+      // Start clean
+      expect(isDirty.value).toBe(false);
+
+      // Make a change
       addSongToSet(store.sets[0].id, { title: "Test Song" });
       await nextTick();
+      expect(isDirty.value).toBe(true);
 
+      // Undo - should be clean again
       undo();
       await nextTick();
+      expect(isDirty.value).toBe(false);
 
-      store.isDirty = false;
+      // Redo - should be dirty again
       redo();
       await nextTick();
+      expect(isDirty.value).toBe(true);
+    });
 
-      expect(store.isDirty).toBe(true);
+    it("should become clean when redo brings state back to saved state", async () => {
+      const { undo, redo } = useHistory();
+
+      // Make a change and save
+      addSongToSet(store.sets[0].id, { title: "Test Song" });
+      await nextTick();
+      markClean(); // Simulate saving
+      expect(isDirty.value).toBe(false);
+
+      // Make another change
+      updateMetadata({ setListName: "New Name" });
+      await nextTick();
+      expect(isDirty.value).toBe(true);
+
+      // Undo the metadata change - should be clean (back to saved state)
+      undo();
+      await nextTick();
+      expect(isDirty.value).toBe(false);
+
+      // Redo - should be dirty again
+      redo();
+      await nextTick();
+      expect(isDirty.value).toBe(true);
     });
   });
 

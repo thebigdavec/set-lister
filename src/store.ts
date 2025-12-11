@@ -1,4 +1,4 @@
-import { computed, reactive, watch } from "vue";
+import { computed, reactive, ref, watch } from "vue";
 import { STORAGE_KEYS } from "./constants";
 import { formatSongLabel, measureSongLabelWidth } from "./utils/textMetrics";
 
@@ -31,9 +31,35 @@ export interface SetListMetadata {
 }
 
 export interface StoreState {
-  isDirty: boolean;
   metadata: SetListMetadata;
   sets: SetItem[];
+}
+
+/**
+ * Comparable song data - excludes computed/derived fields
+ */
+interface ComparableSong {
+  id: string;
+  title: string;
+  key: string | undefined;
+  isEncoreMarker: boolean | undefined;
+}
+
+/**
+ * Comparable set data - excludes metrics (which are derived)
+ */
+interface ComparableSet {
+  id: string;
+  name: string;
+  songs: ComparableSong[];
+}
+
+/**
+ * Comparable store data - what matters for dirty checking
+ */
+interface ComparableData {
+  metadata: SetListMetadata;
+  sets: ComparableSet[];
 }
 
 const ENCORE_MARKER_TITLE = "<encore>";
@@ -122,7 +148,6 @@ function createEmptySet(name: string): SetItem {
 
 function createDefaultState(): StoreState {
   return {
-    isDirty: false,
     metadata: {
       setListName: "",
       venue: "",
@@ -207,12 +232,88 @@ export function hasEncoreMarker(set: SetItem): boolean {
 
 export { isEncoreMarkerSong };
 
+/**
+ * Extract comparable data from the store state.
+ * This excludes computed/derived fields like metrics.
+ */
+function extractComparableData(state: StoreState): ComparableData {
+  return {
+    metadata: { ...state.metadata },
+    sets: state.sets.map((set) => ({
+      id: set.id,
+      name: set.name,
+      songs: set.songs.map((song) => ({
+        id: song.id,
+        title: song.title,
+        key: song.key,
+        isEncoreMarker: song.isEncoreMarker,
+      })),
+    })),
+  };
+}
+
+/**
+ * Deep comparison of two comparable data structures.
+ */
+function isDataEqual(
+  a: ComparableData | null,
+  b: ComparableData | null,
+): boolean {
+  if (a === null || b === null) return a === b;
+
+  // Compare metadata
+  if (
+    a.metadata.setListName !== b.metadata.setListName ||
+    a.metadata.venue !== b.metadata.venue ||
+    a.metadata.date !== b.metadata.date ||
+    a.metadata.actName !== b.metadata.actName
+  ) {
+    return false;
+  }
+
+  // Compare sets count
+  if (a.sets.length !== b.sets.length) {
+    return false;
+  }
+
+  // Compare each set
+  for (let i = 0; i < a.sets.length; i++) {
+    const setA = a.sets[i];
+    const setB = b.sets[i];
+
+    if (setA.id !== setB.id || setA.name !== setB.name) {
+      return false;
+    }
+
+    // Compare songs count
+    if (setA.songs.length !== setB.songs.length) {
+      return false;
+    }
+
+    // Compare each song
+    for (let j = 0; j < setA.songs.length; j++) {
+      const songA = setA.songs[j];
+      const songB = setB.songs[j];
+
+      if (
+        songA.id !== songB.id ||
+        songA.title !== songB.title ||
+        songA.key !== songB.key ||
+        songA.isEncoreMarker !== songB.isEncoreMarker
+      ) {
+        return false;
+      }
+    }
+  }
+
+  return true;
+}
+
 function buildInitialState(): StoreState {
   const savedState = parseSavedState(localStorage.getItem(STORAGE_KEYS.DATA));
   const defaults = createDefaultState();
 
   return {
-    isDirty: savedState?.isDirty ?? defaults.isDirty,
     metadata: {
       setListName:
         savedState?.metadata?.setListName ?? defaults.metadata.setListName,
@@ -225,6 +326,23 @@ function buildInitialState(): StoreState {
 }
 
 export const store = reactive<StoreState>(buildInitialState());
+
+/**
+ * The "original" state - snapshot from last save/load/new operation.
+ * This is compared against the current store to determine if there are unsaved changes.
+ * Using a ref so that the computed isDirty properly reacts to changes.
+ */
+const originalState = ref<ComparableData | null>(extractComparableData(store));
+
+/**
+ * Computed property that determines if there are unsaved changes.
+ * Compares the current store state against the original state.
+ */
+export const isDirty = computed(() => {
+  if (originalState.value === null) return true;
+  const currentData = extractComparableData(store);
+  return !isDataEqual(originalState.value, currentData);
+});
 
 /**
  * Computed property for the ID of the last set in the list.
@@ -254,7 +372,6 @@ watch(
 export function addSet(): void {
   store.sets.push(createEmptySet(`Set ${store.sets.length + 1}`));
   sanitizeEncoreMarkers();
-  store.isDirty = true;
 }
 
 export function removeSet(setId: string): void {
@@ -262,7 +379,6 @@ export function removeSet(setId: string): void {
   if (index !== -1) {
     store.sets.splice(index, 1);
     sanitizeEncoreMarkers();
-    store.isDirty = true;
   }
 }
 
@@ -270,7 +386,6 @@ export function renameSet(setId: string, newName: string): void {
   const set = store.sets.find((s) => s.id === setId);
   if (set) {
     set.name = newName;
-    store.isDirty = true;
   }
 }
 
@@ -299,7 +414,6 @@ export function addSongToSet(
       applySongAdditionMetrics(set, newSong);
     }
     sanitizeEncoreMarkers();
-    store.isDirty = true;
   }
 }
 
@@ -311,7 +425,6 @@ export function removeSongFromSet(setId: string, songId: string): void {
       set.songs.splice(index, 1);
       refreshSetMetrics(set);
       sanitizeEncoreMarkers();
-      store.isDirty = true;
     }
   }
 }
@@ -327,7 +440,6 @@ export function reorderSong(
     const insertIndex = Math.min(toIndex, set.songs.length);
     set.songs.splice(insertIndex, 0, movedSong);
     refreshSetMetrics(set);
-    store.isDirty = true;
   }
 }
 
@@ -352,7 +464,6 @@ export function moveSong(
     refreshSetMetrics(fromSet);
     refreshSetMetrics(toSet);
     sanitizeEncoreMarkers();
-    store.isDirty = true;
   }
 }
 
@@ -367,26 +478,31 @@ export function updateSong(
     if (song) {
       Object.assign(song, updates);
       refreshSetMetrics(set);
-      store.isDirty = true;
     }
   }
 }
 
 export function updateMetadata(updates: Partial<SetListMetadata>): void {
   Object.assign(store.metadata, updates);
-  store.isDirty = true;
 }
 
+/**
+ * Mark the current state as "clean" by snapshotting it as the original state.
+ * After calling this, isDirty will be false until further edits are made.
+ */
 export function markClean(): void {
-  store.isDirty = false;
+  originalState.value = extractComparableData(store);
 }
 
+/**
+ * Reset the store to default state and mark as clean.
+ */
 export function resetStore(): void {
   const newData = createDefaultState();
   store.sets = newData.sets;
-  store.isDirty = newData.isDirty;
   store.metadata = newData.metadata;
   sanitizeEncoreMarkers();
+  originalState.value = extractComparableData(store);
 }
 
 export function loadStore(data: unknown): boolean {
@@ -410,7 +526,7 @@ export function loadStore(data: unknown): boolean {
     actName: candidate.metadata?.actName ?? "",
   };
   sanitizeEncoreMarkers();
-  store.isDirty = false;
+  originalState.value = extractComparableData(store);
   return true;
 }
 

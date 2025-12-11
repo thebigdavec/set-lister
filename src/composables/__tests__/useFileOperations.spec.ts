@@ -1,6 +1,12 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { useFileOperations } from "../useFileOperations";
-import { store, resetStore, addSongToSet, markClean } from "../../store";
+import {
+  store,
+  isDirty,
+  resetStore,
+  addSongToSet,
+  markClean,
+} from "../../store";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const windowAny = window as any;
@@ -105,7 +111,7 @@ describe("useFileOperations", () => {
 
     it("should prevent unload when store is dirty", () => {
       addSongToSet(store.sets[0].id, { title: "Test" });
-      expect(store.isDirty).toBe(true);
+      expect(isDirty.value).toBe(true);
 
       const { handleBeforeUnload } = useFileOperations();
 
@@ -185,14 +191,14 @@ describe("useFileOperations", () => {
       });
 
       it("should mark store as clean after save", async () => {
-        // Manually set dirty without using addSongToSet (which uses canvas)
-        store.isDirty = true;
-        expect(store.isDirty).toBe(true);
+        // Make the store dirty by changing metadata
+        store.metadata.setListName = "Dirty Test";
+        expect(isDirty.value).toBe(true);
 
         const { saveToDisk } = useFileOperations();
         await saveToDisk();
 
-        expect(store.isDirty).toBe(false);
+        expect(isDirty.value).toBe(false);
       });
 
       it("should create and revoke object URL", async () => {
@@ -255,12 +261,12 @@ describe("useFileOperations", () => {
 
       it("should mark store clean after successful save", async () => {
         addSongToSet(store.sets[0].id, { title: "Test" });
-        expect(store.isDirty).toBe(true);
+        expect(isDirty.value).toBe(true);
 
         const { saveToDisk } = useFileOperations();
         await saveToDisk();
 
-        expect(store.isDirty).toBe(false);
+        expect(isDirty.value).toBe(false);
       });
 
       it("should show Save As when altKey is pressed", async () => {
@@ -321,7 +327,7 @@ describe("useFileOperations", () => {
     describe("dirty state handling", () => {
       it("should show confirm dialog when store is dirty", async () => {
         addSongToSet(store.sets[0].id, { title: "Test" });
-        expect(store.isDirty).toBe(true);
+        expect(isDirty.value).toBe(true);
 
         const showConfirm = vi.fn().mockResolvedValue(false);
         const { loadFromDisk } = useFileOperations({ showConfirm });
@@ -659,8 +665,8 @@ describe("useFileOperations", () => {
 
     it("should work without callbacks (fallback to native)", async () => {
       (window.confirm as ReturnType<typeof vi.fn>).mockReturnValue(false);
-      // Manually set dirty without using addSongToSet
-      store.isDirty = true;
+      // Make the store dirty by changing metadata
+      store.metadata.setListName = "Dirty Test";
 
       const { loadFromDisk } = useFileOperations();
       await loadFromDisk();

@@ -87,9 +87,8 @@ export function useHistory() {
 
     // Ensure encore markers are in valid state
     sanitizeEncoreMarkers();
-
-    // Mark as dirty since we've changed state
-    store.isDirty = true;
+    // Note: isDirty is now computed by comparing current state to original state,
+    // so no manual assignment is needed here
   }
 
   /**

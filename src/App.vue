@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, nextTick, onMounted, onUnmounted, ref, watch } from "vue";
 import { Printer, X } from "lucide-vue-next";
-import { addSet, lastSetId, resetStore, store } from "./store";
+import { addSet, isDirty, lastSetId, resetStore, store } from "./store";
 import SetList from "./components/SetList.vue";
 import SetlistMetadata from "./components/SetlistMetadata.vue";
 import SetPreview from "./components/SetPreview.vue";
@@ -83,7 +83,7 @@ const {
 // =============================================================================
 
 function startNew(): void {
-    if (!store.isDirty) {
+    if (!isDirty.value) {
         resetStore();
         clearFileHandle();
         return;
@@ -174,7 +174,7 @@ watch(showPreview, async (value) => {
             <h1>Set Lister</h1>
 
             <MenuBar
-                :is-dirty="store.isDirty"
+                :is-dirty="isDirty"
                 :can-undo="canUndo"
                 :can-redo="canRedo"
                 @new="startNew"

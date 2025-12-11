@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeEach, vi } from "vitest";
 import {
   store,
+  isDirty,
   addSet,
   removeSet,
   renameSet,
@@ -66,7 +67,7 @@ describe("store", () => {
     });
 
     it("should not be dirty initially after reset", () => {
-      expect(store.isDirty).toBe(false);
+      expect(isDirty.value).toBe(false);
     });
   });
 
@@ -87,7 +88,7 @@ describe("store", () => {
     it("should mark store as dirty", () => {
       markClean();
       addSet();
-      expect(store.isDirty).toBe(true);
+      expect(isDirty.value).toBe(true);
     });
 
     it("should create set with empty songs array", () => {
@@ -125,7 +126,7 @@ describe("store", () => {
       addSet();
       markClean();
       removeSet(store.sets[0].id);
-      expect(store.isDirty).toBe(true);
+      expect(isDirty.value).toBe(true);
     });
   });
 
@@ -145,7 +146,7 @@ describe("store", () => {
     it("should mark store as dirty", () => {
       markClean();
       renameSet(store.sets[0].id, "New Name");
-      expect(store.isDirty).toBe(true);
+      expect(isDirty.value).toBe(true);
     });
   });
 
@@ -173,7 +174,7 @@ describe("store", () => {
     it("should mark store as dirty", () => {
       markClean();
       addSongToSet(store.sets[0].id, { title: "Test" });
-      expect(store.isDirty).toBe(true);
+      expect(isDirty.value).toBe(true);
     });
 
     it("should do nothing for non-existent set ID", () => {
@@ -214,7 +215,7 @@ describe("store", () => {
       markClean();
       const set = store.sets[0];
       removeSongFromSet(set.id, set.songs[0].id);
-      expect(store.isDirty).toBe(true);
+      expect(isDirty.value).toBe(true);
     });
 
     it("should update metrics after removing song", () => {
@@ -248,7 +249,7 @@ describe("store", () => {
     it("should mark store as dirty", () => {
       markClean();
       reorderSong(store.sets[0].id, 0, 1);
-      expect(store.isDirty).toBe(true);
+      expect(isDirty.value).toBe(true);
     });
   });
 
@@ -280,7 +281,7 @@ describe("store", () => {
     it("should mark store as dirty", () => {
       markClean();
       moveSong(store.sets[0].id, store.sets[1].id, 0, 0);
-      expect(store.isDirty).toBe(true);
+      expect(isDirty.value).toBe(true);
     });
 
     it("should update metrics for both sets", () => {
@@ -316,7 +317,7 @@ describe("store", () => {
       markClean();
       const set = store.sets[0];
       updateSong(set.id, set.songs[0].id, { title: "New" });
-      expect(store.isDirty).toBe(true);
+      expect(isDirty.value).toBe(true);
     });
 
     it("should update metrics after song update", () => {
@@ -349,16 +350,16 @@ describe("store", () => {
     it("should mark store as dirty", () => {
       markClean();
       updateMetadata({ setListName: "Test" });
-      expect(store.isDirty).toBe(true);
+      expect(isDirty.value).toBe(true);
     });
   });
 
   describe("markClean", () => {
     it("should set isDirty to false", () => {
       addSet(); // This makes store dirty
-      expect(store.isDirty).toBe(true);
+      expect(isDirty.value).toBe(true);
       markClean();
-      expect(store.isDirty).toBe(false);
+      expect(isDirty.value).toBe(false);
     });
   });
 
@@ -376,7 +377,7 @@ describe("store", () => {
     it("should set isDirty to false", () => {
       addSet();
       resetStore();
-      expect(store.isDirty).toBe(false);
+      expect(isDirty.value).toBe(false);
     });
   });
 
@@ -417,7 +418,7 @@ describe("store", () => {
       addSet(); // Make dirty
       const data = { sets: [{ name: "Set 1", songs: [] }] };
       loadStore(data);
-      expect(store.isDirty).toBe(false);
+      expect(isDirty.value).toBe(false);
     });
 
     it("should normalize missing fields", () => {
@@ -558,6 +559,126 @@ describe("store", () => {
         title: "This Is Now The Longest Title In The Set",
       });
       expect(set.metrics.longestEntryId).toBe(firstId);
+    });
+  });
+
+  describe("sophisticated isDirty tracking", () => {
+    it("should become false when edit is reverted to match original", () => {
+      // Start clean
+      expect(isDirty.value).toBe(false);
+
+      // Change metadata
+      const originalName = store.metadata.setListName;
+      updateMetadata({ setListName: "New Name" });
+      expect(isDirty.value).toBe(true);
+
+      // Revert to original value
+      updateMetadata({ setListName: originalName });
+      expect(isDirty.value).toBe(false);
+    });
+
+    it("should track song title edits and reverts", () => {
+      // Add a song and mark clean (simulating a save)
+      addSongToSet(store.sets[0].id, { title: "Original Title" });
+      markClean();
+      expect(isDirty.value).toBe(false);
+
+      const songId = store.sets[0].songs[0].id;
+
+      // Edit the title
+      updateSong(store.sets[0].id, songId, { title: "Changed Title" });
+      expect(isDirty.value).toBe(true);
+
+      // Change it again
+      updateSong(store.sets[0].id, songId, { title: "Another Change" });
+      expect(isDirty.value).toBe(true);
+
+      // Revert to original
+      updateSong(store.sets[0].id, songId, { title: "Original Title" });
+      expect(isDirty.value).toBe(false);
+    });
+
+    it("should track song key edits and reverts", () => {
+      addSongToSet(store.sets[0].id, { title: "Song", key: "C" });
+      markClean();
+      expect(isDirty.value).toBe(false);
+
+      const songId = store.sets[0].songs[0].id;
+
+      // Change key
+      updateSong(store.sets[0].id, songId, { key: "Am" });
+      expect(isDirty.value).toBe(true);
+
+      // Revert key
+      updateSong(store.sets[0].id, songId, { key: "C" });
+      expect(isDirty.value).toBe(false);
+    });
+
+    it("should track set name edits and reverts", () => {
+      const originalSetName = store.sets[0].name;
+      markClean();
+      expect(isDirty.value).toBe(false);
+
+      // Rename set
+      renameSet(store.sets[0].id, "New Set Name");
+      expect(isDirty.value).toBe(true);
+
+      // Revert name
+      renameSet(store.sets[0].id, originalSetName);
+      expect(isDirty.value).toBe(false);
+    });
+
+    it("should track multiple metadata fields independently", () => {
+      markClean();
+      expect(isDirty.value).toBe(false);
+
+      // Change venue
+      updateMetadata({ venue: "The Club" });
+      expect(isDirty.value).toBe(true);
+
+      // Change date too
+      updateMetadata({ date: "2024-12-25" });
+      expect(isDirty.value).toBe(true);
+
+      // Revert venue only
+      updateMetadata({ venue: "" });
+      expect(isDirty.value).toBe(true); // Still dirty because date changed
+
+      // Revert date
+      updateMetadata({ date: "" });
+      expect(isDirty.value).toBe(false); // Now clean
+    });
+
+    it("should stay dirty if structural changes exist even when content matches", () => {
+      // Start with 1 set
+      markClean();
+      expect(isDirty.value).toBe(false);
+
+      // Add a set
+      addSet();
+      expect(isDirty.value).toBe(true);
+
+      // Removing the added set would make it structurally similar
+      // but the original set has a different ID, so still dirty
+      removeSet(store.sets[1].id);
+      expect(isDirty.value).toBe(false); // Back to original 1 set
+    });
+
+    it("should correctly compare after save with songs", () => {
+      // Add songs and save
+      addSongToSet(store.sets[0].id, { title: "Song A", key: "G" });
+      addSongToSet(store.sets[0].id, { title: "Song B" });
+      markClean();
+      expect(isDirty.value).toBe(false);
+
+      // Modify first song
+      const songA = store.sets[0].songs[0];
+      updateSong(store.sets[0].id, songA.id, { title: "Modified A" });
+      expect(isDirty.value).toBe(true);
+
+      // Revert
+      updateSong(store.sets[0].id, songA.id, { title: "Song A" });
+      expect(isDirty.value).toBe(false);
     });
   });
 });

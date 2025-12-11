@@ -1,5 +1,5 @@
 import { ref } from "vue";
-import { loadStore, markClean, store } from "../store";
+import { isDirty, loadStore, markClean, store } from "../store";
 
 /**
  * Options for useFileOperations composable
@@ -124,7 +124,7 @@ export function useFileOperations(options: FileOperationsOptions = {}) {
    * Uses File System Access API if available, otherwise falls back to file input.
    */
   async function loadFromDisk(): Promise<void> {
-    if (store.isDirty) {
+    if (isDirty.value) {
       let confirmed: boolean;
       if (showConfirm) {
         confirmed = await showConfirm({
@@ -247,7 +247,7 @@ export function useFileOperations(options: FileOperationsOptions = {}) {
    * Handle beforeunload event to warn about unsaved changes
    */
   function handleBeforeUnload(event: BeforeUnloadEvent): void {
-    if (store.isDirty) {
+    if (isDirty.value) {
       event.preventDefault();
       event.returnValue = "";
     }
