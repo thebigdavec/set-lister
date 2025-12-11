@@ -1,5 +1,14 @@
 <script setup lang="ts">
-import { computed, nextTick, onMounted, onUnmounted, ref, toRef } from "vue";
+import {
+    computed,
+    inject,
+    nextTick,
+    onMounted,
+    onUnmounted,
+    ref,
+    toRef,
+    watch,
+} from "vue";
 
 import { Plus, Trash } from "lucide-vue-next";
 import Sortable, { MoveEvent, SortableEvent } from "sortablejs";
@@ -12,10 +21,18 @@ import {
     reorderSong,
     updateSong,
     type SetItem,
+    isEncoreMarkerSong,
 } from "../store";
-import { useEncoreHelpers } from "../composables";
+import {
+    useEncoreHelpers,
+    type UseSetlistNavigationReturn,
+} from "../composables";
 
-const props = defineProps<{ set: SetItem; isLast: boolean }>();
+const props = defineProps<{
+    set: SetItem;
+    setIndex: number;
+    isLast: boolean;
+}>();
 
 // Use the consolidated encore helpers
 const { markerIndex, hasEncoreMarker, markerIsLast, isEncoreSongByIndex } =
@@ -26,12 +43,84 @@ const { markerIndex, hasEncoreMarker, markerIsLast, isEncoreSongByIndex } =
 
 defineEmits<{ (e: "remove-set"): void }>();
 
+// Inject navigation context from SetList
+const navigation = inject<UseSetlistNavigationReturn>("setlistNavigation");
+
 const songListRef = ref<HTMLDivElement | null>(null);
 const titleInputRef = ref<HTMLInputElement | null>(null);
+const setNameRef = ref<HTMLHeadingElement | null>(null);
 let sortableInstance: Sortable | null = null;
 
 const newSongTitle = ref("");
 const newSongKey = ref("");
+
+// Track if set name is in edit mode
+const isEditingName = ref(false);
+
+// Register set name element for focus management
+onMounted(() => {
+    if (navigation && setNameRef.value) {
+        navigation.registerElement(props.setIndex, "name", setNameRef.value);
+    }
+});
+
+onUnmounted(() => {
+    if (navigation) {
+        navigation.unregisterElement(props.setIndex, "name");
+    }
+});
+
+// Watch for edit requests on this set's name
+watch(
+    () => navigation?.editRequested.value,
+    (request) => {
+        if (
+            request &&
+            request.setIndex === props.setIndex &&
+            request.type === "name"
+        ) {
+            isEditingName.value = true;
+            nextTick(() => {
+                if (setNameRef.value) {
+                    setNameRef.value.focus();
+                    // Select all text in contenteditable
+                    const range = document.createRange();
+                    range.selectNodeContents(setNameRef.value);
+                    const selection = window.getSelection();
+                    selection?.removeAllRanges();
+                    selection?.addRange(range);
+                }
+            });
+            navigation?.clearEditRequest();
+        }
+    },
+);
+
+// Handle focus events on set name to update navigation state
+function handleSetNameFocus(): void {
+    if (navigation) {
+        navigation.setFocus({ setIndex: props.setIndex, type: "name" });
+    }
+}
+
+// Handle keydown on set name
+function handleSetNameKeyDown(event: KeyboardEvent): void {
+    if (event.key === "Escape") {
+        isEditingName.value = false;
+        setNameRef.value?.blur();
+    } else if (event.key === "Enter" && !event.shiftKey) {
+        event.preventDefault();
+        setNameRef.value?.blur();
+    }
+}
+
+// Get playable song indices (excluding encore markers)
+function getPlayableSongIndices(): number[] {
+    return props.set.songs
+        .map((song, index) => ({ song, index }))
+        .filter(({ song }) => !isEncoreMarkerSong(song))
+        .map(({ index }) => index);
+}
 
 const encoreSummary = computed(() => {
     if (!props.isLast) return "Encore marker appears only in the final set.";
@@ -61,6 +150,7 @@ function handleTitleBlur(event: FocusEvent): void {
     const target = event.target as HTMLElement | null;
     if (!target) return;
     renameSet(props.set.id, target.innerText);
+    isEditingName.value = false;
 }
 
 function handleSortEnd(evt: SortableEvent): void {
@@ -121,7 +211,19 @@ onUnmounted(() => {
 <template>
     <div class="set-container card">
         <div class="set-header">
-            <h2 contenteditable @blur="handleTitleBlur">{{ set.name }}</h2>
+            <h2
+                ref="setNameRef"
+                contenteditable
+                tabindex="0"
+                :class="{
+                    'is-focused': navigation?.isFocused(setIndex, 'name'),
+                }"
+                @blur="handleTitleBlur"
+                @focus="handleSetNameFocus"
+                @keydown="handleSetNameKeyDown"
+            >
+                {{ set.name }}
+            </h2>
             <Button
                 @click="$emit('remove-set')"
                 size="sm"
@@ -137,6 +239,8 @@ onUnmounted(() => {
                 v-for="(song, index) in set.songs"
                 :key="song.id"
                 :song="song"
+                :set-index="setIndex"
+                :song-index="index"
                 :is-encore="songIsEncore(index)"
                 :is-encore-marker="song.isEncoreMarker === true"
                 :marker-is-last="markerIsLast"
@@ -191,8 +295,15 @@ onUnmounted(() => {
     transition: border-bottom-color 0.3s ease;
 }
 
-.set-header h2:focus {
+.set-header h2:focus,
+.set-header h2.is-focused {
     border-bottom-color: var(--accent-color);
+    outline: none;
+}
+
+.set-header h2:focus-visible {
+    outline: 2px solid var(--accent-color);
+    outline-offset: 2px;
 }
 
 .song-list {

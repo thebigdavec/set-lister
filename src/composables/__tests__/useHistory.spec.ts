@@ -39,6 +39,43 @@ describe("useHistory", () => {
   });
 
   describe("tracking changes", () => {
+    it("should not create history entry when state does not actually change", async () => {
+      const { undoCount } = useHistory();
+
+      // First add a song so we have something to work with
+      addSongToSet(store.sets[0].id, { title: "Test Song", key: "A" });
+      await nextTick();
+
+      // Should have 1 undo entry from adding the song
+      expect(undoCount.value).toBe(1);
+
+      // Get current song title
+      const originalTitle = store.sets[0].songs[0].title;
+
+      // "Update" the song with the same title (no actual change)
+      store.sets[0].songs[0].title = originalTitle;
+
+      await nextTick();
+
+      // Should still have 1 undo entry since nothing actually changed
+      expect(undoCount.value).toBe(1);
+    });
+
+    it("should not create history entry when saving set name without changes", async () => {
+      const { undoCount } = useHistory();
+
+      // Get current set name
+      const originalName = store.sets[0].name;
+
+      // "Update" the set with the same name (no actual change)
+      store.sets[0].name = originalName;
+
+      await nextTick();
+
+      // Should still have 0 undo entries since nothing actually changed
+      expect(undoCount.value).toBe(0);
+    });
+
     it("should track song additions", async () => {
       const { canUndo } = useHistory();
 

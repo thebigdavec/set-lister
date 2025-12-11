@@ -24,6 +24,61 @@ function deepClone<T>(value: T): T {
 }
 
 /**
+ * Deep equality check for history state comparison.
+ * Returns true if the two states are equal.
+ */
+function isStateEqual(a: HistoryState, b: HistoryState): boolean {
+  // Quick reference check
+  if (a === b) return true;
+
+  // Compare metadata
+  if (
+    a.metadata.setListName !== b.metadata.setListName ||
+    a.metadata.venue !== b.metadata.venue ||
+    a.metadata.date !== b.metadata.date ||
+    a.metadata.actName !== b.metadata.actName
+  ) {
+    return false;
+  }
+
+  // Compare sets count
+  if (a.sets.length !== b.sets.length) {
+    return false;
+  }
+
+  // Compare each set
+  for (let i = 0; i < a.sets.length; i++) {
+    const setA = a.sets[i];
+    const setB = b.sets[i];
+
+    if (
+      setA.id !== setB.id ||
+      setA.name !== setB.name ||
+      setA.songs.length !== setB.songs.length
+    ) {
+      return false;
+    }
+
+    // Compare songs
+    for (let j = 0; j < setA.songs.length; j++) {
+      const songA = setA.songs[j];
+      const songB = setB.songs[j];
+
+      if (
+        songA.id !== songB.id ||
+        songA.title !== songB.title ||
+        songA.key !== songB.key ||
+        songA.isEncoreMarker !== songB.isEncoreMarker
+      ) {
+        return false;
+      }
+    }
+  }
+
+  return true;
+}
+
+/**
  * Composable for managing undo/redo history of the store state.
  * Uses VueUse's useRefHistory under the hood.
  */
@@ -64,10 +119,17 @@ export function useHistory() {
     (newValue) => {
       if (isApplyingHistory.value) return;
 
-      historyState.value = {
+      const newState: HistoryState = {
         metadata: deepClone(newValue.metadata),
         sets: deepClone(newValue.sets),
       };
+
+      // Only create a new history entry if the state actually changed
+      if (isStateEqual(historyState.value, newState)) {
+        return;
+      }
+
+      historyState.value = newState;
     },
     { deep: true },
   );

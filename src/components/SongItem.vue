@@ -1,10 +1,21 @@
 <script setup lang="ts">
-import { computed, nextTick, onMounted, onUnmounted, ref, watch } from "vue";
+import {
+    computed,
+    inject,
+    nextTick,
+    onMounted,
+    onUnmounted,
+    ref,
+    watch,
+} from "vue";
 import { X, RotateCcw, Pencil, GripVertical } from "lucide-vue-next";
 import type { Song } from "../store";
+import type { UseSetlistNavigationReturn } from "../composables";
 
 const props = defineProps<{
     song: Song;
+    setIndex: number;
+    songIndex: number;
     isEncore?: boolean;
     isEncoreMarker?: boolean;
     markerIsLast?: boolean;
@@ -20,6 +31,7 @@ const isEditing = ref(false);
 const editTitle = ref(props.song.title);
 const editKey = ref(props.song.key);
 const isCancelling = ref(false);
+
 const isMarker = computed(() => props.isEncoreMarker === true);
 const markerIsLast = computed(() => props.markerIsLast === true);
 
@@ -43,6 +55,10 @@ function save(): void {
         key: editKey.value,
     });
     isEditing.value = false;
+    // Restore focus to the song item after saving
+    nextTick(() => {
+        songItemFocusRef.value?.focus();
+    });
 }
 
 function cancel(): void {
@@ -56,6 +72,10 @@ function cancel(): void {
     editKey.value = props.song.key;
     isEditing.value = false;
     isCancelling.value = false;
+    // Restore focus to the song item after canceling
+    nextTick(() => {
+        songItemFocusRef.value?.focus();
+    });
 }
 
 function handleKeyDown(e: KeyboardEvent): void {
@@ -69,13 +89,141 @@ function handleKeyDown(e: KeyboardEvent): void {
     }
 }
 
+// Inject navigation context from SetList
+const navigation = inject<UseSetlistNavigationReturn>("setlistNavigation");
+const songItemFocusRef = ref<HTMLDivElement | null>(null);
+
+// Register/unregister element for focus management (skip encore markers)
+// Handle the custom navigationEdit event from the global navigation handler
+// This is triggered on keydown, so we need to wait for keyup before entering edit mode
+function handleNavigationEdit(): void {
+    if (props.isEncoreMarker) return;
+    // Set pending edit - will be triggered on keyup
+    pendingEditKey.value = "Enter";
+    // Also listen for keyup on window to catch the release
+    const handleKeyUp = (e: KeyboardEvent) => {
+        if (e.key === "Enter" || e.key === "e") {
+            window.removeEventListener("keyup", handleKeyUp);
+            if (pendingEditKey.value) {
+                pendingEditKey.value = null;
+                isEditing.value = true;
+                nextTick(() => {
+                    titleInputRef.value?.focus();
+                });
+            }
+        }
+    };
+    window.addEventListener("keyup", handleKeyUp);
+}
+
 onMounted(() => {
     window.addEventListener("keydown", handleKeyDown);
+    if (navigation && songItemFocusRef.value && !props.isEncoreMarker) {
+        navigation.registerElement(
+            props.setIndex,
+            "song",
+            songItemFocusRef.value,
+            props.songIndex,
+        );
+        // Listen for custom event from navigation handler
+        songItemFocusRef.value.addEventListener(
+            "navigationEdit",
+            handleNavigationEdit,
+        );
+    }
 });
 
 onUnmounted(() => {
     window.removeEventListener("keydown", handleKeyDown);
+    if (navigation && !props.isEncoreMarker) {
+        navigation.unregisterElement(props.setIndex, "song", props.songIndex);
+    }
+    // Clean up custom event listener
+    if (songItemFocusRef.value) {
+        songItemFocusRef.value.removeEventListener(
+            "navigationEdit",
+            handleNavigationEdit,
+        );
+    }
 });
+
+// Watch for edit requests on this song
+watch(
+    () => navigation?.editRequested.value,
+    (request) => {
+        if (
+            request &&
+            request.setIndex === props.setIndex &&
+            request.type === "song" &&
+            request.songIndex === props.songIndex &&
+            !props.isEncoreMarker
+        ) {
+            isEditing.value = true;
+            nextTick(() => {
+                titleInputRef.value?.focus();
+            });
+            navigation?.clearEditRequest();
+        }
+    },
+);
+
+// Handle focus events to update navigation state
+function handleSongFocus(): void {
+    if (navigation && !props.isEncoreMarker) {
+        navigation.setFocus({
+            setIndex: props.setIndex,
+            type: "song",
+            songIndex: props.songIndex,
+        });
+    }
+}
+
+// Check if this song item is currently focused via keyboard navigation
+function isFocusedByNavigation(): boolean {
+    if (!navigation || props.isEncoreMarker) return false;
+    return navigation.isFocused(props.setIndex, "song", props.songIndex);
+}
+
+// Track if Enter/e is being held for edit trigger
+const pendingEditKey = ref<string | null>(null);
+
+// Handle keydown on the song item - mark that we want to edit on keyup
+function handleSongKeyDown(event: KeyboardEvent): void {
+    // Don't handle if modifiers are pressed (let shortcuts work)
+    if (event.ctrlKey || event.metaKey || event.altKey) return;
+
+    if (event.key === "Enter" || event.key === "e") {
+        event.preventDefault();
+        event.stopPropagation();
+        // Mark that this key should trigger edit on keyup
+        pendingEditKey.value = event.key;
+    }
+}
+
+// Handle keyup on the song item - actually enter edit mode
+function handleSongKeyUp(event: KeyboardEvent): void {
+    if (pendingEditKey.value && (event.key === "Enter" || event.key === "e")) {
+        pendingEditKey.value = null;
+        isEditing.value = true;
+        nextTick(() => {
+            titleInputRef.value?.focus();
+        });
+    }
+}
+
+// Handle keyup on title input
+function handleTitleKeyUp(event: KeyboardEvent): void {
+    if (event.key === "Enter") {
+        save();
+    }
+}
+
+// Handle keyup on key input
+function handleKeyInputKeyUp(event: KeyboardEvent): void {
+    if (event.key === "Enter") {
+        save();
+    }
+}
 
 const showDeleteConfirm = ref(false);
 const isDeleting = ref(false);
@@ -174,6 +322,7 @@ function handlePointerCancel(): void {
             'is-encore': isEncore,
             'is-marker': isEncoreMarker,
             'is-deleting': isDeleting,
+            'is-focused': isFocusedByNavigation(),
         }"
     >
         <div v-if="isMarker" class="marker-mode">
@@ -194,11 +343,16 @@ function handlePointerCancel(): void {
         <template v-else>
             <div
                 v-if="!isEditing"
+                ref="songItemFocusRef"
                 class="view-mode"
+                :tabindex="isEncoreMarker ? -1 : 0"
                 @pointerdown="handlePointerDown"
                 @pointermove="handlePointerMove"
                 @pointerup="handlePointerUp"
                 @pointercancel="handlePointerCancel"
+                @focus="handleSongFocus"
+                @keydown="handleSongKeyDown"
+                @keyup="handleSongKeyUp"
             >
                 <GripVertical class="grip" />
                 <div class="song-content">
@@ -225,14 +379,14 @@ function handlePointerCancel(): void {
                     ref="titleInputRef"
                     v-model="editTitle"
                     placeholder="Song Title"
-                    @keyup.enter="save"
+                    @keyup="handleTitleKeyUp"
                     @blur="save"
                 />
                 <input
                     v-model="editKey"
                     placeholder="Song Key"
                     class="key-input"
-                    @keyup.enter="save"
+                    @keyup="handleKeyInputKeyUp"
                     @blur="save"
                 />
                 <Button @click="save">Save</Button>
@@ -349,7 +503,8 @@ function handlePointerCancel(): void {
     white-space: nowrap;
 }
 
-.song-item:hover .actions {
+.song-item:hover .actions,
+.song-item.is-focused .actions {
     opacity: 1;
 }
 
@@ -364,7 +519,8 @@ function handlePointerCancel(): void {
     }
 }
 
-.song-item:hover .grip {
+.song-item:hover .grip,
+.song-item.is-focused .grip {
     opacity: 0.5;
 
     &:hover {
@@ -385,6 +541,21 @@ function handlePointerCancel(): void {
 .delete:hover {
     color: #ff4444;
     border-color: #ff4444;
+}
+
+.view-mode:focus {
+    outline: none;
+}
+
+.view-mode:focus-visible {
+    outline: 2px solid var(--accent-color);
+    outline-offset: 2px;
+    border-radius: 4px;
+}
+
+.song-item.is-focused .view-mode {
+    background-color: rgba(100, 108, 255, 0.1);
+    border-radius: 4px;
 }
 
 .edit-mode {

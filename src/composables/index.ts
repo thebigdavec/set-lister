@@ -22,3 +22,9 @@ export {
   type ConfirmDialogState,
   type AlertDialogState,
 } from "./useDialogs";
+export {
+  useSetlistNavigation,
+  type FocusedItem,
+  type UseSetlistNavigationOptions,
+  type UseSetlistNavigationReturn,
+} from "./useSetlistNavigation";
