@@ -13,6 +13,7 @@ import {
 import { Plus, Trash } from "lucide-vue-next";
 import Sortable, { MoveEvent, SortableEvent } from "sortablejs";
 import SongItem from "./SongItem.vue";
+import ConfirmDialog from "./base/ConfirmDialog.vue";
 import {
     addSongToSet,
     getSetDisplayName,
@@ -42,8 +43,6 @@ const { markerIndex, hasEncoreMarker, markerIsLast, isEncoreSongByIndex } =
         isLast: toRef(props, "isLast"),
     });
 
-defineEmits<{ (e: "remove-set"): void }>();
-
 // Compute the display name (custom name or dynamic "Set #")
 const displayName = computed(() => getSetDisplayName(props.set.id));
 
@@ -60,6 +59,9 @@ const newSongKey = ref("");
 
 // Track if set name is in edit mode
 const isEditingName = ref(false);
+
+// Track if delete confirmation dialog is shown
+const showDeleteConfirm = ref(false);
 
 // Register set name element for focus management
 onMounted(() => {
@@ -210,6 +212,21 @@ onMounted(() => {
 onUnmounted(() => {
     sortableInstance?.destroy();
 });
+
+const emit = defineEmits<{ (e: "remove-set"): void }>();
+
+function handleDeleteClick(): void {
+    showDeleteConfirm.value = true;
+}
+
+function confirmDelete(): void {
+    showDeleteConfirm.value = false;
+    emit("remove-set");
+}
+
+function cancelDelete(): void {
+    showDeleteConfirm.value = false;
+}
 </script>
 
 <template>
@@ -228,14 +245,31 @@ onUnmounted(() => {
             >
                 {{ displayName }}
             </h2>
-            <Button
-                @click="$emit('remove-set')"
-                size="sm"
-                class="no-print danger"
-            >
+            <Button @click="handleDeleteClick" class="no-print danger">
                 <Trash class="icon" />
-                Delete
+                Delete Set
             </Button>
+        </div>
+
+        <div class="add-song no-print">
+            Add {{ set.songs.length === 0 ? "first" : "next" }} song
+            <div class="add-song-form">
+                <input
+                    ref="titleInputRef"
+                    v-model="newSongTitle"
+                    placeholder="Song Title"
+                    @keyup.enter="addSong"
+                />
+                <input
+                    v-model="newSongKey"
+                    placeholder="Song Key"
+                    class="key-input"
+                    @keyup.enter="addSong"
+                />
+                <Button v-if="newSongTitle.length" @click="addSong">
+                    <Plus class="icon" /> Save
+                </Button>
+            </div>
         </div>
 
         <div ref="songListRef" class="song-list" :data-set-id="set.id">
@@ -254,27 +288,19 @@ onUnmounted(() => {
             />
         </div>
 
-        <div class="add-song no-print">
-            <input
-                ref="titleInputRef"
-                v-model="newSongTitle"
-                placeholder="Song Title"
-                @keyup.enter="addSong"
-            />
-            <input
-                v-model="newSongKey"
-                placeholder="Song Key"
-                class="key-input"
-                @keyup.enter="addSong"
-            />
-            <Button v-if="newSongTitle.length" @click="addSong">
-                <Plus class="icon" /> Save
-            </Button>
-        </div>
-
         <div v-if="isLast" class="encore-actions no-print">
             <p class="marker-hint">{{ encoreSummary }}</p>
         </div>
+
+        <ConfirmDialog
+            :show="showDeleteConfirm"
+            title="Delete Set"
+            :message="`Are you sure you want to delete '${displayName}'? This action cannot be undone.`"
+            confirm-text="Delete"
+            :danger="true"
+            @confirm="confirmDelete"
+            @cancel="cancelDelete"
+        />
     </div>
 </template>
 
@@ -318,18 +344,28 @@ onUnmounted(() => {
 }
 
 .add-song {
-    display: flex;
-    gap: 0.5rem;
-    margin-top: 0.25rem;
-    flex-wrap: wrap;
-}
+    text-align: center;
+    color: #bbbbbb;
+    background: #333;
+    padding: 0.5rem;
+    margin-block-end: 0.5rem;
+    border-block-end: 2px solid #242424;
+    border-radius: 3px;
 
-.add-song input {
-    border-color: var(--accent-color);
-}
+    .add-song-form {
+        display: flex;
+        gap: 0.5rem;
+        margin-top: 0.25rem;
+        flex-wrap: wrap;
 
-.add-song input:not(.key-input) {
-    flex: 1;
+        input {
+            border-color: var(--accent-color);
+
+            &:not(.key-input) {
+                flex: 1;
+            }
+        }
+    }
 }
 
 .sortable-ghost {
