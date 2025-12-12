@@ -426,12 +426,15 @@ function handlePointerCancel(): void {
                                 <Pencil class="icon" />
                             </Button>
                         </Tooltip>
-                        <Tooltip text="Delete song" position="top">
+                        <Tooltip
+                            text="Remove song from this set"
+                            position="top"
+                        >
                             <Button
                                 @click="confirmRemove"
                                 size="sm"
                                 class="delete"
-                                aria-label="Delete song"
+                                aria-label="Remove song from this set"
                             >
                                 <X class="icon" />
                             </Button>

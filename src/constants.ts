@@ -71,4 +71,6 @@ export const STORAGE_KEYS = {
   DATA: "set-lister-data",
   /** Key for storing the uppercase preview preference */
   PREVIEW_UPPERCASE: "set-lister-preview-uppercase",
+  /** Key for storing dismissed hints (first-time user tips) */
+  DISMISSED_HINTS: "set-lister-dismissed-hints",
 } as const;

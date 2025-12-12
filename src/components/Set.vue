@@ -276,6 +276,13 @@ function cancelDelete(): void {
             </div>
         </div>
 
+        <FirstTimeHint
+            v-if="setIndex === 0 && set.songs.length > 0"
+            hint-id="reorder-songs"
+            text="Tip: Use the grip icon to reorder songs and move the encore marker."
+            position="above"
+        />
+
         <div ref="songListRef" class="song-list" :data-set-id="set.id">
             <SongItem
                 v-for="(song, index) in set.songs"

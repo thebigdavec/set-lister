@@ -6,11 +6,13 @@ import App from "./App.vue";
 import Button from "./components/base/Button.vue";
 import Card from "./components/base/Card.vue";
 import ConfirmDialog from "./components/base/ConfirmDialog.vue";
+import FirstTimeHint from "./components/base/FirstTimeHint.vue";
 import Tooltip from "./components/base/Tooltip.vue";
 
 const app = createApp(App);
 app.component("Button", Button);
 app.component("Card", Card);
 app.component("ConfirmDialog", ConfirmDialog);
+app.component("FirstTimeHint", FirstTimeHint);
 app.component("Tooltip", Tooltip);
 app.mount("#app");

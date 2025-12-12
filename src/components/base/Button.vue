@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed } from "vue";
 
-const { size, nowrap } = defineProps({
+const { size, nowrap, tooltip } = defineProps({
     size: {
         type: String,
         default: "md",
@@ -12,6 +12,10 @@ const { size, nowrap } = defineProps({
         type: Boolean,
         default: false,
     },
+    tooltip: {
+        type: String,
+        default: "",
+    },
 });
 
 const buttonClasses = computed(() => ({
@@ -21,6 +25,14 @@ const buttonClasses = computed(() => ({
 </script>
 
 <template>
+    <Tooltip v-if="tooltip" :text="tooltip">
+        <button
+            aria-label="Button"
+            :aria-details="tooltip ? tooltip : 'Click me'"
+        >
+            <slot />
+        </button>
+    </Tooltip>
     <button :class="buttonClasses">
         <slot />
     </button>
@@ -35,7 +47,7 @@ button {
     cursor: pointer;
     border-radius: 8px;
     border: 1px solid oklch(from var(--card-bg) calc(l * 1.5) c h);
-    padding: 0.6em 1.2em;
+    /*padding: 0.6em 1.2em;*/
     transition: border-color 0.25s background-color 1s;
     background-color: var(--card-bg);
     color: var(--text-color);
