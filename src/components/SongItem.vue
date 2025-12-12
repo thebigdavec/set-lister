@@ -425,14 +425,12 @@ function handlePointerCancel(): void {
                     v-model="editTitle"
                     placeholder="Song Title"
                     @keyup="handleTitleKeyUp"
-                    @blur="save"
                 />
                 <input
                     v-model="editKey"
                     placeholder="Song Key"
                     class="key-input"
                     @keyup="handleKeyInputKeyUp"
-                    @blur="save"
                 />
                 <Button @click="save">Save</Button>
                 <Button @mousedown="isCancelling = true" @click="cancel">
