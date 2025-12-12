@@ -369,8 +369,9 @@ function handlePointerCancel(): void {
             'is-focused': isFocusedByNavigation(),
         }"
     >
-        <div v-if="isMarker" class="marker-mode">
-            <span class="marker-pill">&lt;Encores from here&gt;</span>
+        <template v-if="isMarker">
+            <GripVertical class="grip" />
+            <div class="marker-pill">Start of Encore section</div>
             <Button
                 v-if="!markerIsLast"
                 size="sm"
@@ -382,7 +383,7 @@ function handlePointerCancel(): void {
             >
                 <RotateCcw class="icon" />
             </Button>
-        </div>
+        </template>
 
         <template v-else>
             <div
@@ -406,7 +407,7 @@ function handlePointerCancel(): void {
                     >
                 </div>
                 <div class="song-meta">
-                    <span v-if="isEncore" class="encore-pill">Encores</span>
+                    <span v-if="isEncore" class="encore-pill">Encore</span>
                     <div class="actions no-print">
                         <Button @click="isEditing = true" size="sm">
                             <Pencil class="icon" />
@@ -454,22 +455,77 @@ function handlePointerCancel(): void {
 
 <style scoped>
 .song-item {
+    --into-hover: 350ms ease-in;
+    --into-hover-delay: 200ms;
+    --into-hover-quick: 200ms ease-in;
+    --out-of-hover: 100ms ease-out;
+
     padding-inline: 0.75rem;
     margin-block-end: 0.15rem;
     display: flex;
     align-items: center;
     background-color: #2a2a2a;
+    border-radius: 3px;
     transition:
-        transform 0.3s ease,
-        opacity 0.3s ease,
-        max-height 0.3s ease,
-        margin 0.3s ease,
-        padding 0.3s ease;
+        transform var(--out-of-hover),
+        opacity var(--out-of-hover),
+        max-height var(--out-of-hover),
+        margin var(--out-of-hover),
+        padding var(--out-of-hover);
     max-height: 100px;
     overflow: hidden;
 
     &:is(:nth-child(even)) {
         background-color: #242424;
+    }
+
+    &.is-marker {
+        background: linear-gradient(
+            45deg,
+            oklch(from var(--accent-color) calc(l * 0.4) c h),
+            oklch(from var(--accent-color) calc(l * 0.6) c h),
+            oklch(from var(--accent-color) calc(l * 0.4) c h)
+        );
+        border: 1px dashed var(--accent-color);
+        cursor: grab;
+        padding: 0.35rem 0.75rem;
+        display: grid;
+        grid-template-columns: 1fr auto 1fr;
+
+        .marker-pill {
+            flex: 1 0 0;
+            font-style: italic;
+            text-align: center;
+            letter-spacing: 0.1em;
+            color: #ffffff;
+            opacity: 0.6;
+            transition: opacity var(--out-of-hover);
+            text-transform: uppercase;
+            margin-inline: auto;
+        }
+
+        .marker-reset-btn {
+            color: white;
+            margin-left: auto;
+            opacity: 0.2;
+            transition: opacity var(--out-of-hover);
+        }
+
+        &:hover {
+            .marker-pill {
+                transition: opacity var(--into-hover);
+                opacity: 1;
+            }
+
+            .marker-reset-btn {
+                transition: opacity var(--into-hover) var(--into-hover-delay);
+                opacity: 0.8;
+
+                &:hover {
+                    opacity: 1;
+                }
+            }
+        }
     }
 
     @media (min-width: 768px) {
@@ -488,14 +544,6 @@ function handlePointerCancel(): void {
 .song-item.is-encore {
     border: 1px solid var(--accent-color);
     background-color: rgba(100, 108, 255, 0.15);
-}
-
-.song-item.is-marker {
-    border: 1px dashed var(--accent-color);
-    background-color: rgba(100, 108, 255, 0.08);
-    cursor: grab;
-    padding: 0.35rem 0.75rem;
-    justify-content: space-between;
 }
 
 .view-mode {
@@ -533,30 +581,28 @@ function handlePointerCancel(): void {
     display: flex;
     gap: 0.25rem;
     opacity: 0.2;
-    transition: opacity 100ms ease-out;
+    transition: opacity var(--out-of-hover);
 }
 
 .encore-pill {
-    font-size: 0.75rem;
     text-transform: uppercase;
-    letter-spacing: 0.08em;
-    padding: 0.125rem 0.5rem;
+    letter-spacing: 0.1em;
+    padding: 0.125rem 0.75rem;
     border-radius: 999px;
     background: rgba(100, 108, 255, 0.2);
     color: var(--accent-color);
-    white-space: nowrap;
 }
 
 .song-item:hover .actions,
 .song-item.is-focused .actions {
-    transition: opacity 0.4s ease-in;
+    transition: opacity var(--into-hover) var(--into-hover-delay);
     opacity: 1;
 }
 
 .grip {
     cursor: grab;
     opacity: 0.2;
-    transition: opacity 100ms ease-out;
+    transition: opacity var(--out-of-hover);
     flex-shrink: 0;
 
     &:active {
@@ -566,7 +612,7 @@ function handlePointerCancel(): void {
 
 .song-item:hover .grip,
 .song-item.is-focused .grip {
-    transition: opacity 250ms ease-in;
+    transition: opacity var(--into-hover-quick);
     opacity: 0.75;
 
     &:hover {
@@ -617,23 +663,5 @@ function handlePointerCancel(): void {
 
 .key-input {
     flex: 0 0 80px;
-}
-
-.marker-mode {
-    display: flex;
-    align-items: center;
-    width: 100%;
-    gap: 0.75rem;
-}
-
-.marker-pill {
-    font-size: 0.75rem;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-    color: var(--accent-color);
-}
-
-.marker-reset-btn {
-    margin-left: auto;
 }
 </style>
