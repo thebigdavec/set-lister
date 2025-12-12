@@ -532,8 +532,8 @@ function handlePointerCancel(): void {
 .actions {
     display: flex;
     gap: 0.25rem;
-    opacity: 0;
-    transition: opacity 0.2s;
+    opacity: 0.2;
+    transition: opacity 100ms ease-out;
 }
 
 .encore-pill {
@@ -549,13 +549,14 @@ function handlePointerCancel(): void {
 
 .song-item:hover .actions,
 .song-item.is-focused .actions {
+    transition: opacity 0.4s ease-in;
     opacity: 1;
 }
 
 .grip {
     cursor: grab;
-    opacity: 0;
-    transition: opacity 0.2s ease;
+    opacity: 0.2;
+    transition: opacity 100ms ease-out;
     flex-shrink: 0;
 
     &:active {
@@ -565,7 +566,8 @@ function handlePointerCancel(): void {
 
 .song-item:hover .grip,
 .song-item.is-focused .grip {
-    opacity: 0.5;
+    transition: opacity 250ms ease-in;
+    opacity: 0.75;
 
     &:hover {
         opacity: 1;
