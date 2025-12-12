@@ -13,7 +13,6 @@ import {
 import { Plus, Trash } from "lucide-vue-next";
 import Sortable, { MoveEvent, SortableEvent } from "sortablejs";
 import SongItem from "./SongItem.vue";
-import ConfirmDialog from "./base/ConfirmDialog.vue";
 import {
     addSongToSet,
     getSetDisplayName,
