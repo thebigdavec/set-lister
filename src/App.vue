@@ -206,12 +206,27 @@ watch(showPreview, async (value) => {
                     <input type="checkbox" v-model="uppercasePreview" />
                     Uppercase titles
                 </label>
-                <Button @click="printSets" class="primary">
-                    <Printer class="icon" /> Print
-                </Button>
-                <Button @click="closePreview" class="danger">
-                    <X class="icon" /> Close
-                </Button>
+                <Tooltip text="Print the setlist" position="bottom">
+                    <Button
+                        @click="printSets"
+                        class="primary"
+                        aria-label="Print setlist"
+                    >
+                        <Printer class="icon" /> Print
+                    </Button>
+                </Tooltip>
+                <Tooltip
+                    text="Close preview and return to editor"
+                    position="bottom"
+                >
+                    <Button
+                        @click="closePreview"
+                        class="danger"
+                        aria-label="Close preview"
+                    >
+                        <X class="icon" /> Close
+                    </Button>
+                </Tooltip>
             </div>
         </div>
 

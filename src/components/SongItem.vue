@@ -372,17 +372,21 @@ function handlePointerCancel(): void {
         <template v-if="isMarker">
             <GripVertical class="grip" />
             <div class="marker-pill">Start of Encore section</div>
-            <Button
+            <Tooltip
                 v-if="!markerIsLast"
-                size="sm"
-                class="icon-btn no-print marker-reset-btn delete"
-                type="button"
-                title="Reset encore marker to end"
-                aria-label="Reset encore marker to end"
-                @click.stop.prevent="$emit('reset-encore')"
+                text="Reset encore marker to end"
+                position="top"
             >
-                <RotateCcw class="icon" />
-            </Button>
+                <Button
+                    size="sm"
+                    class="icon-btn no-print marker-reset-btn delete"
+                    type="button"
+                    aria-label="Reset encore marker to end"
+                    @click.stop.prevent="$emit('reset-encore')"
+                >
+                    <RotateCcw class="icon" />
+                </Button>
+            </Tooltip>
         </template>
 
         <template v-else>
@@ -409,12 +413,25 @@ function handlePointerCancel(): void {
                 <div class="song-meta">
                     <span v-if="isEncore" class="encore-pill">Encore</span>
                     <div class="actions no-print">
-                        <Button @click="isEditing = true" size="sm">
-                            <Pencil class="icon" />
-                        </Button>
-                        <Button @click="confirmRemove" size="sm" class="delete">
-                            <X class="icon" />
-                        </Button>
+                        <Tooltip text="Edit song" position="top">
+                            <Button
+                                @click="isEditing = true"
+                                size="sm"
+                                aria-label="Edit song"
+                            >
+                                <Pencil class="icon" />
+                            </Button>
+                        </Tooltip>
+                        <Tooltip text="Delete song" position="top">
+                            <Button
+                                @click="confirmRemove"
+                                size="sm"
+                                class="delete"
+                                aria-label="Delete song"
+                            >
+                                <X class="icon" />
+                            </Button>
+                        </Tooltip>
                     </div>
                 </div>
             </div>

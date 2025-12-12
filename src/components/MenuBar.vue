@@ -90,64 +90,88 @@ onUnmounted(() => {
     <div class="menu-bar no-print" :class="{ 'mobile-open': isMobileMenuOpen }">
         <div>
             <div class="menu-items">
-                <Button
-                    @click="handleAction('new')"
-                    :title="`New Set List (${shortcuts.newDocument})`"
-                    nowrap
-                    class="action-item"
+                <Tooltip
+                    :text="`New Set List (${shortcuts.newDocument})`"
+                    position="bottom"
                 >
-                    <FilePlus class="icon" /> New
-                </Button>
-                <Button
-                    @click="handleAction('load')"
-                    :title="`Open Set List (${shortcuts.open})`"
-                    nowrap
-                    class="action-item"
+                    <Button
+                        @click="handleAction('new')"
+                        nowrap
+                        class="action-item"
+                        aria-describedby="tooltip-new"
+                    >
+                        <FilePlus class="icon" /> New
+                    </Button>
+                </Tooltip>
+                <Tooltip
+                    :text="`Open Set List (${shortcuts.open})`"
+                    position="bottom"
                 >
-                    <FolderOpen class="icon" /> Load
-                </Button>
+                    <Button
+                        @click="handleAction('load')"
+                        nowrap
+                        class="action-item"
+                        aria-describedby="tooltip-load"
+                    >
+                        <FolderOpen class="icon" /> Load
+                    </Button>
+                </Tooltip>
             </div>
             <div class="menu-items">
-                <Button
-                    @click="handleAction('save')"
-                    :title="`Save Set List (${shortcuts.save})`"
-                    class="action-item"
-                    nowrap
-                    :class="{ 'dirty-indicator-text': isDirty }"
+                <Tooltip
+                    :text="`Save Set List (${shortcuts.save})`"
+                    position="bottom"
                 >
-                    <Save class="icon" /> Save
-                    <span v-if="isDirty" class="dirty-indicator">*</span>
-                </Button>
-                <Button
-                    @click="handleAction('save-as')"
-                    :title="`Save Set List As (${shortcuts.saveAs})`"
-                    nowrap
-                    class="action-item"
+                    <Button
+                        @click="handleAction('save')"
+                        class="action-item"
+                        nowrap
+                        :class="{ 'dirty-indicator-text': isDirty }"
+                        aria-describedby="tooltip-save"
+                    >
+                        <Save class="icon" /> Save
+                        <span v-if="isDirty" class="dirty-indicator">*</span>
+                    </Button>
+                </Tooltip>
+                <Tooltip
+                    :text="`Save Set List As (${shortcuts.saveAs})`"
+                    position="bottom"
                 >
-                    <SaveAll class="icon" /> Save As
-                </Button>
+                    <Button
+                        @click="handleAction('save-as')"
+                        nowrap
+                        class="action-item"
+                        aria-describedby="tooltip-save-as"
+                    >
+                        <SaveAll class="icon" /> Save As
+                    </Button>
+                </Tooltip>
             </div>
         </div>
         <div>
             <div class="menu-items">
-                <Button
-                    @click="handleAction('undo')"
-                    :title="`Undo (${shortcuts.undo})`"
-                    nowrap
-                    class="action-item"
-                    :disabled="!canUndo"
-                >
-                    <Undo2 class="icon" /> Undo
-                </Button>
-                <Button
-                    @click="handleAction('redo')"
-                    :title="`Redo (${shortcuts.redo})`"
-                    nowrap
-                    class="action-item"
-                    :disabled="!canRedo"
-                >
-                    <Redo2 class="icon" /> Redo
-                </Button>
+                <Tooltip :text="`Undo (${shortcuts.undo})`" position="bottom">
+                    <Button
+                        @click="handleAction('undo')"
+                        nowrap
+                        class="action-item"
+                        :disabled="!canUndo"
+                        aria-describedby="tooltip-undo"
+                    >
+                        <Undo2 class="icon" /> Undo
+                    </Button>
+                </Tooltip>
+                <Tooltip :text="`Redo (${shortcuts.redo})`" position="bottom">
+                    <Button
+                        @click="handleAction('redo')"
+                        nowrap
+                        class="action-item"
+                        :disabled="!canRedo"
+                        aria-describedby="tooltip-redo"
+                    >
+                        <Redo2 class="icon" /> Redo
+                    </Button>
+                </Tooltip>
             </div>
         </div>
     </div>

@@ -9,7 +9,6 @@ import {
     toRef,
     watch,
 } from "vue";
-
 import { Plus, Trash } from "lucide-vue-next";
 import Sortable, { MoveEvent, SortableEvent } from "sortablejs";
 import SongItem from "./SongItem.vue";
@@ -244,10 +243,16 @@ function cancelDelete(): void {
             >
                 {{ displayName }}
             </h2>
-            <Button @click="handleDeleteClick" class="no-print danger">
-                <Trash class="icon" />
-                Delete Set
-            </Button>
+            <Tooltip text="Delete this set and all its songs" position="bottom">
+                <Button
+                    @click="handleDeleteClick"
+                    class="no-print danger"
+                    aria-label="Delete set"
+                >
+                    <Trash class="icon" />
+                    Delete Set
+                </Button>
+            </Tooltip>
         </div>
 
         <div class="add-song no-print">

@@ -59,38 +59,55 @@ onMounted(() => {
             <h2 v-else>Untitled Setlist</h2>
 
             <div class="set-list-actions">
-                <Button
+                <Tooltip
                     v-if="isEditingMetadata"
-                    class="danger"
-                    @click="toggleEditingMetadata"
-                    title="Finish editing details"
+                    text="Finish editing details"
+                    position="bottom"
                 >
-                    <X class="icon" /> Finish Editing
-                </Button>
-                <Button
-                    v-else
-                    @click="toggleEditingMetadata"
-                    title="Start editing details"
+                    <Button
+                        class="danger"
+                        @click="toggleEditingMetadata"
+                        aria-label="Finish editing details"
+                    >
+                        <X class="icon" /> Finish Editing
+                    </Button>
+                </Tooltip>
+                <Tooltip v-else text="Start editing details" position="bottom">
+                    <Button
+                        @click="toggleEditingMetadata"
+                        aria-label="Edit details"
+                    >
+                        <Pencil class="icon" /> Edit Details
+                    </Button>
+                </Tooltip>
+                <Tooltip
+                    :text="`Preview & Print (${shortcuts.print})`"
+                    position="bottom"
                 >
-                    <Pencil class="icon" /> Edit Details
-                </Button>
-                <Button
-                    @click="emit('export')"
-                    class="action-item"
-                    :title="`Preview & Print (${shortcuts.print})`"
-                    :disabled="!hasSets"
-                    nowrap
+                    <Button
+                        @click="emit('export')"
+                        class="action-item"
+                        :disabled="!hasSets"
+                        nowrap
+                        aria-label="Export PDF"
+                    >
+                        <FileDown class="icon" style="color: inherit" /> Export
+                        PDF
+                    </Button>
+                </Tooltip>
+                <Tooltip
+                    :text="`Add Set (${shortcuts.addSet})`"
+                    position="bottom"
                 >
-                    <FileDown class="icon" style="color: inherit" /> Export PDF
-                </Button>
-                <Button
-                    @click="emit('add-set')"
-                    :title="`Add Set (${shortcuts.addSet})`"
-                    nowrap
-                    class="action-item primary"
-                >
-                    <Plus class="icon" /> Add Set
-                </Button>
+                    <Button
+                        @click="emit('add-set')"
+                        nowrap
+                        class="action-item primary"
+                        aria-label="Add set"
+                    >
+                        <Plus class="icon" /> Add Set
+                    </Button>
+                </Tooltip>
             </div>
         </div>
         <div v-if="isEditingMetadata" class="metadata-grid">
