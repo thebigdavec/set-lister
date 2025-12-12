@@ -370,7 +370,9 @@ function handlePointerCancel(): void {
         }"
     >
         <template v-if="isMarker">
-            <GripVertical class="grip" />
+            <Tooltip text="Grab to reorder" position="top">
+                <GripVertical class="grip" />
+            </Tooltip>
             <div class="marker-pill">Start of Encore section</div>
             <Tooltip
                 v-if="!markerIsLast"
@@ -403,7 +405,9 @@ function handlePointerCancel(): void {
                 @keydown="handleSongKeyDown"
                 @keyup="handleSongKeyUp"
             >
-                <GripVertical class="grip" />
+                <Tooltip text="Grab to reorder" position="top">
+                    <GripVertical class="grip" />
+                </Tooltip>
                 <div class="song-content">
                     <span class="song-title">{{ song.title }}</span>
                     <span v-if="song.key" class="song-key"
