@@ -315,7 +315,6 @@ function handleKeyInputKeyUp(event: KeyboardEvent): void {
 
 const showDeleteConfirm = ref(false);
 const isDeleting = ref(false);
-const songItemRef = ref<HTMLDivElement | null>(null);
 
 function confirmRemove(): void {
 	showDeleteConfirm.value = true;
@@ -422,7 +421,7 @@ function handlePointerCancel(): void {
 			<Button
 				v-if="!markerIsLast"
 				size="sm"
-				class="icon-btn no-print marker-reset-btn delete"
+				class="icon-btn no-print marker-reset-btn"
 				type="button"
 				tooltip="Reset encore marker to end"
 				aria-label="Reset encore marker to end"
@@ -552,8 +551,6 @@ function handlePointerCancel(): void {
 		border: 1px dashed var(--accent-color);
 		cursor: grab;
 		padding: 0.35rem 0.75rem;
-		display: grid;
-		grid-template-columns: 1fr auto 1fr;
 
 		.marker-pill {
 			flex: 1 0 0;
@@ -566,7 +563,6 @@ function handlePointerCancel(): void {
 			text-transform: uppercase;
 			margin-inline: auto;
 		}
-
 		.marker-reset-btn {
 			color: white;
 			margin-left: auto;
