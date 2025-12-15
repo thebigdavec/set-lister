@@ -100,7 +100,7 @@ onUnmounted(() => {
                         class="action-item"
                         aria-describedby="tooltip-new"
                     >
-                        <FilePlus class="icon" /> New
+                        <FilePlus class="icon" /> New Set List
                     </Button>
                 </Tooltip>
                 <Tooltip
@@ -113,7 +113,7 @@ onUnmounted(() => {
                         class="action-item"
                         aria-describedby="tooltip-load"
                     >
-                        <FolderOpen class="icon" /> Load
+                        <FolderOpen class="icon" /> Open Set List
                     </Button>
                 </Tooltip>
             </div>
@@ -129,7 +129,7 @@ onUnmounted(() => {
                         :class="{ 'dirty-indicator-text': isDirty }"
                         aria-describedby="tooltip-save"
                     >
-                        <Save class="icon" /> Save
+                        <Save class="icon" /> Save Set List
                         <span v-if="isDirty" class="dirty-indicator">*</span>
                     </Button>
                 </Tooltip>
@@ -143,7 +143,7 @@ onUnmounted(() => {
                         class="action-item"
                         aria-describedby="tooltip-save-as"
                     >
-                        <SaveAll class="icon" /> Save As
+                        <SaveAll class="icon" /> Save A Copy
                     </Button>
                 </Tooltip>
             </div>
