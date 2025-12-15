@@ -9,9 +9,10 @@ import {
     toRef,
     watch,
 } from "vue";
-import { Plus, Trash } from "lucide-vue-next";
+import { Trash } from "lucide-vue-next";
 import Sortable, { MoveEvent, SortableEvent } from "sortablejs";
 import SongItem from "./SongItem.vue";
+import AddSong from "./AddSong.vue";
 import {
     addSongToSet,
     getSetDisplayName,
@@ -48,12 +49,9 @@ const displayName = computed(() => getSetDisplayName(props.set.id));
 const navigation = inject<UseSetlistNavigationReturn>("setlistNavigation");
 
 const songListRef = ref<HTMLDivElement | null>(null);
-const titleInputRef = ref<HTMLInputElement | null>(null);
+const addSongRef = ref<InstanceType<typeof AddSong> | null>(null);
 const setNameRef = ref<HTMLHeadingElement | null>(null);
 let sortableInstance: Sortable | null = null;
-
-const newSongTitle = ref("");
-const newSongKey = ref("");
 
 // Track if set name is in edit mode
 const isEditingName = ref(false);
@@ -135,19 +133,14 @@ const encoreSummary = computed(() => {
     return "Drag the <encore> entry to choose where encores begin.";
 });
 
-async function addSong(): Promise<void> {
-    if (!newSongTitle.value.trim()) return;
-
-    addSongToSet(props.set.id, {
-        title: newSongTitle.value,
-        key: newSongKey.value,
-    });
-
-    newSongTitle.value = "";
-    newSongKey.value = "";
+async function handleAddSong(payload: {
+    title: string;
+    key: string;
+}): Promise<void> {
+    addSongToSet(props.set.id, payload);
 
     await nextTick();
-    titleInputRef.value?.focus();
+    addSongRef.value?.focusTitleInput();
 }
 
 function handleTitleBlur(event: FocusEvent): void {
@@ -255,26 +248,11 @@ function cancelDelete(): void {
             </Tooltip>
         </div>
 
-        <div class="add-song no-print">
-            Add {{ set.songs.length === 0 ? "first" : "next" }} song
-            <div class="add-song-form">
-                <input
-                    ref="titleInputRef"
-                    v-model="newSongTitle"
-                    placeholder="Song Title"
-                    @keyup.enter="addSong"
-                />
-                <input
-                    v-model="newSongKey"
-                    placeholder="Song Key"
-                    class="key-input"
-                    @keyup.enter="addSong"
-                />
-                <Button v-if="newSongTitle.length" @click="addSong">
-                    <Plus class="icon" /> Save
-                </Button>
-            </div>
-        </div>
+        <AddSong
+            ref="addSongRef"
+            :song-count="set.songs.length"
+            @add="handleAddSong"
+        />
 
         <FirstTimeHint
             v-if="setIndex === 0 && set.songs.length > 0"
@@ -352,31 +330,6 @@ function cancelDelete(): void {
     display: flex;
     flex-direction: column;
     gap: 0.1rem;
-}
-
-.add-song {
-    text-align: center;
-    color: #bbbbbb;
-    background: #333;
-    padding: 0.5rem;
-    margin-block-end: 0.5rem;
-    border-block-end: 2px solid #242424;
-    border-radius: 3px;
-
-    .add-song-form {
-        display: flex;
-        gap: 0.5rem;
-        margin-top: 0.25rem;
-        flex-wrap: wrap;
-
-        input {
-            border-color: var(--accent-color);
-
-            &:not(.key-input) {
-                flex: 1;
-            }
-        }
-    }
 }
 
 .sortable-ghost {
