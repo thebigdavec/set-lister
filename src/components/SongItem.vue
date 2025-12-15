@@ -8,7 +8,7 @@ import {
 	ref,
 	watch,
 } from "vue";
-import { X, RotateCcw, Pencil, GripVertical } from "lucide-vue-next";
+import { X, Check, RotateCcw, Pencil, GripVertical } from "lucide-vue-next";
 import type { Song } from "../store";
 import type { UseSetlistNavigationReturn } from "../composables";
 
@@ -461,10 +461,9 @@ function handlePointerCancel(): void {
 					class="key-input"
 					@keyup="handleKeyInputKeyUp"
 				/>
-				<Button @click="save">Save</Button>
-				<Button @mousedown="isCancelling = true" @click="cancel">
-					Cancel
-				</Button>
+				<Button class="success" size="sm" @click="save"
+					><Check class="icon" /> Done</Button
+				>
 			</div>
 		</template>
 

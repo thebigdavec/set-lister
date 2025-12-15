@@ -128,6 +128,21 @@ button {
 		}
 	}
 
+	&.success {
+		background-color: oklch(
+			from var(--success-color) calc(l * 0.8) c h / 0.3
+		);
+		color: white;
+
+		&:hover {
+			background-color: oklch(from var(--success-color) calc(l * 1) c h);
+			border-color: oklch(from var(--success-color) calc(l * 1) c h);
+			transition:
+				border-color var(--enter-hover),
+				background-color var(--enter-hover);
+		}
+	}
+
 	&.danger {
 		background-color: oklch(
 			from var(--error-color) calc(l * 0.8) c h / 0.3
