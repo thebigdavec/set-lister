@@ -84,8 +84,9 @@ onMounted(() => {
 		</div>
 		<div v-if="isEditingMetadata" class="metadata-grid">
 			<div class="input-group">
-				<label>Set List Name</label>
+				<label for="setListName">Set List Name</label>
 				<input
+					id="setListName"
 					v-model="store.metadata.setListName"
 					placeholder="e.g. Summer Tour 2024"
 					@blur="
@@ -96,10 +97,10 @@ onMounted(() => {
 					@keyup.enter="blurInputOnEnter"
 				/>
 			</div>
-
 			<div class="input-group">
-				<label>Act Name</label>
+				<label for="actName">Act Name</label>
 				<input
+					id="actName"
 					v-model="store.metadata.actName"
 					placeholder="e.g. The Beatles"
 					@blur="
@@ -112,8 +113,9 @@ onMounted(() => {
 			</div>
 
 			<div class="input-group">
-				<label>Venue</label>
+				<label for="venue">Venue</label>
 				<input
+					id="venue"
 					v-model="store.metadata.venue"
 					placeholder="e.g. The O2 Arena"
 					@blur="updateMetadata({ venue: store.metadata.venue })"
@@ -122,8 +124,9 @@ onMounted(() => {
 			</div>
 
 			<div class="input-group">
-				<label>Date</label>
+				<label for="date">Date</label>
 				<input
+					id="date"
 					v-model="store.metadata.date"
 					type="date"
 					@blur="updateMetadata({ date: store.metadata.date })"
@@ -192,6 +195,7 @@ onMounted(() => {
 	align-items: center;
 	gap: 1rem;
 	flex-wrap: wrap;
+	margin-block-start: 1em;
 }
 
 .set-list-actions {
