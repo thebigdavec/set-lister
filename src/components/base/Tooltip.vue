@@ -17,8 +17,8 @@ const props = withDefaults(
 	{
 		text: "",
 		position: "top",
-		showDelay: 300,
-		hideDelay: 100,
+		showDelay: 800,
+		hideDelay: 150,
 		disabled: false,
 	},
 );

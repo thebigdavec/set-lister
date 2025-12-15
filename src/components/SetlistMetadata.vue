@@ -6,7 +6,7 @@ import {
 	MapPin,
 	Calendar,
 	Pencil,
-	X,
+	Check,
 	Plus,
 } from "lucide-vue-next";
 import { store, updateMetadata } from "../store";
@@ -69,8 +69,9 @@ onMounted(() => {
 				@click="toggleEditingMetadata"
 				tooltip="Finish editing details"
 				aria-label="Finish editing details"
+				class="success"
 			>
-				<X class="icon" /> Done
+				<Check class="icon" /> Done
 			</Button>
 			<Button
 				v-else
