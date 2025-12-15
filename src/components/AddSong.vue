@@ -131,6 +131,7 @@ defineExpose({
 
 	.add-song-form {
 		display: flex;
+		justify-content: space-between;
 		gap: 0.5rem;
 		margin-top: 0.25rem;
 		flex-wrap: wrap;
