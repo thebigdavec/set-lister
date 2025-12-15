@@ -34,7 +34,7 @@ const buttonClasses = computed(() => ({
             <slot />
         </button>
     </Tooltip>
-    <button :class="buttonClasses">
+    <button v-else :class="buttonClasses">
         <slot />
     </button>
 </template>
