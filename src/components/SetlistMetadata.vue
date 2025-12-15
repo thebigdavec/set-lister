@@ -14,14 +14,22 @@ import { shortcuts } from "../utils/keyboardShortcuts";
 
 const isEditingMetadata = ref(false);
 
-const emit = defineEmits(["add-set", "export"]);
+const emit = defineEmits(["add-set", "export", "update:showSongNumbers"]);
 
-defineProps({
+const props = defineProps({
 	hasSets: {
 		type: Boolean,
 		default: false,
 	},
+	showSongNumbers: {
+		type: Boolean,
+		default: false,
+	},
 });
+
+function toggleSongNumbers() {
+	emit("update:showSongNumbers", !props.showSongNumbers);
+}
 
 const toggleEditingMetadata = () => {
 	isEditingMetadata.value = !isEditingMetadata.value;
@@ -140,32 +148,45 @@ onMounted(() => {
 				{{ store.metadata.date }}
 			</div>
 		</div>
-		<div class="set-list-actions">
-			<Tooltip
-				:text="`Preview & Print (${shortcuts.print})`"
-				position="bottom"
-			>
-				<Button
-					@click="emit('export')"
-					class="action-item"
-					:disabled="!hasSets"
-					nowrap
-					aria-label="Export PDF"
+		<div class="set-list-footer">
+			<label class="view-option" :class="{ active: showSongNumbers }">
+				<input
+					type="checkbox"
+					:checked="showSongNumbers"
+					@change="toggleSongNumbers"
+				/>
+				<span>Show song numbers</span>
+			</label>
+			<div class="set-list-actions">
+				<Tooltip
+					:text="`Preview & Print (${shortcuts.print})`"
+					position="bottom"
 				>
-					<Share class="icon" style="color: inherit" />
-					Export/Print Set List
-				</Button>
-			</Tooltip>
-			<Tooltip :text="`Add Set (${shortcuts.addSet})`" position="bottom">
-				<Button
-					@click="emit('add-set')"
-					nowrap
-					class="action-item primary"
-					aria-label="Add set"
+					<Button
+						@click="emit('export')"
+						class="action-item"
+						:disabled="!hasSets"
+						nowrap
+						aria-label="Export PDF"
+					>
+						<Share class="icon" style="color: inherit" />
+						Export/Print Set List
+					</Button>
+				</Tooltip>
+				<Tooltip
+					:text="`Add Set (${shortcuts.addSet})`"
+					position="bottom"
 				>
-					<Plus class="icon" /> Add Set
-				</Button>
-			</Tooltip>
+					<Button
+						@click="emit('add-set')"
+						nowrap
+						class="action-item primary"
+						aria-label="Add set"
+					>
+						<Plus class="icon" /> Add Set
+					</Button>
+				</Tooltip>
+			</div>
 		</div>
 	</Card>
 </template>
@@ -176,12 +197,39 @@ onMounted(() => {
 	grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
 	gap: 1rem;
 }
+.set-list-footer {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	gap: 1rem;
+	flex-wrap: wrap;
+}
+
 .set-list-actions {
 	display: flex;
 	flex-wrap: wrap;
 	justify-content: flex-end;
 	gap: 0.5em;
 	align-items: center;
+}
+
+.view-option {
+	display: flex;
+	align-items: center;
+	gap: 0.35rem;
+	font-size: 0.8rem;
+	color: #888;
+	cursor: pointer;
+	transition: color 0.2s ease;
+	user-select: none;
+
+	&:hover {
+		color: #bbb;
+	}
+
+	&.active {
+		color: #ddd;
+	}
 }
 .input-group {
 	display: flex;

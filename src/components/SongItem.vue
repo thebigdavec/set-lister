@@ -583,7 +583,7 @@ function handlePointerCancel(): void {
 
 .song-number {
 	font-size: 0.75rem;
-	color: #666;
+	color: #888;
 	min-width: 1.5em;
 	text-align: right;
 	font-variant-numeric: tabular-nums;

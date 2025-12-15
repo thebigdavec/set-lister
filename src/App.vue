@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, nextTick, onMounted, onUnmounted, ref, watch } from "vue";
-import { Hash, Printer, X } from "lucide-vue-next";
+import { Printer, X } from "lucide-vue-next";
 import { addSet, isDirty, lastSetId, resetStore, store } from "./store";
 import SetList from "./components/SetList.vue";
 import SetlistMetadata from "./components/SetlistMetadata.vue";
@@ -209,58 +209,50 @@ watch(showPreview, async (value) => {
 
 			<SetlistMetadata
 				:has-sets="previewSets.length > 0"
+				v-model:show-song-numbers="showEditorNumbers"
 				@add-set="addSet"
 				@export="togglePreview"
 			/>
 		</header>
-
-		<div class="view-options no-print">
-			<label class="view-option" :class="{ active: showEditorNumbers }">
-				<input type="checkbox" v-model="showEditorNumbers" />
-				<span>Show song numbers</span>
-			</label>
-		</div>
 
 		<SetList :show-song-numbers="showEditorNumbers" />
 	</div>
 
 	<div v-else class="print-preview">
 		<div class="preview-controls no-print">
-			<div class="preview-settings">
-				<label class="uppercase-toggle">
-					<input type="checkbox" v-model="showGuides" />
-					Show guides
-				</label>
-				<label class="uppercase-toggle">
-					<input type="checkbox" v-model="uppercasePreview" />
-					Uppercase titles
-				</label>
-				<label class="uppercase-toggle">
-					<input type="checkbox" v-model="showPreviewNumbers" />
-					Song numbers
-				</label>
-				<Tooltip text="Print the setlist" position="bottom">
-					<Button
-						@click="printSets"
-						class="primary"
-						aria-label="Print setlist"
-					>
-						<Printer class="icon" /> Print
-					</Button>
-				</Tooltip>
-				<Tooltip
-					text="Close preview and return to editor"
-					position="bottom"
+			<label class="preview-control">
+				<input type="checkbox" v-model="showGuides" />
+				Show guides
+			</label>
+			<label class="preview-control">
+				<input type="checkbox" v-model="uppercasePreview" />
+				Uppercase titles
+			</label>
+			<label class="preview-control">
+				<input type="checkbox" v-model="showPreviewNumbers" />
+				Song numbers
+			</label>
+			<Tooltip text="Print the setlist" position="bottom">
+				<Button
+					@click="printSets"
+					class="primary"
+					aria-label="Print setlist"
 				>
-					<Button
-						@click="closePreview"
-						class="danger"
-						aria-label="Close preview"
-					>
-						<X class="icon" /> Close
-					</Button>
-				</Tooltip>
-			</div>
+					<Printer class="icon" /> Print
+				</Button>
+			</Tooltip>
+			<Tooltip
+				text="Close preview and return to editor"
+				position="bottom"
+			>
+				<Button
+					@click="closePreview"
+					class="danger"
+					aria-label="Close preview"
+				>
+					<X class="icon" /> Close
+				</Button>
+			</Tooltip>
 		</div>
 
 		<div ref="previewRef" class="preview-content">
@@ -345,49 +337,6 @@ footer {
 	font-size: 0.9rem;
 }
 
-/* View options bar */
-.view-options {
-	display: flex;
-	gap: 1rem;
-	margin-bottom: 1rem;
-	padding: 0.25rem 0;
-}
-
-.view-option {
-	display: flex;
-	align-items: center;
-	gap: 0.35rem;
-	font-size: 0.8rem;
-	color: #888;
-	cursor: pointer;
-	transition: color 0.2s ease;
-	user-select: none;
-
-	.icon {
-		width: 14px;
-		height: 14px;
-		opacity: 0.5;
-		transition: opacity 0.2s ease;
-	}
-
-	&:hover {
-		color: #bbb;
-
-		.icon {
-			opacity: 0.8;
-		}
-	}
-
-	&.active {
-		color: #ddd;
-
-		.icon {
-			opacity: 1;
-			color: var(--accent-color);
-		}
-	}
-}
-
 /* Preview Styles */
 .print-preview {
 	position: fixed;
@@ -409,37 +358,18 @@ footer {
 	background: #222;
 	border: 1px solid #444;
 	padding: 0.5rem 1rem;
-	border-radius: 6px;
 	box-shadow: 0 2px 4px rgba(0, 0, 0, 0.35);
 }
 
-.preview-actions {
+.preview-control {
 	display: flex;
 	gap: 0.5rem;
-	align-items: center;
-}
-
-.preview-settings {
-	display: flex;
-	gap: 0.5rem;
-	> * {
-		background: #333;
-		border: none;
-		color: #ddd;
-		padding: 0.6rem 1rem;
-		cursor: pointer;
-		border-radius: 6px;
-		display: flex;
-		align-items: center;
-		gap: 0.5rem;
-		font-size: 0.85rem;
-		color: #eee;
-		text-transform: uppercase;
-		letter-spacing: 0.05em;
-		input {
-			accent-color: var(--accent-color);
-		}
-	}
+	background: #444;
+	border: 1px solid #666;
+	cursor: pointer;
+	padding: 0.5rem 1rem;
+	border-radius: 4px;
+	transition: background-color 0.2s ease;
 }
 
 .preview-content {
