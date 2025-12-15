@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, nextTick, onMounted, onUnmounted, ref, watch } from "vue";
-import { Printer, X } from "lucide-vue-next";
+import { Hash, Printer, X } from "lucide-vue-next";
 import { addSet, isDirty, lastSetId, resetStore, store } from "./store";
 import SetList from "./components/SetList.vue";
 import SetlistMetadata from "./components/SetlistMetadata.vue";
@@ -8,13 +8,13 @@ import SetPreview from "./components/SetPreview.vue";
 import MenuBar from "./components/MenuBar.vue";
 import { STORAGE_KEYS } from "./constants";
 import {
-    useFileOperations,
-    useHistory,
-    useKeyboardShortcuts,
-    usePreviewScaling,
-    useDialogs,
-    createEditShortcuts,
-    createPreviewShortcuts,
+	useFileOperations,
+	useHistory,
+	useKeyboardShortcuts,
+	usePreviewScaling,
+	useDialogs,
+	createEditShortcuts,
+	createPreviewShortcuts,
 } from "./composables";
 
 // =============================================================================
@@ -27,13 +27,15 @@ const uppercasePreview = ref(false);
 const showGuides = ref(false);
 const previewScale = ref(1);
 const showNewDialog = ref(false);
+const showEditorNumbers = ref(false);
+const showPreviewNumbers = ref(false);
 
 // =============================================================================
 // Computed Properties
 // =============================================================================
 
 const previewSets = computed(() =>
-    store.sets.filter((set) => set.songs.length > 0),
+	store.sets.filter((set) => set.songs.length > 0),
 );
 
 // =============================================================================
@@ -42,13 +44,13 @@ const previewSets = computed(() =>
 
 // Dialog management for confirmations and alerts
 const {
-    confirmDialog,
-    alertDialog,
-    showConfirm,
-    showAlert,
-    handleConfirm: handleDialogConfirm,
-    handleCancel: handleDialogCancel,
-    handleAlertOk,
+	confirmDialog,
+	alertDialog,
+	showConfirm,
+	showAlert,
+	handleConfirm: handleDialogConfirm,
+	handleCancel: handleDialogCancel,
+	handleAlertOk,
 } = useDialogs();
 
 // History management (undo/redo)
@@ -56,26 +58,27 @@ const { undo, redo, canUndo, canRedo, clearHistory } = useHistory();
 
 // File operations (save, load, beforeunload)
 const {
-    fileInput,
-    saveToDisk,
-    loadFromDisk,
-    clearFileHandle,
-    handleBeforeUnload,
+	fileInput,
+	saveToDisk,
+	loadFromDisk,
+	clearFileHandle,
+	handleBeforeUnload,
 } = useFileOperations({ showConfirm, showAlert, onLoad: clearHistory });
 
 // Preview scaling and sizing
 const {
-    previewSheetStyle,
-    previewWrapperStyle,
-    updatePreviewScale,
-    handlePreviewResize,
-    applyPreviewSizing,
-    printSets,
+	previewSheetStyle,
+	previewWrapperStyle,
+	updatePreviewScale,
+	handlePreviewResize,
+	applyPreviewSizing,
+	printSets,
 } = usePreviewScaling(previewScale, {
-    previewRef,
-    showPreview,
-    uppercasePreview,
-    previewSets,
+	previewRef,
+	showPreview,
+	uppercasePreview,
+	showNumbers: showPreviewNumbers,
+	previewSets,
 });
 
 // =============================================================================
@@ -83,33 +86,33 @@ const {
 // =============================================================================
 
 function startNew(): void {
-    if (!isDirty.value) {
-        resetStore();
-        clearFileHandle();
-        return;
-    }
-    showNewDialog.value = true;
+	if (!isDirty.value) {
+		resetStore();
+		clearFileHandle();
+		return;
+	}
+	showNewDialog.value = true;
 }
 
 function confirmNew(): void {
-    resetStore();
-    clearFileHandle();
-    clearHistory();
-    showNewDialog.value = false;
+	resetStore();
+	clearFileHandle();
+	clearHistory();
+	showNewDialog.value = false;
 }
 
 function cancelNew(): void {
-    showNewDialog.value = false;
+	showNewDialog.value = false;
 }
 
 async function togglePreview(): Promise<void> {
-    showPreview.value = true;
-    await applyPreviewSizing();
-    updatePreviewScale();
+	showPreview.value = true;
+	await applyPreviewSizing();
+	updatePreviewScale();
 }
 
 function closePreview(): void {
-    showPreview.value = false;
+	showPreview.value = false;
 }
 
 // =============================================================================
@@ -117,21 +120,21 @@ function closePreview(): void {
 // =============================================================================
 
 useKeyboardShortcuts({
-    shortcuts: createEditShortcuts({
-        newDocument: startNew,
-        save: () => saveToDisk(),
-        saveAs: () => saveToDisk({ altKey: true }),
-        open: loadFromDisk,
-        togglePreview,
-        addSet,
-        undo,
-        redo,
-    }),
-    previewShortcuts: createPreviewShortcuts({
-        closePreview,
-        print: printSets,
-    }),
-    isPreviewMode: showPreview,
+	shortcuts: createEditShortcuts({
+		newDocument: startNew,
+		save: () => saveToDisk(),
+		saveAs: () => saveToDisk({ altKey: true }),
+		open: loadFromDisk,
+		togglePreview,
+		addSet,
+		undo,
+		redo,
+	}),
+	previewShortcuts: createPreviewShortcuts({
+		closePreview,
+		print: printSets,
+	}),
+	isPreviewMode: showPreview,
 });
 
 // =============================================================================
@@ -139,308 +142,382 @@ useKeyboardShortcuts({
 // =============================================================================
 
 onMounted(() => {
-    const savedUppercase = localStorage.getItem(STORAGE_KEYS.PREVIEW_UPPERCASE);
-    uppercasePreview.value = savedUppercase === "true";
-    window.addEventListener("beforeunload", handleBeforeUnload);
-    window.addEventListener("resize", handlePreviewResize);
+	const savedUppercase = localStorage.getItem(STORAGE_KEYS.PREVIEW_UPPERCASE);
+	uppercasePreview.value = savedUppercase === "true";
+	const savedEditorNumbers = localStorage.getItem(
+		STORAGE_KEYS.EDITOR_NUMBERING,
+	);
+	showEditorNumbers.value = savedEditorNumbers === "true";
+	const savedPreviewNumbers = localStorage.getItem(
+		STORAGE_KEYS.PREVIEW_NUMBERING,
+	);
+	showPreviewNumbers.value = savedPreviewNumbers === "true";
+	window.addEventListener("beforeunload", handleBeforeUnload);
+	window.addEventListener("resize", handlePreviewResize);
 });
 
 onUnmounted(() => {
-    window.removeEventListener("beforeunload", handleBeforeUnload);
-    window.removeEventListener("resize", handlePreviewResize);
+	window.removeEventListener("beforeunload", handleBeforeUnload);
+	window.removeEventListener("resize", handlePreviewResize);
 });
 
 watch(uppercasePreview, async (value) => {
-    localStorage.setItem(STORAGE_KEYS.PREVIEW_UPPERCASE, String(value));
-    if (showPreview.value) {
-        await applyPreviewSizing();
-        updatePreviewScale();
-    }
+	localStorage.setItem(STORAGE_KEYS.PREVIEW_UPPERCASE, String(value));
+	if (showPreview.value) {
+		await applyPreviewSizing();
+		updatePreviewScale();
+	}
+});
+
+watch(showEditorNumbers, (value) => {
+	localStorage.setItem(STORAGE_KEYS.EDITOR_NUMBERING, String(value));
+});
+
+watch(showPreviewNumbers, async (value) => {
+	localStorage.setItem(STORAGE_KEYS.PREVIEW_NUMBERING, String(value));
+	if (showPreview.value) {
+		await applyPreviewSizing();
+	}
 });
 
 watch(showPreview, async (value) => {
-    if (value) {
-        await nextTick();
-        updatePreviewScale();
-    } else {
-        previewScale.value = 1;
-    }
+	if (value) {
+		await nextTick();
+		updatePreviewScale();
+	} else {
+		previewScale.value = 1;
+	}
 });
 </script>
 
 <template>
-    <div v-if="!showPreview" class="app-container">
-        <header class="no-print">
-            <h1>Set Lister</h1>
+	<div v-if="!showPreview" class="app-container">
+		<header class="no-print">
+			<h1>Set Lister</h1>
 
-            <MenuBar
-                :is-dirty="isDirty"
-                :can-undo="canUndo"
-                :can-redo="canRedo"
-                @new="startNew"
-                @load="loadFromDisk"
-                @save="saveToDisk"
-                @save-as="saveToDisk({ altKey: true })"
-                @undo="undo"
-                @redo="redo"
-            />
+			<MenuBar
+				:is-dirty="isDirty"
+				:can-undo="canUndo"
+				:can-redo="canRedo"
+				@new="startNew"
+				@load="loadFromDisk"
+				@save="saveToDisk"
+				@save-as="saveToDisk({ altKey: true })"
+				@undo="undo"
+				@redo="redo"
+			/>
 
-            <SetlistMetadata
-                :has-sets="previewSets.length > 0"
-                @add-set="addSet"
-                @export="togglePreview"
-            />
-        </header>
+			<SetlistMetadata
+				:has-sets="previewSets.length > 0"
+				@add-set="addSet"
+				@export="togglePreview"
+			/>
+		</header>
 
-        <SetList />
-    </div>
+		<div class="view-options no-print">
+			<label class="view-option" :class="{ active: showEditorNumbers }">
+				<input type="checkbox" v-model="showEditorNumbers" />
+				<span>Show song numbers</span>
+			</label>
+		</div>
 
-    <div v-else class="print-preview">
-        <div class="preview-controls no-print">
-            <div class="preview-settings">
-                <label class="uppercase-toggle">
-                    <input type="checkbox" v-model="showGuides" />
-                    Show guides
-                </label>
-                <label class="uppercase-toggle">
-                    <input type="checkbox" v-model="uppercasePreview" />
-                    Uppercase titles
-                </label>
-                <Tooltip text="Print the setlist" position="bottom">
-                    <Button
-                        @click="printSets"
-                        class="primary"
-                        aria-label="Print setlist"
-                    >
-                        <Printer class="icon" /> Print
-                    </Button>
-                </Tooltip>
-                <Tooltip
-                    text="Close preview and return to editor"
-                    position="bottom"
-                >
-                    <Button
-                        @click="closePreview"
-                        class="danger"
-                        aria-label="Close preview"
-                    >
-                        <X class="icon" /> Close
-                    </Button>
-                </Tooltip>
-            </div>
-        </div>
+		<SetList :show-song-numbers="showEditorNumbers" />
+	</div>
 
-        <div ref="previewRef" class="preview-content">
-            <div class="sets-wrapper">
-                <div
-                    v-for="(set, index) in previewSets"
-                    :key="set.id"
-                    class="preview-page"
-                    :style="previewWrapperStyle"
-                >
-                    <SetPreview
-                        :set="set"
-                        :set-index="index"
-                        :metadata="store.metadata"
-                        :uppercase="uppercasePreview"
-                        :show-guides="showGuides"
-                        :is-last="set.id === lastSetId"
-                        :style="previewSheetStyle"
-                    />
-                </div>
-            </div>
-        </div>
-    </div>
-    <!-- New Set List Confirmation Dialog -->
-    <ConfirmDialog
-        :show="showNewDialog"
-        title="Start New Set List?"
-        message="Are you sure you want to start a new set list? All current changes will be lost if not saved."
-        cancel-text="Cancel"
-        confirm-text="Start New"
-        :danger="true"
-        @confirm="confirmNew"
-        @cancel="cancelNew"
-    />
+	<div v-else class="print-preview">
+		<div class="preview-controls no-print">
+			<div class="preview-settings">
+				<label class="uppercase-toggle">
+					<input type="checkbox" v-model="showGuides" />
+					Show guides
+				</label>
+				<label class="uppercase-toggle">
+					<input type="checkbox" v-model="uppercasePreview" />
+					Uppercase titles
+				</label>
+				<label class="uppercase-toggle">
+					<input type="checkbox" v-model="showPreviewNumbers" />
+					Song numbers
+				</label>
+				<Tooltip text="Print the setlist" position="bottom">
+					<Button
+						@click="printSets"
+						class="primary"
+						aria-label="Print setlist"
+					>
+						<Printer class="icon" /> Print
+					</Button>
+				</Tooltip>
+				<Tooltip
+					text="Close preview and return to editor"
+					position="bottom"
+				>
+					<Button
+						@click="closePreview"
+						class="danger"
+						aria-label="Close preview"
+					>
+						<X class="icon" /> Close
+					</Button>
+				</Tooltip>
+			</div>
+		</div>
 
-    <!-- Generic Confirmation Dialog (for file operations) -->
-    <ConfirmDialog
-        :show="confirmDialog.show"
-        :title="confirmDialog.title"
-        :message="confirmDialog.message"
-        :cancel-text="confirmDialog.cancelText"
-        :confirm-text="confirmDialog.confirmText"
-        :danger="confirmDialog.danger"
-        @confirm="handleDialogConfirm"
-        @cancel="handleDialogCancel"
-    />
+		<div ref="previewRef" class="preview-content">
+			<div class="sets-wrapper">
+				<div
+					v-for="(set, index) in previewSets"
+					:key="set.id"
+					class="preview-page"
+					:style="previewWrapperStyle"
+				>
+					<SetPreview
+						:set="set"
+						:set-index="index"
+						:metadata="store.metadata"
+						:uppercase="uppercasePreview"
+						:show-guides="showGuides"
+						:show-numbers="showPreviewNumbers"
+						:is-last="set.id === lastSetId"
+						:style="previewSheetStyle"
+					/>
+				</div>
+			</div>
+		</div>
+	</div>
+	<!-- New Set List Confirmation Dialog -->
+	<ConfirmDialog
+		:show="showNewDialog"
+		title="Start New Set List?"
+		message="Are you sure you want to start a new set list? All current changes will be lost if not saved."
+		cancel-text="Cancel"
+		confirm-text="Start New"
+		:danger="true"
+		@confirm="confirmNew"
+		@cancel="cancelNew"
+	/>
 
-    <!-- Alert Dialog (for errors and notifications) -->
-    <ConfirmDialog
-        :show="alertDialog.show"
-        :title="alertDialog.title"
-        :message="alertDialog.message"
-        :alert-mode="true"
-        :ok-text="alertDialog.okText"
-        @ok="handleAlertOk"
-    />
+	<!-- Generic Confirmation Dialog (for file operations) -->
+	<ConfirmDialog
+		:show="confirmDialog.show"
+		:title="confirmDialog.title"
+		:message="confirmDialog.message"
+		:cancel-text="confirmDialog.cancelText"
+		:confirm-text="confirmDialog.confirmText"
+		:danger="confirmDialog.danger"
+		@confirm="handleDialogConfirm"
+		@cancel="handleDialogCancel"
+	/>
+
+	<!-- Alert Dialog (for errors and notifications) -->
+	<ConfirmDialog
+		:show="alertDialog.show"
+		:title="alertDialog.title"
+		:message="alertDialog.message"
+		:alert-mode="true"
+		:ok-text="alertDialog.okText"
+		@ok="handleAlertOk"
+	/>
 </template>
 
 <style scoped>
 header {
-    margin-block-end: 1.5rem;
+	margin-block-end: 1.5rem;
 }
 
 h1 {
-    margin: 0;
-    background: linear-gradient(45deg, #646cff, #a164ff);
-    background-clip: text;
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
+	margin: 0;
+	background: linear-gradient(45deg, #646cff, #a164ff);
+	background-clip: text;
+	-webkit-background-clip: text;
+	-webkit-text-fill-color: transparent;
 }
 
 .controls {
-    display: flex;
-    gap: 1rem;
+	display: flex;
+	gap: 1rem;
 }
 
 footer {
-    margin-top: 3rem;
-    text-align: center;
-    color: #666;
-    font-size: 0.9rem;
+	margin-top: 3rem;
+	text-align: center;
+	color: #666;
+	font-size: 0.9rem;
+}
+
+/* View options bar */
+.view-options {
+	display: flex;
+	gap: 1rem;
+	margin-bottom: 1rem;
+	padding: 0.25rem 0;
+}
+
+.view-option {
+	display: flex;
+	align-items: center;
+	gap: 0.35rem;
+	font-size: 0.8rem;
+	color: #888;
+	cursor: pointer;
+	transition: color 0.2s ease;
+	user-select: none;
+
+	.icon {
+		width: 14px;
+		height: 14px;
+		opacity: 0.5;
+		transition: opacity 0.2s ease;
+	}
+
+	&:hover {
+		color: #bbb;
+
+		.icon {
+			opacity: 0.8;
+		}
+	}
+
+	&.active {
+		color: #ddd;
+
+		.icon {
+			opacity: 1;
+			color: var(--accent-color);
+		}
+	}
 }
 
 /* Preview Styles */
 .print-preview {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100vw;
-    height: 100vh;
-    z-index: 1000;
-    display: flex;
-    flex-direction: column;
+	position: fixed;
+	top: 0;
+	left: 0;
+	width: 100vw;
+	height: 100vh;
+	z-index: 1000;
+	display: flex;
+	flex-direction: column;
 }
 
 .preview-controls {
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: center;
-    align-items: center;
-    gap: 1rem;
-    background: #222;
-    border: 1px solid #444;
-    padding: 0.5rem 1rem;
-    border-radius: 6px;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.35);
+	display: flex;
+	flex-wrap: wrap;
+	justify-content: center;
+	align-items: center;
+	gap: 1rem;
+	background: #222;
+	border: 1px solid #444;
+	padding: 0.5rem 1rem;
+	border-radius: 6px;
+	box-shadow: 0 2px 4px rgba(0, 0, 0, 0.35);
 }
 
 .preview-actions {
-    display: flex;
-    gap: 0.5rem;
-    align-items: center;
+	display: flex;
+	gap: 0.5rem;
+	align-items: center;
 }
 
 .preview-settings {
-    display: flex;
-    gap: 0.5rem;
-    > * {
-        background: #333;
-        border: none;
-        color: #ddd;
-        padding: 0.6rem 1rem;
-        cursor: pointer;
-        border-radius: 6px;
-        display: flex;
-        align-items: center;
-        gap: 0.5rem;
-        font-size: 0.85rem;
-        color: #eee;
-        text-transform: uppercase;
-        letter-spacing: 0.05em;
-        input {
-            accent-color: var(--accent-color);
-        }
-    }
+	display: flex;
+	gap: 0.5rem;
+	> * {
+		background: #333;
+		border: none;
+		color: #ddd;
+		padding: 0.6rem 1rem;
+		cursor: pointer;
+		border-radius: 6px;
+		display: flex;
+		align-items: center;
+		gap: 0.5rem;
+		font-size: 0.85rem;
+		color: #eee;
+		text-transform: uppercase;
+		letter-spacing: 0.05em;
+		input {
+			accent-color: var(--accent-color);
+		}
+	}
 }
 
 .preview-content {
-    flex: 1;
-    padding: 1rem;
-    overflow-y: auto;
-    background-color: #525659;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 1rem;
-    width: 100%;
-    box-sizing: border-box;
+	flex: 1;
+	padding: 1rem;
+	overflow-y: auto;
+	background-color: #525659;
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: 1rem;
+	width: 100%;
+	box-sizing: border-box;
 }
 
 @media (min-width: 900px) {
-    .preview-content {
-        padding: 2rem;
-        gap: 2rem;
-    }
+	.preview-content {
+		padding: 2rem;
+		gap: 2rem;
+	}
 }
 
 .preview-page {
-    transition: transform 0.2s ease;
-    display: flex;
-    justify-content: center;
-    flex-shrink: 0;
-    margin-block-end: 1rem;
-    @media print {
-        margin: 0;
-    }
+	transition: transform 0.2s ease;
+	display: flex;
+	justify-content: center;
+	flex-shrink: 0;
+	margin-block-end: 1rem;
+	@media print {
+		margin: 0;
+	}
 }
 
 .preview-page :deep(.preview-set) {
-    width: 210mm;
-    min-height: 297mm;
+	width: 210mm;
+	min-height: 297mm;
 }
 
 .preview-content .sets-wrapper {
-    display: block;
+	display: block;
 }
 
 @media print {
-    .print-preview {
-        position: static;
-        height: auto;
-        width: auto;
-        overflow: visible;
-        background: none;
-    }
+	.print-preview {
+		position: static;
+		height: auto;
+		width: auto;
+		overflow: visible;
+		background: none;
+	}
 
-    .preview-controls {
-        display: none;
-    }
+	.preview-controls {
+		display: none;
+	}
 
-    .preview-content {
-        flex: none;
-        padding: 0;
-        gap: 0;
-        background: none;
-        display: block;
-        overflow: visible;
-        height: auto;
-        width: auto;
-    }
+	.preview-content {
+		flex: none;
+		padding: 0;
+		gap: 0;
+		background: none;
+		display: block;
+		overflow: visible;
+		height: auto;
+		width: auto;
+	}
 
-    .sets-wrapper {
-        display: block;
-    }
+	.sets-wrapper {
+		display: block;
+	}
 
-    .preview-page {
-        transform: none !important;
-        height: auto !important;
-        display: block;
-    }
+	.preview-page {
+		transform: none !important;
+		height: auto !important;
+		display: block;
+	}
 
-    .app-container {
-        display: none;
-    }
+	.app-container {
+		display: none;
+	}
 }
 </style>

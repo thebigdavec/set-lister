@@ -4,6 +4,10 @@ import { lastSetId, removeSet, store } from "../store";
 import Set from "./Set.vue";
 import { useSetlistNavigation } from "../composables";
 
+defineProps<{
+	showSongNumbers?: boolean;
+}>();
+
 // Navigation state
 const navigationEnabled = ref(true);
 const navigation = useSetlistNavigation({ enabled: navigationEnabled });
@@ -13,47 +17,48 @@ provide("setlistNavigation", navigation);
 
 // Global keyboard handler for navigation
 function handleGlobalKeyDown(event: KeyboardEvent): void {
-    navigation.handleKeyDown(event);
+	navigation.handleKeyDown(event);
 }
 
 onMounted(() => {
-    window.addEventListener("keydown", handleGlobalKeyDown);
+	window.addEventListener("keydown", handleGlobalKeyDown);
 });
 
 onUnmounted(() => {
-    window.removeEventListener("keydown", handleGlobalKeyDown);
+	window.removeEventListener("keydown", handleGlobalKeyDown);
 });
 
 // Watch for edit requests and handle them (components will listen via provide/inject)
 watch(
-    () => navigation.editRequested.value,
-    (request) => {
-        if (request) {
-            // The edit request is handled by the individual components
-            // via the provided navigation context
-        }
-    },
+	() => navigation.editRequested.value,
+	(request) => {
+		if (request) {
+			// The edit request is handled by the individual components
+			// via the provided navigation context
+		}
+	},
 );
 </script>
 
 <template>
-    <Card class="sets-wrapper">
-        <Set
-            v-for="(set, setIndex) in store.sets"
-            :key="set.id"
-            :set="set"
-            :set-index="setIndex"
-            :is-last="set.id === lastSetId"
-            @remove-set="removeSet(set.id)"
-        />
-    </Card>
+	<Card class="sets-wrapper">
+		<Set
+			v-for="(set, setIndex) in store.sets"
+			:key="set.id"
+			:set="set"
+			:set-index="setIndex"
+			:is-last="set.id === lastSetId"
+			:show-song-numbers="showSongNumbers"
+			@remove-set="removeSet(set.id)"
+		/>
+	</Card>
 </template>
 
 <style scoped>
 .sets-wrapper {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-    gap: 2rem;
-    align-items: start;
+	display: grid;
+	grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+	gap: 2rem;
+	align-items: start;
 }
 </style>

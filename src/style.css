@@ -10,10 +10,6 @@
 	src: url("/fonts/NotoSans-VariableFont_wdth,wght.ttf") format("truetype");
 }
 
-body {
-	font-family: "NotoSans", cursive;
-}
-
 :root {
 	--bg-color: #1a1a1a;
 	--text-color: #ffffff;
@@ -34,6 +30,8 @@ body {
 	font-family: var(--font-family);
 	line-height: 1.5;
 	min-height: 100vh;
+	font-family: "NotoSans", cursive;
+	accent-color: var(--accent-color);
 }
 
 #app {
