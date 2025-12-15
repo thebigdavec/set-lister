@@ -1,5 +1,8 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted, watch, nextTick } from "vue";
+import { useTooltipState } from "../../composables/useTooltipState";
+
+const { markTooltipSeen, getShowDelay } = useTooltipState();
 
 const props = withDefaults(
 	defineProps<{
@@ -17,7 +20,7 @@ const props = withDefaults(
 	{
 		text: "",
 		position: "top",
-		showDelay: 800,
+		showDelay: undefined, // Will use dynamic delay from global state
 		hideDelay: 150,
 		disabled: false,
 	},
@@ -73,9 +76,13 @@ function clearTimeouts(): void {
 function show(): void {
 	if (props.disabled || !tooltipText.value) return;
 	clearTimeouts();
+	// Use explicit prop if provided, otherwise use adaptive delay from global state
+	const delay = props.showDelay ?? getShowDelay();
 	showTimeout = setTimeout(() => {
 		isVisible.value = true;
-	}, props.showDelay);
+		// Mark that a tooltip has been seen for faster subsequent tooltips
+		markTooltipSeen();
+	}, delay);
 }
 
 function hide(): void {
@@ -207,6 +214,7 @@ watch(
 	pointer-events: none;
 	max-width: 300px;
 	width: max-content;
+	font-style: italic;
 
 	/* Fallback positioning for browsers without anchor positioning support */
 	@supports not (anchor-name: --test) {
@@ -246,9 +254,10 @@ watch(
 .tooltip-content {
 	display: block;
 	background-color: rgba(30, 30, 30, 0.95);
-	color: #fff;
+	color: #fffc;
 	padding: 0.5em 0.75em;
 	border-radius: 6px;
+	border: 1px solid rgba(255, 255, 255, 0.3);
 	font-size: 0.85rem;
 	line-height: 1.4;
 	box-shadow:
