@@ -7,10 +7,19 @@ import {
 	onUnmounted,
 	ref,
 	watch,
+	type DeepReadonly,
+	type Ref,
 } from "vue";
 import { X, Check, RotateCcw, Pencil, GripVertical } from "lucide-vue-next";
 import type { Song } from "../store";
 import type { UseSetlistNavigationReturn } from "../composables";
+
+// Type for edit mode context provided by Set.vue
+interface EditModeContext {
+	activeEditId: DeepReadonly<Ref<string | null>>;
+	claim: (id: string) => void;
+	release: (id: string) => void;
+}
 
 const props = defineProps<{
 	song: Song;
@@ -37,6 +46,33 @@ const isCancelling = ref(false);
 const isMarker = computed(() => props.isEncoreMarker === true);
 const markerIsLast = computed(() => props.markerIsLast === true);
 
+// Inject edit mode context from Set.vue
+const editModeContext = inject<EditModeContext>("editModeContext");
+
+// Unique ID for this song item's edit mode
+const editModeId = computed(() => `song-${props.song.id}`);
+
+// Watch for another component claiming edit mode
+watch(
+	() => editModeContext?.activeEditId.value,
+	(newId) => {
+		if (newId !== null && newId !== editModeId.value && isEditing.value) {
+			// Another component claimed edit mode, exit our edit mode without saving
+			cancelWithoutFocus();
+		}
+	},
+);
+
+// Cancel without restoring focus (used when another component claims edit mode)
+function cancelWithoutFocus(): void {
+	isCancelling.value = true;
+	editTitle.value = props.song.title;
+	editKey.value = props.song.key;
+	isEditing.value = false;
+	editModeContext?.release(editModeId.value);
+	isCancelling.value = false;
+}
+
 watch(
 	() => props.song,
 	(newSong) => {
@@ -57,6 +93,7 @@ function save(): void {
 		key: editKey.value,
 	});
 	isEditing.value = false;
+	editModeContext?.release(editModeId.value);
 	// Restore focus to the song item after saving
 	nextTick(() => {
 		songItemFocusRef.value?.focus();
@@ -67,12 +104,14 @@ function cancel(): void {
 	isCancelling.value = true;
 	if (isMarker.value) {
 		isEditing.value = false;
+		editModeContext?.release(editModeId.value);
 		isCancelling.value = false;
 		return;
 	}
 	editTitle.value = props.song.title;
 	editKey.value = props.song.key;
 	isEditing.value = false;
+	editModeContext?.release(editModeId.value);
 	isCancelling.value = false;
 	// Restore focus to the song item after canceling
 	nextTick(() => {
@@ -108,6 +147,7 @@ function handleNavigationEdit(): void {
 			window.removeEventListener("keyup", handleKeyUp);
 			if (pendingEditKey.value) {
 				pendingEditKey.value = null;
+				editModeContext?.claim(editModeId.value);
 				isEditing.value = true;
 				nextTick(() => {
 					titleInputRef.value?.focus();
@@ -201,6 +241,7 @@ watch(
 			request.songIndex === props.songIndex &&
 			!props.isEncoreMarker
 		) {
+			editModeContext?.claim(editModeId.value);
 			isEditing.value = true;
 			nextTick(() => {
 				titleInputRef.value?.focus();
@@ -250,6 +291,7 @@ function handleSongKeyDown(event: KeyboardEvent): void {
 function handleSongKeyUp(event: KeyboardEvent): void {
 	if (pendingEditKey.value && (event.key === "Enter" || event.key === "e")) {
 		pendingEditKey.value = null;
+		editModeContext?.claim(editModeId.value);
 		isEditing.value = true;
 		nextTick(() => {
 			titleInputRef.value?.focus();
@@ -344,6 +386,7 @@ function handlePointerUp(e: PointerEvent): void {
 
 	// If minimal movement and quick tap, enter edit mode
 	if (!hasMoved && duration < TAP_DURATION_THRESHOLD) {
+		editModeContext?.claim(editModeId.value);
 		isEditing.value = true;
 		nextTick(() => {
 			titleInputRef.value?.focus();
@@ -376,21 +419,17 @@ function handlePointerCancel(): void {
 				<GripVertical class="grip" />
 			</Tooltip>
 			<div class="marker-pill">Start of Encore section</div>
-			<Tooltip
+			<Button
 				v-if="!markerIsLast"
-				text="Reset encore marker to end"
-				position="top"
+				size="sm"
+				class="icon-btn no-print marker-reset-btn delete"
+				type="button"
+				tooltip="Reset encore marker to end"
+				aria-label="Reset encore marker to end"
+				@click.stop.prevent="$emit('reset-encore')"
 			>
-				<Button
-					size="sm"
-					class="icon-btn no-print marker-reset-btn delete"
-					type="button"
-					aria-label="Reset encore marker to end"
-					@click.stop.prevent="$emit('reset-encore')"
-				>
-					<RotateCcw class="icon" />
-				</Button>
-			</Tooltip>
+				<RotateCcw class="icon" />
+			</Button>
 		</template>
 
 		<template v-else>
@@ -422,28 +461,26 @@ function handlePointerCancel(): void {
 				<div class="song-meta">
 					<span v-if="isEncore" class="encore-pill">Encore</span>
 					<div class="actions no-print">
-						<Tooltip text="Edit song" position="top">
-							<Button
-								@click="isEditing = true"
-								size="sm"
-								aria-label="Edit song"
-							>
-								<Pencil class="icon" />
-							</Button>
-						</Tooltip>
-						<Tooltip
-							text="Remove song from this set"
-							position="top"
+						<Button
+							@click="
+								editModeContext?.claim(editModeId);
+								isEditing = true;
+							"
+							size="sm"
+							tooltip="Edit song"
+							aria-label="Edit song"
 						>
-							<Button
-								@click="confirmRemove"
-								size="sm"
-								class="delete"
-								aria-label="Remove song from this set"
-							>
-								<X class="icon" />
-							</Button>
-						</Tooltip>
+							<Pencil class="icon" />
+						</Button>
+						<Button
+							@click="confirmRemove"
+							size="sm"
+							class="delete"
+							tooltip="Remove song from this set"
+							aria-label="Remove song from this set"
+						>
+							<X class="icon" />
+						</Button>
 					</div>
 				</div>
 			</div>

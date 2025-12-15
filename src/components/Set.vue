@@ -5,6 +5,8 @@ import {
 	nextTick,
 	onMounted,
 	onUnmounted,
+	provide,
+	readonly,
 	ref,
 	toRef,
 	watch,
@@ -62,6 +64,26 @@ const songNumbers = computed(() => {
 
 // Inject navigation context from SetList
 const navigation = inject<UseSetlistNavigationReturn>("setlistNavigation");
+
+// Edit mode management - only one SongItem or AddSong can be in edit mode at a time
+const activeEditId = ref<string | null>(null);
+
+function claimEditMode(id: string): void {
+	activeEditId.value = id;
+}
+
+function releaseEditMode(id: string): void {
+	if (activeEditId.value === id) {
+		activeEditId.value = null;
+	}
+}
+
+// Provide edit mode context to child components
+provide("editModeContext", {
+	activeEditId: readonly(activeEditId),
+	claim: claimEditMode,
+	release: releaseEditMode,
+});
 
 const songListRef = ref<HTMLDivElement | null>(null);
 const addSongRef = ref<InstanceType<typeof AddSong> | null>(null);
@@ -251,16 +273,16 @@ function cancelDelete(): void {
 			>
 				{{ displayName }}
 			</h2>
-			<Tooltip text="Delete this set and all its songs" position="bottom">
-				<Button
-					@click="handleDeleteClick"
-					class="no-print danger"
-					aria-label="Delete set"
-				>
-					<Trash class="icon" />
-					Delete Set
-				</Button>
-			</Tooltip>
+			<Button
+				@click="handleDeleteClick"
+				class="no-print danger"
+				aria-label="Delete set"
+				size="sm"
+				tooltip="Delete this set and all its songs"
+			>
+				<Trash class="icon" />
+				Delete Set
+			</Button>
 		</div>
 
 		<AddSong

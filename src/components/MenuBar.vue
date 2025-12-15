@@ -90,62 +90,46 @@ onUnmounted(() => {
 	<div class="menu-bar no-print" :class="{ 'mobile-open': isMobileMenuOpen }">
 		<div>
 			<div class="menu-items">
-				<Tooltip
-					:text="`New Set List (${shortcuts.newDocument})`"
-					position="bottom"
+				<Button
+					@click="handleAction('new')"
+					nowrap
+					class="action-item"
+					:tooltip="`New Set List (${shortcuts.newDocument})`"
+					aria-describedby="tooltip-new"
 				>
-					<Button
-						@click="handleAction('new')"
-						nowrap
-						class="action-item"
-						aria-describedby="tooltip-new"
-					>
-						<FilePlus class="icon" /> New Set List
-					</Button>
-				</Tooltip>
-				<Tooltip
-					:text="`Open Set List (${shortcuts.open})`"
-					position="bottom"
+					<FilePlus class="icon" /> New Set List
+				</Button>
+				<Button
+					@click="handleAction('load')"
+					nowrap
+					class="action-item"
+					:tooltip="`Open Set List (${shortcuts.open})`"
+					aria-describedby="tooltip-load"
 				>
-					<Button
-						@click="handleAction('load')"
-						nowrap
-						class="action-item"
-						aria-describedby="tooltip-load"
-					>
-						<FolderOpen class="icon" /> Open Set List
-					</Button>
-				</Tooltip>
+					<FolderOpen class="icon" /> Open Set List
+				</Button>
 			</div>
 			<div class="menu-items">
-				<Tooltip
-					:text="`Save Set List (${shortcuts.save})`"
-					position="bottom"
+				<Button
+					@click="handleAction('save')"
+					class="action-item"
+					nowrap
+					:class="{ 'dirty-indicator-text': isDirty }"
+					:tooltip="`Save Set List (${shortcuts.save})`"
+					aria-describedby="tooltip-save"
 				>
-					<Button
-						@click="handleAction('save')"
-						class="action-item"
-						nowrap
-						:class="{ 'dirty-indicator-text': isDirty }"
-						aria-describedby="tooltip-save"
-					>
-						<Save class="icon" /> Save Set List
-						<span v-if="isDirty" class="dirty-indicator">*</span>
-					</Button>
-				</Tooltip>
-				<Tooltip
-					:text="`Save Set List As (${shortcuts.saveAs})`"
-					position="bottom"
+					<Save class="icon" /> Save Set List
+					<span v-if="isDirty" class="dirty-indicator">*</span>
+				</Button>
+				<Button
+					@click="handleAction('save-as')"
+					nowrap
+					class="action-item"
+					:tooltip="`Save Set List As (${shortcuts.saveAs})`"
+					aria-describedby="tooltip-save-as"
 				>
-					<Button
-						@click="handleAction('save-as')"
-						nowrap
-						class="action-item"
-						aria-describedby="tooltip-save-as"
-					>
-						<SaveAll class="icon" /> Save A Copy
-					</Button>
-				</Tooltip>
+					<SaveAll class="icon" /> Save A Copy
+				</Button>
 			</div>
 		</div>
 		<div>

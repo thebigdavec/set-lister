@@ -232,27 +232,22 @@ watch(showPreview, async (value) => {
 				<input type="checkbox" v-model="showPreviewNumbers" />
 				Song numbers
 			</label>
-			<Tooltip text="Print the setlist" position="bottom">
-				<Button
-					@click="printSets"
-					class="primary"
-					aria-label="Print setlist"
-				>
-					<Printer class="icon" /> Print
-				</Button>
-			</Tooltip>
-			<Tooltip
-				text="Close preview and return to editor"
-				position="bottom"
+			<Button
+				@click="printSets"
+				class="primary"
+				tooltip="Print the setlist"
+				aria-label="Print setlist"
 			>
-				<Button
-					@click="closePreview"
-					class="danger"
-					aria-label="Close preview"
-				>
-					<X class="icon" /> Close
-				</Button>
-			</Tooltip>
+				<Printer class="icon" /> Print
+			</Button>
+			<Button
+				@click="closePreview"
+				class="danger"
+				tooltip="Close preview and return to editor"
+				aria-label="Close preview"
+			>
+				<X class="icon" /> Close
+			</Button>
 		</div>
 
 		<div ref="previewRef" class="preview-content">

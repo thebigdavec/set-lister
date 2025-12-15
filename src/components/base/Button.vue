@@ -1,5 +1,11 @@
 <script setup lang="ts">
-import { computed } from "vue";
+import { computed, useAttrs } from "vue";
+
+defineOptions({
+	inheritAttrs: false,
+});
+
+const attrs = useAttrs();
 
 const { size, nowrap, tooltip, disabled } = defineProps({
 	size: {
@@ -35,7 +41,8 @@ const buttonClasses = computed(() => ({
 		position="bottom"
 	>
 		<button
-			:class="buttonClasses"
+			v-bind="attrs"
+			:class="[buttonClasses, attrs.class]"
 			:disabled
 			aria-label="Button"
 			:aria-details="tooltip ? tooltip : 'Click me'"
@@ -43,7 +50,13 @@ const buttonClasses = computed(() => ({
 			<slot />
 		</button>
 	</Tooltip>
-	<button v-else :class="buttonClasses" :disabled aria-label="button">
+	<button
+		v-else
+		v-bind="attrs"
+		:class="[buttonClasses, attrs.class]"
+		:disabled
+		aria-label="button"
+	>
 		<slot />
 	</button>
 </template>
@@ -155,6 +168,12 @@ button {
 			transition:
 				border-color var(--enter-hover),
 				background-color var(--enter-hover);
+		}
+	}
+
+	&.no-print {
+		@media print {
+			display: none;
 		}
 	}
 }

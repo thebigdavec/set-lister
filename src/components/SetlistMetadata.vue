@@ -64,26 +64,22 @@ onMounted(() => {
 				{{ store.metadata.setListName }}
 			</h2>
 			<h2 v-else>Untitled Setlist</h2>
-			<Tooltip
+			<Button
 				v-if="isEditingMetadata"
-				text="Finish editing details"
-				position="bottom"
+				@click="toggleEditingMetadata"
+				tooltip="Finish editing details"
+				aria-label="Finish editing details"
 			>
-				<Button
-					@click="toggleEditingMetadata"
-					aria-label="Finish editing details"
-				>
-					<X class="icon" /> Done
-				</Button>
-			</Tooltip>
-			<Tooltip v-else text="Start editing details" position="bottom">
-				<Button
-					@click="toggleEditingMetadata"
-					aria-label="Edit details"
-				>
-					<Pencil class="icon" /> Edit Set Details
-				</Button>
-			</Tooltip>
+				<X class="icon" /> Done
+			</Button>
+			<Button
+				v-else
+				@click="toggleEditingMetadata"
+				tooltip="Start editing details"
+				aria-label="Edit details"
+			>
+				<Pencil class="icon" /> Edit Set Details
+			</Button>
 		</div>
 		<div v-if="isEditingMetadata" class="metadata-grid">
 			<div class="input-group">
@@ -158,34 +154,26 @@ onMounted(() => {
 				<span>Show song numbers</span>
 			</label>
 			<div class="set-list-actions">
-				<Tooltip
-					:text="`Preview & Print (${shortcuts.print})`"
-					position="bottom"
+				<Button
+					@click="emit('export')"
+					class="action-item"
+					:disabled="!hasSets"
+					nowrap
+					:tooltip="`Preview & Print (${shortcuts.print})`"
+					aria-label="Export PDF"
 				>
-					<Button
-						@click="emit('export')"
-						class="action-item"
-						:disabled="!hasSets"
-						nowrap
-						aria-label="Export PDF"
-					>
-						<Share class="icon" style="color: inherit" />
-						Export/Print Set List
-					</Button>
-				</Tooltip>
-				<Tooltip
-					:text="`Add Set (${shortcuts.addSet})`"
-					position="bottom"
+					<Share class="icon" style="color: inherit" />
+					Export/Print Set List
+				</Button>
+				<Button
+					@click="emit('add-set')"
+					nowrap
+					class="action-item primary"
+					:tooltip="`Add Set (${shortcuts.addSet})`"
+					aria-label="Add set"
 				>
-					<Button
-						@click="emit('add-set')"
-						nowrap
-						class="action-item primary"
-						aria-label="Add set"
-					>
-						<Plus class="icon" /> Add Set
-					</Button>
-				</Tooltip>
+					<Plus class="icon" /> Add Set
+				</Button>
 			</div>
 		</div>
 	</Card>
