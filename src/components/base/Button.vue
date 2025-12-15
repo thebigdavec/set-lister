@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed } from "vue";
 
-const { size, nowrap, tooltip } = defineProps({
+const { size, nowrap, tooltip, disabled } = defineProps({
 	size: {
 		type: String,
 		default: "md",
@@ -16,6 +16,10 @@ const { size, nowrap, tooltip } = defineProps({
 		type: String,
 		default: "",
 	},
+	disabled: {
+		type: Boolean,
+		default: false,
+	},
 });
 
 const buttonClasses = computed(() => ({
@@ -25,16 +29,21 @@ const buttonClasses = computed(() => ({
 </script>
 
 <template>
-	<Tooltip v-if="tooltip" :text="tooltip">
+	<Tooltip
+		v-if="disabled === false && tooltip"
+		:text="tooltip"
+		position="bottom"
+	>
 		<button
 			:class="buttonClasses"
+			:disabled
 			aria-label="Button"
 			:aria-details="tooltip ? tooltip : 'Click me'"
 		>
 			<slot />
 		</button>
 	</Tooltip>
-	<button v-else :class="buttonClasses">
+	<button v-else :class="buttonClasses" :disabled aria-label="button">
 		<slot />
 	</button>
 </template>
@@ -48,7 +57,6 @@ button {
 	cursor: pointer;
 	border-radius: 8px;
 	border: 1px solid oklch(from var(--card-bg) calc(l * 2.5) c h);
-	/*padding: 0.6em 1.2em;*/
 	transition:
 		border-color var(--exit-hover),
 		background-color var(--exit-hover);
@@ -94,6 +102,15 @@ button {
 	&:disabled {
 		color: #666;
 		cursor: not-allowed;
+		filter: blur(0);
+		transition: filter var(--exit-hover);
+		&:hover,
+		&:focus-visible {
+			border-color: #666;
+			background-color: var(--card-bg);
+			filter: blur(3px);
+			transition: filter var(--enter-hover);
+		}
 	}
 
 	&.primary {
