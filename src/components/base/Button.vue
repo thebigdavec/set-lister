@@ -27,6 +27,7 @@ const buttonClasses = computed(() => ({
 <template>
     <Tooltip v-if="tooltip" :text="tooltip">
         <button
+            :class="buttonClasses"
             aria-label="Button"
             :aria-details="tooltip ? tooltip : 'Click me'"
         >
