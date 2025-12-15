@@ -31,7 +31,6 @@ const { set, metadata, uppercase, showGuides, showNumbers, isLast } =
 
 // Use the consolidated encore helpers
 const {
-	markerIndex,
 	firstEncoreSongId,
 	songsWithoutMarker: previewSongs,
 	isEncoreSong,
@@ -125,7 +124,6 @@ function getSongNumber(index: number): number {
 					</div>
 				</template>
 			</div>
-			<div class="set-spacer">&nbsp;</div>
 		</div>
 	</div>
 </template>
