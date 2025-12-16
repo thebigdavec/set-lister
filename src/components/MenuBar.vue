@@ -72,7 +72,6 @@ onUnmounted(() => {
 			<Button
 				@click="handleAction('undo')"
 				nowrap
-				class="action-item"
 				:disabled="!canUndo"
 				:tooltip="`Undo (${shortcuts.undo})`"
 				aria-label="Undo"
@@ -83,7 +82,6 @@ onUnmounted(() => {
 			<Button
 				@click="handleAction('redo')"
 				nowrap
-				class="action-item"
 				:disabled="!canRedo"
 				aria-describedby="tooltip-redo"
 				:tooltip="`Redo (${shortcuts.redo})`"
@@ -119,7 +117,6 @@ onUnmounted(() => {
 				<Button
 					@click="handleAction('new')"
 					nowrap
-					class="action-item"
 					:tooltip="`New Set List (${shortcuts.newDocument})`"
 					aria-describedby="tooltip-new"
 				>
@@ -128,7 +125,6 @@ onUnmounted(() => {
 				<Button
 					@click="handleAction('load')"
 					nowrap
-					class="action-item"
 					:tooltip="`Open Set List (${shortcuts.open})`"
 					aria-describedby="tooltip-load"
 				>
@@ -138,8 +134,8 @@ onUnmounted(() => {
 			<div class="menu-items">
 				<Button
 					@click="handleAction('save')"
-					class="action-item"
 					nowrap
+					:disabled="!isDirty"
 					:class="{ 'dirty-indicator-text': isDirty }"
 					:tooltip="`Save Set List (${shortcuts.save})`"
 					aria-describedby="tooltip-save"
@@ -150,7 +146,6 @@ onUnmounted(() => {
 				<Button
 					@click="handleAction('save-as')"
 					nowrap
-					class="action-item"
 					:tooltip="`Save Set List As (${shortcuts.saveAs})`"
 					aria-describedby="tooltip-save-as"
 				>
@@ -223,25 +218,6 @@ onUnmounted(() => {
 	display: flex;
 	gap: 0.5rem;
 	align-items: center;
-}
-
-.action-item {
-	box-shadow: 0 2px 4px -2px #000;
-	color: #ddd;
-	transition:
-		background-color 0.2s,
-		ease color 0.2s ease,
-		box-shadow 0.2s ease;
-
-	&:hover {
-		color: white;
-		box-shadow: 0 3px 6px -2px #000;
-	}
-
-	&:disabled {
-		color: #666;
-		cursor: not-allowed;
-	}
 }
 
 .dirty-indicator-text {
