@@ -99,7 +99,7 @@
 		editModeContext?.release(editModeId.value);
 		// Restore focus to the song item after saving
 		nextTick(() => {
-			songItemFocusRef.value?.focus();
+			songItemFocusRef.value?.$el.value?.focus();
 		});
 	}
 
@@ -118,7 +118,7 @@
 		isCancelling.value = false;
 		// Restore focus to the song item after canceling
 		nextTick(() => {
-			songItemFocusRef.value?.focus();
+			songItemFocusRef.value?.$el.value?.focus();
 		});
 	}
 
@@ -135,7 +135,7 @@
 
 	// Inject navigation context from SetList
 	const navigation = inject<UseSetlistNavigationReturn>("setlistNavigation");
-	const songItemFocusRef = ref<HTMLDivElement | null>(null);
+	const songItemFocusRef = ref<InstanceType<typeof SongItemDisplay> | null>(null);
 
 	// Register/unregister element for focus management (skip encore markers)
 	// Handle the custom navigationEdit event from the global navigation handler
@@ -166,16 +166,16 @@
 
 	onMounted(() => {
 		window.addEventListener("keydown", handleKeyDown);
-		if (navigation && songItemFocusRef.value && !props.isEncoreMarker) {
+		if (navigation && songItemFocusRef.value?.$el.value && !props.isEncoreMarker) {
 			navigation.registerElement(
 				props.setIndex,
 				"song",
-				songItemFocusRef.value,
+				songItemFocusRef.value.$el.value,
 				props.songIndex,
 			);
 			registeredSongIndex.value = props.songIndex;
 			// Listen for custom event from navigation handler
-			songItemFocusRef.value.addEventListener(
+			songItemFocusRef.value.$el.value.addEventListener(
 				"navigationEdit",
 				handleNavigationEdit,
 			);
@@ -188,7 +188,7 @@
 		(newIndex, oldIndex) => {
 			if (
 				navigation &&
-				songItemFocusRef.value &&
+				songItemFocusRef.value?.$el.value &&
 				!props.isEncoreMarker &&
 				newIndex !== oldIndex &&
 				registeredSongIndex.value !== null
@@ -203,7 +203,7 @@
 				navigation.registerElement(
 					props.setIndex,
 					"song",
-					songItemFocusRef.value,
+					songItemFocusRef.value.$el.value,
 					newIndex,
 				);
 				registeredSongIndex.value = newIndex;
@@ -225,8 +225,8 @@
 			);
 		}
 		// Clean up custom event listener
-		if (songItemFocusRef.value) {
-			songItemFocusRef.value.removeEventListener(
+		if (songItemFocusRef.value?.$el.value) {
+			songItemFocusRef.value.$el.value.removeEventListener(
 				"navigationEdit",
 				handleNavigationEdit,
 			);
@@ -443,7 +443,6 @@
 		--into-hover-quick: 200ms ease-in;
 		--out-of-hover: 100ms ease-out;
 
-		padding-inline: 0.75rem;
 		margin-block-end: 0.15rem;
 		display: flex;
 		align-items: center;
@@ -470,10 +469,6 @@
 			border: 1px dashed var(--accent-color);
 			cursor: grab;
 			padding: 0.35rem 0.75rem;
-		}
-
-		@media (min-width: 768px) {
-			padding-block: 0.5rem;
 		}
 	}
 

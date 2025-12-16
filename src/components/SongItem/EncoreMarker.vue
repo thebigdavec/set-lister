@@ -30,11 +30,7 @@
 	}
 
 	.marker-pill {
-		background: var(--accent-color);
-		color: #000;
-		padding: 0.5rem 1rem;
-		border-radius: 1rem;
-		font-weight: 600;
+		font-style: italic;
 		font-size: 0.9rem;
 		flex: 1;
 		text-align: center;

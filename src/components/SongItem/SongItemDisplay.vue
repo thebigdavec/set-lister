@@ -1,4 +1,5 @@
 <script setup lang="ts">
+	import { ref } from 'vue'
 	import { GripVertical, Pencil, X } from 'lucide-vue-next'
 	import type { Song } from '../../store'
 
@@ -21,10 +22,17 @@
 		(e: 'keydown', event: KeyboardEvent): void
 		(e: 'keyup', event: KeyboardEvent): void
 	}>()
+
+	const rootRef = ref<HTMLDivElement | null>(null)
+
+	// Expose root element for parent component
+	defineExpose({
+		$el: rootRef
+	})
 </script>
 
 <template>
-	<div class="view-mode" :tabindex="tabindex" @pointerdown="$emit('pointerdown', $event)"
+	<div ref="rootRef" class="view-mode" :tabindex="tabindex" @pointerdown="$emit('pointerdown', $event)"
 		@pointermove="$emit('pointermove', $event)" @pointerup="$emit('pointerup', $event)"
 		@pointercancel="$emit('pointercancel', $event)" @focus="$emit('focus')" @keydown="$emit('keydown', $event)"
 		@keyup="$emit('keyup', $event)">
@@ -106,9 +114,10 @@
 	}
 
 	.encore-pill {
-		background: var(--accent-color);
-		color: #000;
-		padding: 0.25rem 0.75rem;
+		background: oklch(from var(--accent-color) calc(l * 0.6) c h / 0.75);
+		border: 1px solid var(--accent-color);
+		color: #fffa;
+		padding: 0.25rem 1rem;
 		border-radius: 1rem;
 		font-weight: 600;
 		font-size: 0.75rem;

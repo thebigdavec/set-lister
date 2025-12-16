@@ -1,5 +1,5 @@
 <script setup lang="ts">
-	import { ref, watch, nextTick, onMounted } from 'vue'
+	import { ref, watch } from 'vue'
 	import { Check } from 'lucide-vue-next'
 	import { LIMITS } from '../../constants/limits'
 
@@ -32,13 +32,6 @@
 			editKey.value = newKey
 		},
 	)
-
-	// Auto-focus title input when mounted
-	onMounted(() => {
-		nextTick(() => {
-			titleInputRef.value?.focus()
-		})
-	})
 
 	function handleSave() {
 		emit('save', {
