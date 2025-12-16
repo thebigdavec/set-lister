@@ -102,6 +102,11 @@ function handleSubmit(): void {
 	});
 }
 
+function handleSubmitAndClose(): void {
+	handleSubmit();
+	handleClose();
+}
+
 function handleKeyDown(event: KeyboardEvent): void {
 	if (event.key === "Escape") {
 		event.preventDefault();
@@ -187,11 +192,15 @@ onUnmounted(() => {
 				</div>
 
 				<div class="dialog-actions">
+					<Button type="button" @click="handleSubmitAndClose">
+						{{ songTitle.trim() ? "Add and " : "" }}Close
+					</Button>
 					<Button
+						v-if="songTitle.trim()"
 						type="submit"
 						:class="{ success: songTitle.trim() }"
 					>
-						<Check class="icon" /> Done
+						<Check class="icon" /> Add
 					</Button>
 				</div>
 			</form>
@@ -274,6 +283,7 @@ onUnmounted(() => {
 .dialog-actions {
 	display: flex;
 	justify-content: flex-end;
+	gap: 1rem;
 	margin-top: 0.5rem;
 }
 
