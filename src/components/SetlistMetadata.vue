@@ -165,7 +165,7 @@ onMounted(() => {
 					:disabled="!hasSets"
 					nowrap
 					:tooltip="`Preview & Print (${shortcuts.print})`"
-					aria-label="Export PDF"
+					aria-label="PreviewSet List"
 				>
 					<Share class="icon" style="color: inherit" />
 					Export/Print Set List
@@ -174,10 +174,10 @@ onMounted(() => {
 					@click="emit('add-set')"
 					nowrap
 					class="action-item primary"
-					:tooltip="`Add Set (${shortcuts.addSet})`"
+					:tooltip="`Add A New Set (${shortcuts.addSet})`"
 					aria-label="Add set"
 				>
-					<Plus class="icon" /> Add Set
+					<Plus class="icon" /> Add New Set
 				</Button>
 			</div>
 		</div>

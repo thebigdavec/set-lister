@@ -11,10 +11,10 @@ import {
 	toRef,
 	watch,
 } from "vue";
-import { Trash } from "lucide-vue-next";
+import { Plus, Trash } from "lucide-vue-next";
 import Sortable, { MoveEvent, SortableEvent } from "sortablejs";
 import SongItem from "./SongItem.vue";
-import AddSong from "./AddSong.vue";
+import AddSongModal from "./AddSongModal.vue";
 import {
 	addSongToSet,
 	getSetDisplayName,
@@ -65,7 +65,7 @@ const songNumbers = computed(() => {
 // Inject navigation context from SetList
 const navigation = inject<UseSetlistNavigationReturn>("setlistNavigation");
 
-// Edit mode management - only one SongItem or AddSong can be in edit mode at a time
+// Edit mode management - only one SongItem can be in edit mode at a time
 const activeEditId = ref<string | null>(null);
 
 function claimEditMode(id: string): void {
@@ -86,8 +86,8 @@ provide("editModeContext", {
 });
 
 const songListRef = ref<HTMLDivElement | null>(null);
-const addSongRef = ref<InstanceType<typeof AddSong> | null>(null);
 const setNameRef = ref<HTMLHeadingElement | null>(null);
+const addSongButtonRef = ref<HTMLButtonElement | null>(null);
 let sortableInstance: Sortable | null = null;
 
 // Track if set name is in edit mode
@@ -95,6 +95,9 @@ const isEditingName = ref(false);
 
 // Track if delete confirmation dialog is shown
 const showDeleteConfirm = ref(false);
+
+// Track if add song modal is shown
+const showAddSongModal = ref(false);
 
 // Register set name element for focus management
 onMounted(() => {
@@ -153,14 +156,6 @@ function handleSetNameKeyDown(event: KeyboardEvent): void {
 	}
 }
 
-// Get playable song indices (excluding encore markers)
-function getPlayableSongIndices(): number[] {
-	return props.set.songs
-		.map((song, index) => ({ song, index }))
-		.filter(({ song }) => !isEncoreMarkerSong(song))
-		.map(({ index }) => index);
-}
-
 const encoreSummary = computed(() => {
 	if (!props.isLast) return "Encore marker appears only in the final set.";
 	if (props.set.songs.length < 2)
@@ -170,14 +165,24 @@ const encoreSummary = computed(() => {
 	return "Drag the <encore> entry to choose where encores begin.";
 });
 
-async function handleAddSong(payload: {
+function openAddSongModal(): void {
+	showAddSongModal.value = true;
+}
+
+function closeAddSongModal(): void {
+	showAddSongModal.value = false;
+	// Return focus to the add song button
+	nextTick(() => {
+		addSongButtonRef.value?.focus();
+	});
+}
+
+function handleAddSong(payload: {
+	setId: string;
 	title: string;
 	key: string;
-}): Promise<void> {
-	addSongToSet(props.set.id, payload);
-
-	await nextTick();
-	addSongRef.value?.focusTitleInput();
+}): void {
+	addSongToSet(payload.setId, { title: payload.title, key: payload.key });
 }
 
 function handleTitleBlur(event: FocusEvent): void {
@@ -273,23 +278,30 @@ function cancelDelete(): void {
 			>
 				{{ displayName }}
 			</h2>
-			<Button
-				@click="handleDeleteClick"
-				class="no-print danger"
-				aria-label="Delete set"
-				size="sm"
-				tooltip="Delete this set and all its songs"
-			>
-				<Trash class="icon" />
-				Delete Set
-			</Button>
+			<div class="set-header-actions no-print">
+				<Button
+					ref="addSongButtonRef"
+					@click="openAddSongModal"
+					class="primary"
+					aria-label="Add song"
+					size="sm"
+					tooltip="Add a new song to this set"
+				>
+					<Plus class="icon" />
+					Add Song
+				</Button>
+				<Button
+					@click="handleDeleteClick"
+					class="danger"
+					aria-label="Delete set"
+					size="sm"
+					tooltip="Delete this set and all its songs"
+				>
+					<Trash class="icon" />
+					Delete Set
+				</Button>
+			</div>
 		</div>
-
-		<AddSong
-			ref="addSongRef"
-			:song-count="set.songs.length"
-			@add="handleAddSong"
-		/>
 
 		<FirstTimeHint
 			v-if="setIndex === 0 && set.songs.length > 0"
@@ -316,9 +328,20 @@ function cancelDelete(): void {
 			/>
 		</div>
 
+		<p v-if="set.songs.length === 0" class="empty-set-message no-print">
+			No songs yet. Click "Add Song" to get started.
+		</p>
+
 		<div v-if="isLast" class="encore-actions no-print">
 			<p class="marker-hint">{{ encoreSummary }}</p>
 		</div>
+
+		<AddSongModal
+			:show="showAddSongModal"
+			:default-set-id="set.id"
+			@close="closeAddSongModal"
+			@add="handleAddSong"
+		/>
 
 		<ConfirmDialog
 			:show="showDeleteConfirm"
@@ -341,9 +364,17 @@ function cancelDelete(): void {
 
 .set-header {
 	display: flex;
+	position: sticky;
+	top: 0;
+	z-index: 1;
+	background: #1e1e1e80;
+	backdrop-filter: blur(5px);
 	justify-content: space-between;
 	align-items: center;
-	padding-bottom: 0.5rem;
+	padding-block: 0.5rem;
+	border-block-end: 1px solid #1e1e1e;
+	gap: 0.5rem;
+	flex-wrap: wrap;
 }
 
 .set-header h2 {
@@ -364,6 +395,12 @@ function cancelDelete(): void {
 	outline-offset: 2px;
 }
 
+.set-header-actions {
+	display: flex;
+	gap: 0.5rem;
+	flex-wrap: wrap;
+}
+
 .song-list {
 	min-height: 50px;
 	display: flex;
@@ -374,6 +411,13 @@ function cancelDelete(): void {
 .sortable-ghost {
 	opacity: 0.5;
 	background: #333;
+}
+
+.empty-set-message {
+	text-align: center;
+	color: #888;
+	padding: 1rem;
+	font-style: italic;
 }
 
 .encore-actions {
