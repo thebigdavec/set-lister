@@ -11,6 +11,7 @@ import {
 } from "lucide-vue-next";
 import { store, updateMetadata } from "../store";
 import { shortcuts } from "../utils/keyboardShortcuts";
+import { LIMITS } from "../constants/limits";
 
 const isEditingMetadata = ref(false);
 
@@ -89,6 +90,7 @@ onMounted(() => {
 				<input
 					id="setListName"
 					v-model="store.metadata.setListName"
+					:maxlength="LIMITS.MAX_METADATA_FIELD_LENGTH"
 					placeholder="e.g. Summer Tour 2024"
 					@blur="
 						updateMetadata({
@@ -103,6 +105,7 @@ onMounted(() => {
 				<input
 					id="actName"
 					v-model="store.metadata.actName"
+					:maxlength="LIMITS.MAX_METADATA_FIELD_LENGTH"
 					placeholder="e.g. The Beatles"
 					@blur="
 						updateMetadata({
@@ -118,6 +121,7 @@ onMounted(() => {
 				<input
 					id="venue"
 					v-model="store.metadata.venue"
+					:maxlength="LIMITS.MAX_METADATA_FIELD_LENGTH"
 					placeholder="e.g. The O2 Arena"
 					@blur="updateMetadata({ venue: store.metadata.venue })"
 					@keyup.enter="blurInputOnEnter"
@@ -129,6 +133,7 @@ onMounted(() => {
 				<input
 					id="date"
 					v-model="store.metadata.date"
+					:maxlength="LIMITS.MAX_METADATA_FIELD_LENGTH"
 					type="date"
 					@blur="updateMetadata({ date: store.metadata.date })"
 					@keyup.enter="blurInputOnEnter"

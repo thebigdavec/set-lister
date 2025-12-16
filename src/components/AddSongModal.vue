@@ -2,6 +2,7 @@
 import { computed, nextTick, onMounted, onUnmounted, ref, watch } from "vue";
 import { Check, X } from "lucide-vue-next";
 import { store, getSetDisplayName } from "../store";
+import { LIMITS } from "../constants/limits";
 
 const props = defineProps<{
 	show: boolean;
@@ -162,6 +163,7 @@ onUnmounted(() => {
 						ref="titleInputRef"
 						v-model="songTitle"
 						type="text"
+						:maxlength="LIMITS.MAX_SONG_TITLE_LENGTH"
 						placeholder="Enter song title"
 						autocomplete="off"
 					/>
@@ -173,6 +175,7 @@ onUnmounted(() => {
 						id="song-key"
 						v-model="songKey"
 						type="text"
+						:maxlength="LIMITS.MAX_SONG_KEY_LENGTH"
 						placeholder="e.g., Am, C, F#m"
 						autocomplete="off"
 					/>

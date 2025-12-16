@@ -30,6 +30,7 @@ import {
 	useEncoreHelpers,
 	type UseSetlistNavigationReturn,
 } from "../composables";
+import { LIMITS } from "../constants/limits";
 
 const props = defineProps<{
 	set: SetItem;
@@ -47,6 +48,20 @@ const { markerIndex, hasEncoreMarker, markerIsLast, isEncoreSongByIndex } =
 
 // Compute the display name (custom name or dynamic "Set #")
 const displayName = computed(() => getSetDisplayName(props.set.id));
+
+// State for editing the set name
+const isEditingName = ref(false);
+const editingNameValue = ref<string | undefined>(props.set.name);
+
+// Watch for changes to the set name from external sources
+watch(
+	() => props.set.name,
+	(newName) => {
+		if (!isEditingName.value) {
+			editingNameValue.value = newName;
+		}
+	},
+);
 
 // Compute song numbers (excluding encore markers)
 // Returns a map of songIndex -> displayNumber
@@ -86,12 +101,9 @@ provide("editModeContext", {
 });
 
 const songListRef = ref<HTMLDivElement | null>(null);
-const setNameRef = ref<HTMLHeadingElement | null>(null);
+const setNameRef = ref<HTMLInputElement | null>(null);
 const addSongButtonRef = ref<HTMLButtonElement | null>(null);
 let sortableInstance: Sortable | null = null;
-
-// Track if set name is in edit mode
-const isEditingName = ref(false);
 
 // Track if delete confirmation dialog is shown
 const showDeleteConfirm = ref(false);
@@ -139,20 +151,22 @@ watch(
 );
 
 // Handle focus events on set name to update navigation state
-function handleSetNameFocus(): void {
+async function handleSetNameFocus(): Promise<void> {
+	isEditingName.value = true;
 	if (navigation) {
 		navigation.setFocus({ setIndex: props.setIndex, type: "name" });
 	}
+	// Wait for the input to be rendered, then focus it
+	await nextTick();
+	setNameRef.value?.focus();
+	setNameRef.value?.select();
 }
 
-// Handle keydown on set name
+// Handle keydown on set name (when not editing)
 function handleSetNameKeyDown(event: KeyboardEvent): void {
-	if (event.key === "Escape") {
-		isEditingName.value = false;
-		setNameRef.value?.blur();
-	} else if (event.key === "Enter" && !event.shiftKey) {
+	if (event.key === "Enter" || event.key === " ") {
 		event.preventDefault();
-		setNameRef.value?.blur();
+		handleSetNameFocus();
 	}
 }
 
@@ -185,11 +199,22 @@ function handleAddSong(payload: {
 	addSongToSet(payload.setId, { title: payload.title, key: payload.key });
 }
 
-function handleTitleBlur(event: FocusEvent): void {
-	const target = event.target as HTMLElement | null;
-	if (!target) return;
-	renameSet(props.set.id, target.innerText);
+function handleTitleBlur(): void {
+	if (editingNameValue.value !== undefined) {
+		renameSet(props.set.id, editingNameValue.value);
+	}
 	isEditingName.value = false;
+}
+
+function handleTitleKeyDown(event: KeyboardEvent): void {
+	if (event.key === "Enter") {
+		event.preventDefault();
+		(event.target as HTMLInputElement)?.blur();
+	} else if (event.key === "Escape") {
+		event.preventDefault();
+		editingNameValue.value = props.set.name;
+		(event.target as HTMLInputElement)?.blur();
+	}
 }
 
 function handleSortEnd(evt: SortableEvent): void {
@@ -265,19 +290,31 @@ function cancelDelete(): void {
 <template>
 	<div class="set-container card">
 		<div class="set-header">
-			<h2
-				ref="setNameRef"
-				contenteditable
-				tabindex="0"
-				:class="{
-					'is-focused': navigation?.isFocused(setIndex, 'name'),
-				}"
-				@blur="handleTitleBlur"
-				@focus="handleSetNameFocus"
-				@keydown="handleSetNameKeyDown"
-			>
-				{{ displayName }}
-			</h2>
+			<div class="set-name-wrapper">
+				<h2
+					v-if="!isEditingName"
+					tabindex="0"
+					:class="{
+						'is-focused': navigation?.isFocused(setIndex, 'name'),
+					}"
+					@click="handleSetNameFocus"
+					@focus="handleSetNameFocus"
+					@keydown="handleSetNameKeyDown"
+				>
+					{{ displayName }}
+				</h2>
+				<input
+					v-else
+					ref="setNameRef"
+					v-model="editingNameValue"
+					type="text"
+					class="set-name-input"
+					:maxlength="LIMITS.MAX_SET_NAME_LENGTH"
+					:placeholder="displayName"
+					@blur="handleTitleBlur"
+					@keydown="handleTitleKeyDown"
+				/>
+			</div>
 			<div class="set-header-actions no-print">
 				<Button
 					ref="addSongButtonRef"
@@ -377,11 +414,17 @@ function cancelDelete(): void {
 	flex-wrap: wrap;
 }
 
+.set-name-wrapper {
+	flex: 1;
+	min-width: 0;
+}
+
 .set-header h2 {
 	margin: 0;
 	outline: none;
 	border-bottom: 2px solid transparent;
 	transition: border-bottom-color 0.3s ease;
+	cursor: pointer;
 }
 
 .set-header h2:focus,
@@ -393,6 +436,24 @@ function cancelDelete(): void {
 .set-header h2:focus-visible {
 	outline: 2px solid var(--accent-color);
 	outline-offset: 2px;
+}
+
+.set-name-input {
+	width: 100%;
+	font-size: 1.5rem;
+	font-weight: bold;
+	background: transparent;
+	border: none;
+	border-bottom: 2px solid var(--accent-color);
+	color: inherit;
+	padding: 0.25rem 0;
+	outline: none;
+	font-family: inherit;
+}
+
+.set-name-input::placeholder {
+	color: #888;
+	opacity: 0.6;
 }
 
 .set-header-actions {

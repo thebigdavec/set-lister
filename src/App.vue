@@ -7,6 +7,7 @@ import SetlistMetadata from "./components/SetlistMetadata.vue";
 import SetPreview from "./components/SetPreview.vue";
 import MenuBar from "./components/MenuBar.vue";
 import { STORAGE_KEYS } from "./constants";
+import { safeGetItem, safeSetItem } from "./utils/storage";
 import {
 	useFileOperations,
 	useHistory,
@@ -142,15 +143,11 @@ useKeyboardShortcuts({
 // =============================================================================
 
 onMounted(() => {
-	const savedUppercase = localStorage.getItem(STORAGE_KEYS.PREVIEW_UPPERCASE);
+	const savedUppercase = safeGetItem(STORAGE_KEYS.PREVIEW_UPPERCASE);
 	uppercasePreview.value = savedUppercase === "true";
-	const savedEditorNumbers = localStorage.getItem(
-		STORAGE_KEYS.EDITOR_NUMBERING,
-	);
+	const savedEditorNumbers = safeGetItem(STORAGE_KEYS.EDITOR_NUMBERING);
 	showEditorNumbers.value = savedEditorNumbers === "true";
-	const savedPreviewNumbers = localStorage.getItem(
-		STORAGE_KEYS.PREVIEW_NUMBERING,
-	);
+	const savedPreviewNumbers = safeGetItem(STORAGE_KEYS.PREVIEW_NUMBERING);
 	showPreviewNumbers.value = savedPreviewNumbers === "true";
 	window.addEventListener("beforeunload", handleBeforeUnload);
 	window.addEventListener("resize", handlePreviewResize);
@@ -162,7 +159,7 @@ onUnmounted(() => {
 });
 
 watch(uppercasePreview, async (value) => {
-	localStorage.setItem(STORAGE_KEYS.PREVIEW_UPPERCASE, String(value));
+	safeSetItem(STORAGE_KEYS.PREVIEW_UPPERCASE, String(value));
 	if (showPreview.value) {
 		await applyPreviewSizing();
 		updatePreviewScale();
@@ -170,11 +167,11 @@ watch(uppercasePreview, async (value) => {
 });
 
 watch(showEditorNumbers, (value) => {
-	localStorage.setItem(STORAGE_KEYS.EDITOR_NUMBERING, String(value));
+	safeSetItem(STORAGE_KEYS.EDITOR_NUMBERING, String(value));
 });
 
 watch(showPreviewNumbers, async (value) => {
-	localStorage.setItem(STORAGE_KEYS.PREVIEW_NUMBERING, String(value));
+	safeSetItem(STORAGE_KEYS.PREVIEW_NUMBERING, String(value));
 	if (showPreview.value) {
 		await applyPreviewSizing();
 	}

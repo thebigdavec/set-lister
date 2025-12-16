@@ -13,6 +13,7 @@ import {
 import { X, Check, RotateCcw, Pencil, GripVertical } from "lucide-vue-next";
 import type { Song } from "../store";
 import type { UseSetlistNavigationReturn } from "../composables";
+import { LIMITS } from "../constants/limits";
 
 // Type for edit mode context provided by Set.vue
 interface EditModeContext {
@@ -488,11 +489,13 @@ function handlePointerCancel(): void {
 				<input
 					ref="titleInputRef"
 					v-model="editTitle"
+					:maxlength="LIMITS.MAX_SONG_TITLE_LENGTH"
 					placeholder="Song Title"
 					@keyup="handleTitleKeyUp"
 				/>
 				<input
 					v-model="editKey"
+					:maxlength="LIMITS.MAX_SONG_KEY_LENGTH"
 					placeholder="Song Key"
 					class="key-input"
 					@keyup="handleKeyInputKeyUp"

@@ -1,81 +1,47 @@
-import { computed, nextTick, ref, watch } from "vue";
-import { useRefHistory } from "@vueuse/core";
+import { computed, nextTick, ref, watch } from 'vue'
+import { useRefHistory } from '@vueuse/core'
 import {
   store,
   type SetItem,
   type SetListMetadata,
-  sanitizeEncoreMarkers,
-} from "../store";
+  sanitizeEncoreMarkers
+} from '../store'
+import { LIMITS } from '../constants/limits'
+import { isDataEqual, type ComparableData } from '../utils/stateComparison'
 
 /**
  * Represents the trackable state for undo/redo operations.
  * This excludes isDirty as it's a derived state.
  */
 interface HistoryState {
-  metadata: SetListMetadata;
-  sets: SetItem[];
+  metadata: SetListMetadata
+  sets: SetItem[]
 }
 
 /**
  * Deep clone function for history snapshots
  */
 function deepClone<T>(value: T): T {
-  return JSON.parse(JSON.stringify(value));
+  return JSON.parse(JSON.stringify(value))
 }
 
 /**
- * Deep equality check for history state comparison.
- * Returns true if the two states are equal.
+ * Convert HistoryState to ComparableData for comparison
  */
-function isStateEqual(a: HistoryState, b: HistoryState): boolean {
-  // Quick reference check
-  if (a === b) return true;
-
-  // Compare metadata
-  if (
-    a.metadata.setListName !== b.metadata.setListName ||
-    a.metadata.venue !== b.metadata.venue ||
-    a.metadata.date !== b.metadata.date ||
-    a.metadata.actName !== b.metadata.actName
-  ) {
-    return false;
+function toComparableData(state: HistoryState): ComparableData {
+  return {
+    metadata: state.metadata,
+    sets: state.sets.map(set => ({
+      id: set.id,
+      name: set.name,
+      songs: set.songs.map(song => ({
+        id: song.id,
+        title: song.title,
+        key: song.key,
+        isEncoreMarker: song.isEncoreMarker
+      }))
+    }))
   }
-
-  // Compare sets count
-  if (a.sets.length !== b.sets.length) {
-    return false;
-  }
-
-  // Compare each set
-  for (let i = 0; i < a.sets.length; i++) {
-    const setA = a.sets[i];
-    const setB = b.sets[i];
-
-    if (
-      setA.id !== setB.id ||
-      setA.name !== setB.name ||
-      setA.songs.length !== setB.songs.length
-    ) {
-      return false;
-    }
-
-    // Compare songs
-    for (let j = 0; j < setA.songs.length; j++) {
-      const songA = setA.songs[j];
-      const songB = setB.songs[j];
-
-      if (
-        songA.id !== songB.id ||
-        songA.title !== songB.title ||
-        songA.key !== songB.key ||
-        songA.isEncoreMarker !== songB.isEncoreMarker
-      ) {
-        return false;
-      }
-    }
-  }
-
-  return true;
 }
 
 /**
@@ -86,12 +52,12 @@ export function useHistory() {
   // Create a ref that mirrors the relevant store state
   const historyState = ref<HistoryState>({
     metadata: deepClone(store.metadata),
-    sets: deepClone(store.sets),
-  });
+    sets: deepClone(store.sets)
+  })
 
   // Track whether we're currently applying a history change
   // to avoid triggering a new history entry during undo/redo
-  const isApplyingHistory = ref(false);
+  const isApplyingHistory = ref(false)
 
   // Use VueUse's useRefHistory for the actual history tracking
   const {
@@ -102,53 +68,59 @@ export function useHistory() {
     clear,
     history,
     pause,
-    resume,
+    resume
   } = useRefHistory(historyState, {
     deep: true,
-    capacity: 100, // Limit history to 100 entries
-    clone: deepClone,
-  });
+    capacity: LIMITS.HISTORY_CAPACITY,
+    clone: deepClone
+  })
 
   // Watch the store and sync changes to historyState
   // This creates new history entries when the store changes
   watch(
     () => ({
       metadata: store.metadata,
-      sets: store.sets,
+      sets: store.sets
     }),
-    (newValue) => {
-      if (isApplyingHistory.value) return;
+    newValue => {
+      if (isApplyingHistory.value) return
 
       const newState: HistoryState = {
         metadata: deepClone(newValue.metadata),
-        sets: deepClone(newValue.sets),
-      };
-
-      // Only create a new history entry if the state actually changed
-      if (isStateEqual(historyState.value, newState)) {
-        return;
+        sets: deepClone(newValue.sets)
       }
 
-      historyState.value = newState;
+      // Only create a new history entry if the state actually changed
+      // Use the shared comparison logic
+      if (
+        isDataEqual(
+          toComparableData(historyState.value),
+          toComparableData(newState)
+        )
+      ) {
+        return
+      }
+
+      historyState.value = newState
     },
-    { deep: true },
-  );
+    { deep: true }
+  )
 
   /**
    * Apply a history state snapshot back to the store
    */
   function applyStateToStore(state: HistoryState): void {
     // Update metadata
-    store.metadata.setListName = state.metadata.setListName;
-    store.metadata.venue = state.metadata.venue;
-    store.metadata.date = state.metadata.date;
-    store.metadata.actName = state.metadata.actName;
+    store.metadata.setListName = state.metadata.setListName
+    store.metadata.venue = state.metadata.venue
+    store.metadata.date = state.metadata.date
+    store.metadata.actName = state.metadata.actName
 
     // Update sets - we need to replace the entire array
-    store.sets.splice(0, store.sets.length, ...deepClone(state.sets));
+    store.sets.splice(0, store.sets.length, ...deepClone(state.sets))
 
     // Ensure encore markers are in valid state
-    sanitizeEncoreMarkers();
+    sanitizeEncoreMarkers()
     // Note: isDirty is now computed by comparing current state to original state,
     // so no manual assignment is needed here
   }
@@ -157,58 +129,58 @@ export function useHistory() {
    * Undo the last change
    */
   async function undo(): Promise<void> {
-    if (!canUndo.value) return;
+    if (!canUndo.value) return
 
     // Set flag before undo to prevent the store watcher from creating new history
-    isApplyingHistory.value = true;
+    isApplyingHistory.value = true
 
     // Pause history tracking during the undo operation
-    pause();
+    pause()
 
-    historyUndo();
-    applyStateToStore(historyState.value);
+    historyUndo()
+    applyStateToStore(historyState.value)
 
     // Wait for watchers to complete before resuming
-    await nextTick();
+    await nextTick()
 
     // Resume tracking without creating a new commit
-    resume(false);
-    isApplyingHistory.value = false;
+    resume(false)
+    isApplyingHistory.value = false
   }
 
   /**
    * Redo the last undone change
    */
   async function redo(): Promise<void> {
-    if (!canRedo.value) return;
+    if (!canRedo.value) return
 
     // Set flag before redo to prevent the store watcher from creating new history
-    isApplyingHistory.value = true;
+    isApplyingHistory.value = true
 
     // Pause history tracking during the redo operation
-    pause();
+    pause()
 
-    historyRedo();
-    applyStateToStore(historyState.value);
+    historyRedo()
+    applyStateToStore(historyState.value)
 
     // Wait for watchers to complete before resuming
-    await nextTick();
+    await nextTick()
 
     // Resume tracking without creating a new commit
-    resume(false);
-    isApplyingHistory.value = false;
+    resume(false)
+    isApplyingHistory.value = false
   }
 
   /**
    * Clear all history (useful when loading a new file or starting fresh)
    */
   function clearHistory(): void {
-    clear();
+    clear()
     // Reset history state to current store state
     historyState.value = {
       metadata: deepClone(store.metadata),
-      sets: deepClone(store.sets),
-    };
+      sets: deepClone(store.sets)
+    }
   }
 
   /**
@@ -216,8 +188,8 @@ export function useHistory() {
    */
   const undoCount = computed(() => {
     // history includes current state, so available undos is length - 1
-    return Math.max(0, history.value.length - 1);
-  });
+    return Math.max(0, history.value.length - 1)
+  })
 
   return {
     undo,
@@ -226,8 +198,8 @@ export function useHistory() {
     canRedo,
     clearHistory,
     undoCount,
-    history,
-  };
+    history
+  }
 }
 
-export type UseHistoryReturn = ReturnType<typeof useHistory>;
+export type UseHistoryReturn = ReturnType<typeof useHistory>
