@@ -260,7 +260,7 @@ onUnmounted(() => {
 @media (max-width: 767px) {
 	/* Show burger button on mobile */
 	.burger-menu-button {
-		/*display: flex;*/
+		display: flex;
 		align-items: center;
 		justify-content: center;
 	}
