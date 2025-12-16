@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import {
 	useFileOperations,
-	_resetHandleRestoreFlag,
+	_resetFileState,
 	_generateCopyFilename,
 } from "../useFileOperations";
 import {
@@ -40,75 +40,6 @@ Object.defineProperty(global, "localStorage", {
 window.alert = vi.fn();
 window.confirm = vi.fn(() => true);
 
-// Mock IndexedDB
-const mockIndexedDB = (() => {
-	let store: Record<string, unknown> = {};
-
-	const mockObjectStore = {
-		put: vi.fn((value: unknown, key: string) => {
-			store[key] = value;
-			return { onsuccess: null, onerror: null };
-		}),
-		get: vi.fn((key: string) => {
-			const request = {
-				result: store[key],
-				onsuccess: null as (() => void) | null,
-				onerror: null as (() => void) | null,
-			};
-			// Simulate async behavior
-			setTimeout(() => request.onsuccess?.(), 0);
-			return request;
-		}),
-		delete: vi.fn((key: string) => {
-			delete store[key];
-			return { onsuccess: null, onerror: null };
-		}),
-	};
-
-	const mockTransaction = {
-		objectStore: vi.fn(() => mockObjectStore),
-		oncomplete: null as (() => void) | null,
-		onerror: null as (() => void) | null,
-	};
-
-	const mockDB = {
-		transaction: vi.fn(() => {
-			// Simulate async completion
-			setTimeout(() => mockTransaction.oncomplete?.(), 0);
-			return mockTransaction;
-		}),
-		close: vi.fn(),
-		objectStoreNames: {
-			contains: vi.fn(() => true),
-		},
-		createObjectStore: vi.fn(),
-	};
-
-	return {
-		open: vi.fn(() => {
-			const request = {
-				result: mockDB,
-				onsuccess: null as (() => void) | null,
-				onerror: null as (() => void) | null,
-				onupgradeneeded: null as (() => void) | null,
-			};
-			// Simulate async behavior
-			setTimeout(() => request.onsuccess?.(), 0);
-			return request;
-		}),
-		_clear: () => {
-			store = {};
-		},
-		_mockDB: mockDB,
-		_mockObjectStore: mockObjectStore,
-	};
-})();
-
-Object.defineProperty(global, "indexedDB", {
-	value: mockIndexedDB,
-	writable: true,
-});
-
 // Mock canvas getContext for textMetrics
 const originalCreateElement = document.createElement.bind(document);
 vi.spyOn(document, "createElement").mockImplementation((tagName: string) => {
@@ -123,16 +54,12 @@ vi.spyOn(document, "createElement").mockImplementation((tagName: string) => {
 });
 
 describe("useFileOperations", () => {
-	beforeEach(async () => {
+	beforeEach(() => {
 		resetStore();
 		localStorageMock.clear();
-		mockIndexedDB._clear();
 		vi.clearAllMocks();
-		// Reset the handle restore flag for each test
-		_resetHandleRestoreFlag();
-		// Clear the module-level file handle state between tests
-		const { clearFileHandle } = useFileOperations();
-		await clearFileHandle();
+		// Reset the module-level file state between tests
+		_resetFileState();
 	});
 
 	afterEach(() => {
@@ -229,7 +156,7 @@ describe("useFileOperations", () => {
 		});
 	});
 
-	describe("file handle persistence", () => {
+	describe("file handle and filename persistence", () => {
 		it("should share file handle across multiple useFileOperations() calls", async () => {
 			// This test verifies the fix for the bug where the save dialog would
 			// appear even for previously saved documents. The file handle must
@@ -240,6 +167,7 @@ describe("useFileOperations", () => {
 				close: vi.fn().mockResolvedValue(undefined),
 			};
 			const mockHandle = {
+				name: "test-file.json",
 				createWritable: vi.fn().mockResolvedValue(mockWritable),
 			};
 			windowAny.showSaveFilePicker = vi.fn().mockResolvedValue(mockHandle);
@@ -248,11 +176,13 @@ describe("useFileOperations", () => {
 			const ops1 = useFileOperations();
 			await ops1.saveToDisk();
 			expect(ops1.currentFileHandle.value).toStrictEqual(mockHandle);
+			expect(ops1.currentFilename.value).toBe("test-file.json");
 			expect(window.showSaveFilePicker).toHaveBeenCalledTimes(1);
 
 			// Second instance (simulating component re-mount/HMR) should see the same handle
 			const ops2 = useFileOperations();
 			expect(ops2.currentFileHandle.value).toStrictEqual(mockHandle);
+			expect(ops2.currentFilename.value).toBe("test-file.json");
 
 			// Saving from second instance should NOT show picker (handle exists)
 			await ops2.saveToDisk();
@@ -260,6 +190,39 @@ describe("useFileOperations", () => {
 
 			// Cleanup
 			delete windowAny.showSaveFilePicker;
+		});
+
+		it("should persist filename to localStorage", async () => {
+			const mockWritable = {
+				write: vi.fn().mockResolvedValue(undefined),
+				close: vi.fn().mockResolvedValue(undefined),
+			};
+			const mockHandle = {
+				name: "my-setlist.json",
+				createWritable: vi.fn().mockResolvedValue(mockWritable),
+			};
+			windowAny.showSaveFilePicker = vi.fn().mockResolvedValue(mockHandle);
+
+			const { saveToDisk } = useFileOperations();
+			await saveToDisk();
+
+			// Should have saved filename to localStorage
+			expect(localStorageMock.setItem).toHaveBeenCalledWith(
+				"set-lister-current-filename",
+				"my-setlist.json",
+			);
+
+			// Cleanup
+			delete windowAny.showSaveFilePicker;
+		});
+
+		it("should clear filename from localStorage when clearing file handle", () => {
+			const { clearFileHandle } = useFileOperations();
+			clearFileHandle();
+
+			expect(localStorageMock.removeItem).toHaveBeenCalledWith(
+				"set-lister-current-filename",
+			);
 		});
 	});
 

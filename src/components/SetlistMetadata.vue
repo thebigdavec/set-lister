@@ -78,6 +78,7 @@ onMounted(() => {
 				@click="toggleEditingMetadata"
 				tooltip="Start editing details"
 				aria-label="Edit details"
+				nowrap
 			>
 				<Pencil class="icon" /> Edit Set Details
 			</Button>

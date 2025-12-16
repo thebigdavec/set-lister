@@ -85,18 +85,18 @@ const {
 // Dialog and Preview Functions
 // =============================================================================
 
-async function startNew(): Promise<void> {
+function startNew(): void {
 	if (!isDirty.value) {
 		resetStore();
-		await clearFileHandle();
+		clearFileHandle();
 		return;
 	}
 	showNewDialog.value = true;
 }
 
-async function confirmNew(): Promise<void> {
+function confirmNew(): void {
 	resetStore();
-	await clearFileHandle();
+	clearFileHandle();
 	clearHistory();
 	showNewDialog.value = false;
 }

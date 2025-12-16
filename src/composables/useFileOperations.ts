@@ -1,5 +1,10 @@
-import { ref } from "vue";
+import { ref, computed } from "vue";
 import { isDirty, loadStore, markClean, store } from "../store";
+
+/**
+ * LocalStorage key for persisting the current filename
+ */
+const FILENAME_STORAGE_KEY = "set-lister-current-filename";
 
 /**
  * Generate a suggested filename for "Save As" / "Save a Copy" by appending -01, -02, etc.
@@ -27,135 +32,19 @@ function generateCopyFilename(originalName: string): string {
 }
 
 /**
- * IndexedDB database name and store for persisting file handles
- */
-const DB_NAME = "set-lister-file-handles";
-const STORE_NAME = "handles";
-const HANDLE_KEY = "currentFileHandle";
-
-/**
- * Module-level file handle that persists across component re-mounts and HMR.
- * This ensures we don't lose track of the current file when the component re-renders.
+ * Module-level state that persists across component re-mounts and HMR.
  */
 const currentFileHandle = ref<FileSystemFileHandle | null>(null);
+const currentFilename = ref<string | null>(null);
 
-/**
- * Flag to track if we've attempted to restore the handle from IndexedDB
- */
-let handleRestoreAttempted = false;
-
-/**
- * Open the IndexedDB database for file handle storage
- */
-function openDatabase(): Promise<IDBDatabase> {
-	return new Promise((resolve, reject) => {
-		const request = indexedDB.open(DB_NAME, 1);
-
-		request.onerror = () => {
-			reject(request.error);
-		};
-
-		request.onsuccess = () => {
-			resolve(request.result);
-		};
-
-		request.onupgradeneeded = (event) => {
-			const db = (event.target as IDBOpenDBRequest).result;
-			if (!db.objectStoreNames.contains(STORE_NAME)) {
-				db.createObjectStore(STORE_NAME);
-			}
-		};
-	});
-}
-
-/**
- * Save the current file handle to IndexedDB for persistence across sessions
- */
-async function saveHandleToIndexedDB(
-	handle: FileSystemFileHandle | null,
-): Promise<void> {
-	try {
-		const db = await openDatabase();
-		const transaction = db.transaction(STORE_NAME, "readwrite");
-		const store = transaction.objectStore(STORE_NAME);
-
-		if (handle) {
-			store.put(handle, HANDLE_KEY);
-		} else {
-			store.delete(HANDLE_KEY);
-		}
-
-		return new Promise((resolve, reject) => {
-			transaction.oncomplete = () => {
-				db.close();
-				resolve();
-			};
-			transaction.onerror = () => {
-				db.close();
-				reject(transaction.error);
-			};
-		});
-	} catch (err) {
-		console.warn("Failed to save file handle to IndexedDB:", err);
+// Restore filename from localStorage on module load
+try {
+	const savedFilename = localStorage.getItem(FILENAME_STORAGE_KEY);
+	if (savedFilename) {
+		currentFilename.value = savedFilename;
 	}
-}
-
-/**
- * Restore the file handle from IndexedDB and request permission to use it
- */
-async function restoreHandleFromIndexedDB(): Promise<FileSystemFileHandle | null> {
-	try {
-		const db = await openDatabase();
-		const transaction = db.transaction(STORE_NAME, "readonly");
-		const objectStore = transaction.objectStore(STORE_NAME);
-
-		return new Promise((resolve, reject) => {
-			const request = objectStore.get(HANDLE_KEY);
-
-			request.onsuccess = async () => {
-				db.close();
-				const handle = request.result as FileSystemFileHandle | undefined;
-
-				if (!handle) {
-					resolve(null);
-					return;
-				}
-
-				// Check if we still have permission to access the file
-				try {
-					const permission = await handle.queryPermission({
-						mode: "readwrite",
-					});
-					if (permission === "granted") {
-						resolve(handle);
-						return;
-					}
-
-					// Try to request permission (requires user gesture, so this may fail)
-					// We'll just return null if we can't get permission - the user can re-open the file
-					const requestResult = await handle.requestPermission({
-						mode: "readwrite",
-					});
-					if (requestResult === "granted") {
-						resolve(handle);
-					} else {
-						resolve(null);
-					}
-				} catch {
-					// Permission request failed (likely no user gesture)
-					resolve(null);
-				}
-			};
-
-			request.onerror = () => {
-				db.close();
-				reject(request.error);
-			};
-		});
-	} catch (err) {
-		console.warn("Failed to restore file handle from IndexedDB:", err);
-		return null;
-	}
+} catch {
+	// Ignore localStorage errors
 }
 
 /**
@@ -192,12 +81,32 @@ export interface FileOperationsOptions {
 }
 
 /**
+ * Save the current filename to localStorage
+ */
+function saveFilenameToStorage(filename: string | null): void {
+	try {
+		if (filename) {
+			localStorage.setItem(FILENAME_STORAGE_KEY, filename);
+		} else {
+			localStorage.removeItem(FILENAME_STORAGE_KEY);
+		}
+	} catch {
+		// Ignore localStorage errors
+	}
+}
+
+/**
  * Composable for file save/load operations using File System Access API
  * with fallbacks for browsers that don't support it.
  */
 export function useFileOperations(options: FileOperationsOptions = {}) {
 	const { showConfirm, showAlert, onLoad } = options;
 	const fileInput = ref<HTMLInputElement | null>(null);
+
+	/**
+	 * The display name of the current file (without path)
+	 */
+	const displayFilename = computed(() => currentFilename.value);
 
 	type SaveEvent =
 		| MouseEvent
@@ -206,36 +115,11 @@ export function useFileOperations(options: FileOperationsOptions = {}) {
 		| undefined;
 
 	/**
-	 * Attempt to restore the file handle from IndexedDB on first use.
-	 * This is called lazily to avoid blocking initialization.
-	 */
-	async function tryRestoreHandle(): Promise<void> {
-		if (handleRestoreAttempted || currentFileHandle.value) {
-			return;
-		}
-		handleRestoreAttempted = true;
-
-		// Only attempt if File System Access API is available
-		if (
-			"showSaveFilePicker" in window &&
-			typeof window.showSaveFilePicker === "function"
-		) {
-			const handle = await restoreHandleFromIndexedDB();
-			if (handle) {
-				currentFileHandle.value = handle;
-			}
-		}
-	}
-
-	/**
 	 * Save the current set list to disk.
 	 * Uses File System Access API if available, otherwise falls back to download.
 	 * @param event - Optional event to check for altKey (Save As)
 	 */
 	async function saveToDisk(event?: SaveEvent): Promise<void> {
-		// Try to restore handle from IndexedDB first
-		await tryRestoreHandle();
-
 		const data = {
 			metadata: store.metadata,
 			sets: store.sets,
@@ -247,16 +131,21 @@ export function useFileOperations(options: FileOperationsOptions = {}) {
 				"showSaveFilePicker" in window &&
 				typeof window.showSaveFilePicker === "function"
 			) {
-				const saveAs =
-					Boolean(event && "altKey" in event && event.altKey) ||
-					!currentFileHandle.value;
+				const isSaveAs = Boolean(event && "altKey" in event && event.altKey);
+				const hasExistingHandle = Boolean(currentFileHandle.value);
 
-				if (saveAs) {
-					// Generate suggested filename - use copy name if we have an existing file
+				// Determine if we need to show the picker
+				const showPicker = isSaveAs || !hasExistingHandle;
+
+				if (showPicker) {
+					// Generate suggested filename
 					let suggestedName: string;
-					if (currentFileHandle.value) {
+					if (isSaveAs && currentFilename.value) {
 						// Save As on existing file - suggest a copy name with -01, -02, etc.
-						suggestedName = generateCopyFilename(currentFileHandle.value.name);
+						suggestedName = generateCopyFilename(currentFilename.value);
+					} else if (currentFilename.value) {
+						// Use current filename
+						suggestedName = currentFilename.value;
 					} else {
 						// New file - use the set list name
 						suggestedName = `${store.metadata.setListName || "set-list"}.json`;
@@ -272,8 +161,8 @@ export function useFileOperations(options: FileOperationsOptions = {}) {
 						],
 					});
 					currentFileHandle.value = handle;
-					// Persist the new handle to IndexedDB
-					await saveHandleToIndexedDB(handle);
+					currentFilename.value = handle.name;
+					saveFilenameToStorage(handle.name);
 				}
 
 				if (!currentFileHandle.value) return;
@@ -289,11 +178,27 @@ export function useFileOperations(options: FileOperationsOptions = {}) {
 				const url = URL.createObjectURL(blob);
 				const anchor = document.createElement("a");
 				anchor.href = url;
-				anchor.download = `${store.metadata.setListName || "set-list"}.json`;
+
+				// Use current filename or generate one
+				let downloadName: string;
+				if (currentFilename.value) {
+					const isSaveAs = Boolean(event && "altKey" in event && event.altKey);
+					downloadName = isSaveAs
+						? generateCopyFilename(currentFilename.value)
+						: currentFilename.value;
+				} else {
+					downloadName = `${store.metadata.setListName || "set-list"}.json`;
+				}
+
+				anchor.download = downloadName;
 				document.body.appendChild(anchor);
 				anchor.click();
 				document.body.removeChild(anchor);
 				URL.revokeObjectURL(url);
+
+				// Update filename (user may have changed it in the save dialog, but we can't know)
+				currentFilename.value = downloadName;
+				saveFilenameToStorage(downloadName);
 				markClean();
 			}
 		} catch (err) {
@@ -357,8 +262,8 @@ export function useFileOperations(options: FileOperationsOptions = {}) {
 
 				if (loadStore(data)) {
 					currentFileHandle.value = handle;
-					// Persist the handle to IndexedDB
-					await saveHandleToIndexedDB(handle);
+					currentFilename.value = handle.name;
+					saveFilenameToStorage(handle.name);
 					onLoad?.();
 				} else {
 					if (showAlert) {
@@ -403,9 +308,10 @@ export function useFileOperations(options: FileOperationsOptions = {}) {
 			const data = JSON.parse(text);
 
 			if (loadStore(data)) {
+				// No file handle in fallback mode
 				currentFileHandle.value = null;
-				// Clear the persisted handle since we loaded via fallback
-				await saveHandleToIndexedDB(null);
+				currentFilename.value = file.name;
+				saveFilenameToStorage(file.name);
 				onLoad?.();
 			} else {
 				if (showAlert) {
@@ -434,11 +340,12 @@ export function useFileOperations(options: FileOperationsOptions = {}) {
 	}
 
 	/**
-	 * Clear the current file handle (used when starting a new set list)
+	 * Clear the current file handle and filename (used when starting a new set list)
 	 */
-	async function clearFileHandle(): Promise<void> {
+	function clearFileHandle(): void {
 		currentFileHandle.value = null;
-		await saveHandleToIndexedDB(null);
+		currentFilename.value = null;
+		saveFilenameToStorage(null);
 	}
 
 	/**
@@ -453,6 +360,7 @@ export function useFileOperations(options: FileOperationsOptions = {}) {
 
 	return {
 		currentFileHandle,
+		currentFilename: displayFilename,
 		fileInput,
 		saveToDisk,
 		loadFromDisk,
@@ -463,10 +371,16 @@ export function useFileOperations(options: FileOperationsOptions = {}) {
 }
 
 /**
- * Reset the handle restore flag (for testing purposes)
+ * Reset module-level state (for testing purposes)
  */
-export function _resetHandleRestoreFlag(): void {
-	handleRestoreAttempted = false;
+export function _resetFileState(): void {
+	currentFileHandle.value = null;
+	currentFilename.value = null;
+	try {
+		localStorage.removeItem(FILENAME_STORAGE_KEY);
+	} catch {
+		// Ignore localStorage errors
+	}
 }
 
 /**
