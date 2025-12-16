@@ -66,29 +66,55 @@ onUnmounted(() => {
 </script>
 
 <template>
-	<!-- Burger menu button (mobile only) -->
-	<Button
-		class="burger-menu-button no-print"
-		:class="{ 'mobile-open': isMobileMenuOpen }"
-		@click="toggleMobileMenu"
-		aria-label="Toggle menu"
-		:aria-expanded="isMobileMenuOpen"
-	>
-		<Menu v-if="!isMobileMenuOpen" class="icon" />
-		<X v-else class="icon" />
-	</Button>
+	<div class="menu-container no-print">
+		<!-- Undo/Redo buttons - always visible -->
+		<div class="undo-redo-buttons">
+			<Button
+				@click="handleAction('undo')"
+				nowrap
+				class="action-item"
+				:disabled="!canUndo"
+				:tooltip="`Undo (${shortcuts.undo})`"
+				aria-label="Undo"
+				aria-describedby="tooltip-undo"
+			>
+				<Undo2 class="icon" /> <span class="button-label">Undo</span>
+			</Button>
+			<Button
+				@click="handleAction('redo')"
+				nowrap
+				class="action-item"
+				:disabled="!canRedo"
+				aria-describedby="tooltip-redo"
+				:tooltip="`Redo (${shortcuts.redo})`"
+				aria-label="Redo"
+			>
+				<Redo2 class="icon" /> <span class="button-label">Redo</span>
+			</Button>
+		</div>
 
-	<!-- Mobile menu overlay -->
-	<div
-		v-if="isMobileMenuOpen"
-		class="mobile-menu-overlay no-print"
-		@click="closeMobileMenu"
-		aria-hidden="true"
-	></div>
+		<!-- Burger menu button (mobile only) -->
+		<Button
+			class="burger-menu-button"
+			:class="{ 'mobile-open': isMobileMenuOpen }"
+			@click="toggleMobileMenu"
+			aria-label="Toggle menu"
+			:aria-expanded="isMobileMenuOpen"
+		>
+			<Menu v-if="!isMobileMenuOpen" class="icon" />
+			<X v-else class="icon" />
+		</Button>
 
-	<!-- Menu content (desktop always visible, mobile slide-in) -->
-	<div class="menu-bar no-print" :class="{ 'mobile-open': isMobileMenuOpen }">
-		<div>
+		<!-- Mobile menu overlay -->
+		<div
+			v-if="isMobileMenuOpen"
+			class="mobile-menu-overlay"
+			@click="closeMobileMenu"
+			aria-hidden="true"
+		></div>
+
+		<!-- Menu content (desktop always visible, mobile slide-in) -->
+		<div class="menu-bar" :class="{ 'mobile-open': isMobileMenuOpen }">
 			<div class="menu-items">
 				<Button
 					@click="handleAction('new')"
@@ -132,36 +158,28 @@ onUnmounted(() => {
 				</Button>
 			</div>
 		</div>
-		<div>
-			<div class="menu-items">
-				<Button
-					@click="handleAction('undo')"
-					nowrap
-					class="action-item"
-					:disabled="!canUndo"
-					:tooltip="`Undo (${shortcuts.undo})`"
-					aria-label="Undo"
-					aria-describedby="tooltip-undo"
-				>
-					<Undo2 class="icon" /> Undo
-				</Button>
-				<Button
-					@click="handleAction('redo')"
-					nowrap
-					class="action-item"
-					:disabled="!canRedo"
-					aria-describedby="tooltip-redo"
-					:tooltip="`Redo (${shortcuts.redo})`"
-					aria-label="Redo"
-				>
-					<Redo2 class="icon" /> Redo
-				</Button>
-			</div>
-		</div>
 	</div>
 </template>
 
 <style scoped>
+.menu-container {
+	display: flex;
+	flex-wrap: wrap;
+	justify-content: space-between;
+	align-items: center;
+	gap: 0.5rem;
+	margin-bottom: 1rem;
+	position: relative;
+}
+
+/* Undo/Redo buttons - always visible */
+.undo-redo-buttons {
+	display: flex;
+	gap: 0.5rem;
+	align-items: center;
+	z-index: 100;
+}
+
 /* Burger menu button - hidden on desktop */
 .burger-menu-button {
 	display: none;
@@ -173,19 +191,10 @@ onUnmounted(() => {
 	border-radius: 6px;
 	box-shadow: 0 2px 4px -2px #000;
 	transition: background-color 0.2s;
-	position: absolute;
-	top: 1rem;
-	left: calc(100% - 1rem);
-	transform: translateX(-100%);
 	z-index: 1001;
-	transition:
-		left 0.25s ease,
-		transform 0.25s ease;
 
 	&.mobile-open {
 		background-color: #400;
-		left: 1rem;
-		transform: translateX(0);
 	}
 }
 
@@ -203,25 +212,17 @@ onUnmounted(() => {
 .menu-bar {
 	display: flex;
 	flex-wrap: wrap;
-	justify-content: space-between;
 	gap: 0.5rem;
-	margin-bottom: 1rem;
 	position: relative;
 	z-index: 100;
 	align-items: center;
 	text-wrap: nowrap;
+}
 
-	> * {
-		display: flex;
-		flex-wrap: wrap;
-		gap: 0.5rem;
-		align-items: center;
-		.menu-items {
-			display: flex;
-			gap: 0.5rem;
-			align-items: center;
-		}
-	}
+.menu-items {
+	display: flex;
+	gap: 0.5rem;
+	align-items: center;
 }
 
 .action-item {
@@ -243,26 +244,36 @@ onUnmounted(() => {
 	}
 }
 
-.divider {
-	height: 1px;
-	background: #444;
-	margin: 0.25rem 0;
-}
-
 .dirty-indicator-text {
 	outline: 2px solid #ee88;
 }
+
 .dirty-indicator {
 	color: #ee8;
 }
 
 /* Mobile responsive styles */
 @media (max-width: 767px) {
+	.menu-container {
+		justify-content: flex-start;
+	}
+
+	/* Undo/Redo buttons - icon only on mobile */
+	.undo-redo-buttons {
+		order: 1;
+	}
+
+	.undo-redo-buttons .button-label {
+		display: none;
+	}
+
 	/* Show burger button on mobile */
 	.burger-menu-button {
 		display: flex;
 		align-items: center;
 		justify-content: center;
+		order: 2;
+		margin-left: auto;
 	}
 
 	/* Menu bar becomes a slide-in panel on mobile */
@@ -278,6 +289,7 @@ onUnmounted(() => {
 		justify-content: flex-start;
 		align-items: stretch;
 		padding: 1rem;
+		padding-top: 4rem;
 		margin: 0;
 		gap: 1rem;
 		z-index: 1000;
@@ -291,18 +303,12 @@ onUnmounted(() => {
 	}
 
 	/* Stack menu items vertically on mobile */
-	.menu-bar > * {
-		width: 100%;
-		flex-direction: column;
-		gap: 0.5rem;
-	}
-
 	.menu-bar .menu-items {
 		width: 100%;
 		flex-direction: column;
 	}
 
-	.action-item {
+	.menu-bar .action-item {
 		width: 100%;
 		justify-content: flex-start;
 	}
