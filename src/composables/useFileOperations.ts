@@ -1,5 +1,6 @@
 import { ref, computed } from "vue";
 import { isDirty, loadStore, markClean, store } from "../store";
+import { generateSlugFromArray } from "../utils/generateSlugFromArray";
 
 /**
  * LocalStorage key for persisting the current filename
@@ -148,7 +149,10 @@ export function useFileOperations(options: FileOperationsOptions = {}) {
 						suggestedName = currentFilename.value;
 					} else {
 						// New file - use the set list name
-						suggestedName = `${store.metadata.setListName || "set-list"}.json`;
+						suggestedName = generateSlugFromArray([
+							store.metadata.setListName,
+							store.metadata.actName,
+						]);
 					}
 
 					const handle = await window.showSaveFilePicker({
