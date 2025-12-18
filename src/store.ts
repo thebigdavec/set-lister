@@ -10,6 +10,9 @@ import {
   sanitizeMetadata
 } from './utils/sanitize'
 import { isDataEqual, type ComparableData } from './utils/stateComparison'
+import { migrateToCurrentSchema } from './utils/schemaMigration'
+
+export const CURRENT_SCHEMA_VERSION = 1
 
 export interface Song {
   id: string
@@ -40,6 +43,7 @@ export interface SetListMetadata {
 }
 
 export interface StoreState {
+  schemaVersion: number
   metadata: SetListMetadata
   sets: SetItem[]
 }
@@ -132,6 +136,7 @@ function createEmptySet(): SetItem {
 
 function createDefaultState(): StoreState {
   return {
+    schemaVersion: CURRENT_SCHEMA_VERSION,
     metadata: {
       setListName: '',
       venue: '',
@@ -231,10 +236,13 @@ function extractComparableData(state: StoreState): ComparableData {
 }
 
 function buildInitialState(): StoreState {
-  const savedState = parseSavedState(safeGetItem(STORAGE_KEYS.DATA))
+  const rawState = parseSavedState(safeGetItem(STORAGE_KEYS.DATA))
+  const migratedState = rawState ? migrateToCurrentSchema(rawState) : null
+  const savedState = migratedState
   const defaults = createDefaultState()
 
   return {
+    schemaVersion: CURRENT_SCHEMA_VERSION,
     metadata: {
       setListName:
         savedState?.metadata?.setListName ?? defaults.metadata.setListName,
@@ -442,6 +450,7 @@ export function markClean(): void {
  */
 export function resetStore(): void {
   const newData = createDefaultState()
+  store.schemaVersion = newData.schemaVersion
   store.sets = newData.sets
   store.metadata = newData.metadata
   sanitizeEncoreMarkers()
@@ -461,6 +470,7 @@ export function loadStore(data: unknown): boolean {
     return false
   }
 
+  store.schemaVersion = CURRENT_SCHEMA_VERSION
   store.sets = normalizeSets(candidate.sets)
   store.metadata = sanitizeMetadata({
     setListName: candidate.metadata?.setListName,
