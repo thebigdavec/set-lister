@@ -264,30 +264,16 @@ onMounted(() => {
 		margin: 0;
 		padding: 0;
 	}
-
-	button {
-		font-size: 1rem;
-		background: #242424;
-		transition: background-color 0.2s ease;
-		&:hover,
-		&:focus-visible {
-			background: #444;
-		}
-	}
 }
 
 .metadata-detail {
 	display: flex;
 	gap: 0.5rem;
 	align-items: center;
-	color: #ddd;
-
-	&.metadata-detail--heading {
-		color: #e3e3e3;
-	}
+	color: var(--text-color-muted);
 }
 
 .icon {
-	color: #cca;
+	color: var(--accent-color);
 }
 </style>
