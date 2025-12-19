@@ -313,16 +313,12 @@ header {
 		margin: 0;
 		line-height: 1;
 		margin-block-end: 1em;
-		color: #fffa;
+		color: var(--text-color-muted);
 	}
 }
 
 h1 {
 	margin: 0;
-	background: linear-gradient(45deg, #646cff, #a164ff);
-	background-clip: text;
-	-webkit-background-clip: text;
-	-webkit-text-fill-color: transparent;
 
 	img {
 		width: 1em;
@@ -340,7 +336,7 @@ h1 {
 footer {
 	margin-top: 3rem;
 	text-align: center;
-	color: #666;
+	color: var(--text-color-ghost);
 	font-size: 0.9rem;
 }
 
@@ -362,18 +358,18 @@ footer {
 	justify-content: center;
 	align-items: center;
 	gap: 1rem;
-	border: 1px solid #444;
+	border: 1px solid var(--border-color);
 	padding: 0.5rem 1rem;
-	box-shadow: 0 2px 4px rgba(0, 0, 0, 0.35);
+	box-shadow: 0 2px 4px var(--shadow-color);
 }
 
 .preview-control {
 	display: flex;
 	gap: 0.5rem;
-	border: 1px solid #666;
+	border: 1px solid var(--border-color);
 	cursor: pointer;
 	padding: 0.5rem 1rem;
-	border-radius: 4px;
+	border-radius: 0.6em;
 	transition: background-color 0.2s ease;
 }
 
