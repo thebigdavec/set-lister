@@ -362,7 +362,6 @@ footer {
 	justify-content: center;
 	align-items: center;
 	gap: 1rem;
-	background: #222;
 	border: 1px solid #444;
 	padding: 0.5rem 1rem;
 	box-shadow: 0 2px 4px rgba(0, 0, 0, 0.35);
@@ -371,7 +370,6 @@ footer {
 .preview-control {
 	display: flex;
 	gap: 0.5rem;
-	background: #444;
 	border: 1px solid #666;
 	cursor: pointer;
 	padding: 0.5rem 1rem;
@@ -383,7 +381,7 @@ footer {
 	flex: 1;
 	padding: 1rem;
 	overflow-y: auto;
-	background-color: #525659;
+	background-color: var(--bg-color-muted);
 	display: flex;
 	flex-direction: column;
 	align-items: center;

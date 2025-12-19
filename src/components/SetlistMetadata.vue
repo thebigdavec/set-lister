@@ -58,7 +58,7 @@ onMounted(() => {
 </script>
 
 <template>
-	<Card>
+	<Card class="metadata">
 		<div class="metadata-title">
 			<h2 v-if="noDetailsExist">Enter Setlist Details</h2>
 			<h2 v-else-if="store.metadata.setListName">
@@ -190,11 +190,17 @@ onMounted(() => {
 </template>
 
 <style scoped>
+.metadata {
+	display: grid;
+	gap: 1em;
+}
+
 .metadata-grid {
 	display: grid;
 	grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
 	gap: 1rem;
 }
+
 .set-list-footer {
 	display: flex;
 	justify-content: space-between;
@@ -217,43 +223,25 @@ onMounted(() => {
 	align-items: center;
 	gap: 0.35rem;
 	font-size: 0.8rem;
-	color: #888;
+	color: var(--text-color-muted);
 	cursor: pointer;
 	transition: color 0.2s ease;
 	user-select: none;
 
-	&:hover {
-		color: #bbb;
+	&:hover,
+	&:focus-visible {
+		color: var(--text-color-hover);
 	}
 
 	&.active {
-		color: #ddd;
+		color: var(--text-color-active);
 	}
 }
+
 .input-group {
 	display: flex;
 	flex-direction: column;
-	gap: 0.5rem;
-}
-
-.input-group label {
-	font-size: 0.8rem;
-	color: #888;
-	text-transform: uppercase;
-	letter-spacing: 0.05em;
-}
-
-.input-group input {
-	padding: 0.5rem;
-	border-radius: 4px;
-	border: 1px solid #444;
-	background: #222;
-	color: white;
-}
-
-.input-group input:focus {
-	border-color: var(--accent-color);
-	outline: none;
+	gap: 0.2rem;
 }
 
 .metadata-details {
@@ -270,10 +258,9 @@ onMounted(() => {
 	justify-content: space-between;
 	align-items: center;
 	gap: 0.5rem;
-	font-size: 1.6rem;
-	color: #ddd;
 
 	h2 {
+		font-size: var(--card-title-fs);
 		margin: 0;
 		padding: 0;
 	}

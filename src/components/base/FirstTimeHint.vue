@@ -57,18 +57,17 @@ onMounted(() => {
 			aria-live="polite"
 		>
 			<Tooltip text="Here's a little tip for you!" position="bottom">
-				<Lightbulb class="hint-icon" aria-hidden="true" />
+				<Lightbulb class="icon hint-icon" aria-hidden="true" />
 			</Tooltip>
 			<span class="hint-text">{{ text }}</span>
 			<Button
 				type="button"
-				class="hint-dismiss"
 				aria-label="Dismiss tip"
 				tooltip="Dismiss tip"
 				size="sm"
 				@click="dismiss"
 			>
-				<X class="dismiss-icon" aria-hidden="true" />
+				<X class="icon" aria-hidden="true" />
 			</Button>
 		</div>
 	</Transition>
@@ -80,15 +79,9 @@ onMounted(() => {
 	align-items: center;
 	gap: 0.5rem;
 	padding: 0.5rem 0.75rem;
-	background: linear-gradient(
-		135deg,
-		rgba(100, 108, 255, 0.15),
-		rgba(161, 100, 255, 0.15)
-	);
-	border: 1px solid rgba(100, 108, 255, 0.3);
+	background-color: var(--bg-color-accent);
 	border-radius: 6px;
 	font-size: 0.85rem;
-	color: #ddd;
 	line-height: 1.4;
 }
 
@@ -105,47 +98,11 @@ onMounted(() => {
 }
 
 .hint-icon {
-	flex-shrink: 0;
-	width: 16px;
-	height: 16px;
-	color: #a164ff;
+	color: var(--accent-color);
 }
 
 .hint-text {
 	flex: 1;
-}
-
-.hint-dismiss {
-	flex-shrink: 0;
-	display: flex;
-	align-items: center;
-	justify-content: center;
-	width: 20px;
-	height: 20px;
-	padding: 0;
-	background: transparent;
-	border: none;
-	border-radius: 4px;
-	color: #888;
-	cursor: pointer;
-	transition:
-		color 0.15s ease,
-		background-color 0.15s ease;
-}
-
-.hint-dismiss:hover {
-	color: #fff;
-	background-color: rgba(255, 255, 255, 0.1);
-}
-
-.hint-dismiss:focus-visible {
-	outline: 2px solid var(--accent-color);
-	outline-offset: 2px;
-}
-
-.dismiss-icon {
-	width: 14px;
-	height: 14px;
 }
 
 /* Fade transition */

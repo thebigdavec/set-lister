@@ -394,7 +394,6 @@ function cancelDelete(): void {
 
 <style scoped>
 .set-container {
-	background-color: #1e1e1e;
 	display: flex;
 	flex-direction: column;
 }
@@ -404,12 +403,10 @@ function cancelDelete(): void {
 	position: sticky;
 	top: 0;
 	z-index: 1;
-	background: #1e1e1e80;
 	backdrop-filter: blur(5px);
 	justify-content: space-between;
 	align-items: center;
 	padding-block: 0.5rem;
-	border-block-end: 1px solid #1e1e1e;
 	gap: 0.5rem;
 	flex-wrap: wrap;
 }
@@ -440,7 +437,7 @@ function cancelDelete(): void {
 
 .set-name-input {
 	width: 100%;
-	font-size: 1.5rem;
+	font-size: 2em;
 	font-weight: bold;
 	background: transparent;
 	border: none;
@@ -471,12 +468,13 @@ function cancelDelete(): void {
 
 .sortable-ghost {
 	opacity: 0.5;
-	background: #333;
+	background-color: var(--bg-color-ghost);
+	border: 3px dashed var(--accent-color);
 }
 
 .empty-set-message {
 	text-align: center;
-	color: #888;
+	color: var(--text-color-ghost);
 	padding: 1rem;
 	font-style: italic;
 }
@@ -491,6 +489,6 @@ function cancelDelete(): void {
 .marker-hint {
 	margin: 0;
 	font-size: 0.85rem;
-	color: #bbbbbb;
+	color: var(--text-color-ghost);
 }
 </style>

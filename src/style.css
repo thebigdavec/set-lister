@@ -11,24 +11,64 @@
 }
 
 :root {
-	--bg-color: #1a1a1a;
-	--text-color: #ffffff;
-	--accent-color: #646cff;
-	--success-color: #22aa22;
-	--error-color: #ee3b3b;
-	--card-bg: #1e1e1e;
-	--border-color: #333;
-	--font-family:
-		"NotoSans", Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
-	--exit-hover: 300ms ease-out;
-	--enter-hover: 150ms ease-in;
-}
+	--bg-color: light-dark(#e8e8e8, #1a1a1a);
+	--bg-color-1: light-dark(#f0f0f0, #1e1e1e);
+	--bg-color-2: light-dark(#f7f7f7, #222222);
+	--bg-color-hover: light-dark(#fcfcfc, #222222);
+	--bg-color-active: light-dark(#e0e0e0, #0e0e0e);
+	--bg-color-muted: light-dark(#888, #888);
+	--bg-color-ghost: light-dark(#ccc, #333);
 
-body {
-	color-scheme: dark;
-	margin: 0;
-	background-color: var(--bg-color);
-	color: var(--text-color);
+	--bg-color-accent: light-dark(#a0ade0, #222550);
+	--bg-color-accent-muted: light-dark(#c0cdf0, #121530);
+	--bg-color-accent-ghost: light-dark(#e0e8ef, #282a40);
+	--bg-color-accent-hover: light-dark(#b0bdef, #333560);
+	--bg-color-accent-active: light-dark(#909dd0, #191e40);
+
+	--text-color: light-dark(#000000, #ffffff);
+	--text-color-1: light-dark(#1e1e1e, #fafafa);
+	--text-color-2: light-dark(#222222, #f0f0f0);
+	--text-color-hover: light-dark(#1e1e1e, #fafafa);
+	--text-color-active: light-dark(#000000, #ffffff);
+	--text-on-dark: #fff;
+	--text-on-light: #000;
+	--text-color-muted: light-dark(#585858, #b8b8b8);
+	--text-color-ghost: light-dark(#aaa, #888);
+
+	--border-color: light-dark(rgba(0, 0, 0, 0.2), rgba(255, 255, 255, 0.2));
+	--border-color-ghost: light-dark(
+		rgba(0, 0, 0, 0.1),
+		rgba(255, 255, 255, 0.1)
+	);
+	--border-color-hover: var(--accent-color-hover);
+	--border-color-active: var(--accent-color-active);
+
+	--accent-color: light-dark(#444ccf, #646cff);
+	--accent-color-hover: light-dark(#555ddf, #757dff);
+	--accent-color-active: light-dark(#333bbe, #535bee);
+
+	--success-color: light-dark(#22aa22, #22aa22);
+	--success-color-hover: light-dark(#28ee28, #28ee28);
+	--success-color-active: light-dark(#337733, #337733);
+
+	--error-color: light-dark(#ee3b3b, #ee3b3b);
+	--error-color-hover: light-dark(#ff4b4b, #ff4b4b);
+	--error-color-active: light-dark(#bb3b3b, #bb3b3b);
+
+	--card-bg: light-dark(#fafafa, #1a1a1a);
+	--card-bg-1: light-dark(#fcfcfc, #1e1e1e);
+	--card-bg-2: light-dark(#ffffff, #222222);
+	--card-bg-hover: light-dark(#fdfdfd, #1a1a1a);
+	--card-bg-active: light-dark(#e0e0e0, #262626);
+
+	--tooltip-bg: light-dark(#f8f8c0, #222211);
+	--tooltip-text: light-dark(#000000, #ffffdd);
+
+	--shadow-color: light-dark(rgba(5, 0, 15, 0.15), transparent);
+
+	--card-title-fs: 1.6em;
+
+	color-scheme: light dark;
 	font-family: var(--font-family);
 	line-height: 1.5;
 	min-height: 100vh;
@@ -36,18 +76,17 @@ body {
 	accent-color: var(--accent-color);
 }
 
+body {
+	font-size: clamp(0.68rem, 0.85vw + 0.85rem, 1.02rem);
+	background: var(--bg-color);
+	color: var(--text-color);
+}
+
 #app {
 	max-width: 1280px;
 	margin: 0 auto;
 	padding: 0.5rem;
 }
-
-.icon {
-	width: 1em;
-}
-
-/* Responsive header font sizes */
-/* using clamp */
 
 h1 {
 	font-size: clamp(1.7rem, 1.7vw + 0.85rem, 3.4rem);
@@ -73,19 +112,54 @@ h6 {
 	font-size: clamp(0.34rem, 0.34vw + 0.34rem, 0.51rem);
 }
 
-/*responsive body fontsize using clamp*/
-
-body {
-	font-size: clamp(0.68rem, 0.85vw + 0.85rem, 1.02rem);
+label {
+	font-size: 0.7em;
+	color: var(--text-color-muted);
+	text-transform: uppercase;
+	letter-spacing: 0.075em;
 }
 
 input {
-	background-color: var(--card-bg);
 	border: 1px solid var(--border-color);
-	color: var(--text-color);
+	background-color: inherit;
 	padding: 0.5em;
 	border-radius: 4px;
-	font-size: 1em;
+	font-size: 0.8em;
+
+	&:focus {
+		border-color: var(--accent-color);
+		outline: none;
+	}
+}
+
+input[type="checkbox"] {
+	width: 0;
+	position: relative;
+	margin-inline: 1em;
+	&::before {
+		content: "";
+		position: absolute;
+		top: 50%;
+		left: 50%;
+		transform: translate(-50%, -50%);
+		font-size: 1.5em;
+		width: 1em;
+		height: 1em;
+		text-align: center;
+		border-radius: 50%;
+		border: 2px solid var(--border-color);
+		background-color: var(--bg-color);
+	}
+
+	&:checked::before {
+		content: "\2713"; /* insert check mark */
+		color: white;
+		background-color: var(--accent-color);
+	}
+}
+
+.icon {
+	width: 1em;
 }
 
 @media print {
@@ -107,6 +181,6 @@ input {
 		border: none;
 		padding: 0;
 		background-color: transparent;
-		color: black;
+		color: light-dark(white, black);
 	}
 }

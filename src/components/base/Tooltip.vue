@@ -253,16 +253,14 @@ watch(
 
 .tooltip-content {
 	display: block;
-	background-color: rgba(30, 30, 30, 0.95);
-	color: #fffc;
+	background-color: var(--tooltip-bg);
+	color: var(--tooltip-text);
 	padding: 0.5em 0.75em;
 	border-radius: 6px;
-	border: 1px solid rgba(255, 255, 255, 0.3);
+	border: 1px solid var(--border-color);
 	font-size: 0.85rem;
 	line-height: 1.4;
-	box-shadow:
-		0 4px 12px rgba(0, 0, 0, 0.3),
-		0 0 0 1px rgba(255, 255, 255, 0.1);
+	box-shadow: 0 4px 12px var(--shadow-color);
 	text-align: center;
 	word-wrap: break-word;
 }
