@@ -1,13 +1,21 @@
 <script setup lang="ts">
 import { computed, nextTick, onMounted, onUnmounted, ref, watch } from "vue";
 import { Printer, X } from "lucide-vue-next";
-import { addSet, isDirty, lastSetId, resetStore, store } from "./store";
+import {
+	addSet,
+	isDirty,
+	lastSetId,
+	resetStore,
+	store,
+	getTotalDuration,
+} from "./store";
 import SetList from "./components/SetList.vue";
 import SetlistMetadata from "./components/SetlistMetadata.vue";
 import SetPreview from "./components/SetPreview.vue";
 import MenuBar from "./components/MenuBar.vue";
 import { STORAGE_KEYS } from "./constants";
 import { safeGetItem, safeSetItem } from "./utils/storage";
+import { formatDuration } from "./utils/utils";
 import {
 	useFileOperations,
 	useHistory,
@@ -214,6 +222,30 @@ watch(showPreview, async (value) => {
 		</header>
 
 		<SetList :show-song-numbers="showEditorNumbers" />
+
+		<footer class="no-print">
+			<!-- Area to show current set list statistics -->
+
+			<!-- Display Setlist name -->
+			<p>Selist: {{ store.metadata.setListName || "Untitled" }}</p>
+			<p>
+				Total sets: {{ previewSets.length }}
+				<span v-if="previewSets.length > 0">
+					({{ formatDuration(getTotalDuration()) }})
+				</span>
+			</p>
+			<p
+				v-if="previewSets.length > 0"
+				v-for="(set, index) in previewSets"
+				:key="index"
+			>
+				{{ index + 1 }}: {{ set.name }} -
+				{{ set.songs.length ? `${set.songs.length} songs` : "Empty" }}
+			</p>
+			<p v-if="previewSets.length > 0 && getTotalDuration() > 0">
+				Total duration: {{ formatDuration(getTotalDuration()) }}
+			</p>
+		</footer>
 	</div>
 
 	<div v-else class="print-preview">
@@ -335,9 +367,11 @@ h1 {
 
 footer {
 	margin-top: 3rem;
-	text-align: center;
 	color: var(--text-color-ghost);
 	font-size: 0.9rem;
+	display: flex;
+	flex-wrap: wrap;
+	gap: 2em;
 }
 
 /* Preview Styles */
