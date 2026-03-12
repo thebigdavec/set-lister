@@ -77,4 +77,6 @@ export const STORAGE_KEYS = {
 	EDITOR_NUMBERING: "set-lister-editor-numbering",
 	/** Key for storing song numbering preference in preview */
 	PREVIEW_NUMBERING: "set-lister-preview-numbering",
+	/** Key for storing the current editor mode (classic vs wysiwyg) */
+	EDITOR_MODE: "set-lister-editor-mode",
 } as const;

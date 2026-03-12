@@ -128,21 +128,25 @@ export function fitStringsToBox(
   // Apply minimum font size constraint
   fontSizePx = Math.max(fontSizePx, MIN_FONT_SIZE_PX);
 
-  // Calculate remaining vertical space
-  const minTextHeightPx =
+  // Calculate remaining vertical space using standard MIN_LINE_HEIGHT
+  const standardTextHeightPx =
     fontSizePx * lineHeightRatio * MIN_LINE_HEIGHT * numLines;
-  const remainingHeightPx = boxHeightPx - minTextHeightPx;
+  const remainingHeightPx = boxHeightPx - standardTextHeightPx;
 
-  // Distribute remaining vertical space as increased line height
+  // Calculate actual line height to use
   let lineHeight = MIN_LINE_HEIGHT;
+  
   if (remainingHeightPx > 0 && numLines > 0) {
-    // Extra height per line we can add
+    // We have extra space, expand line height
     const extraPerLine = remainingHeightPx / numLines;
-    // Convert to line-height units (relative to fontSize * lineHeightRatio)
-    lineHeight =
-      MIN_LINE_HEIGHT + extraPerLine / (fontSizePx * lineHeightRatio);
-    // Cap line height to prevent excessive spacing
+    lineHeight = MIN_LINE_HEIGHT + extraPerLine / (fontSizePx * lineHeightRatio);
     lineHeight = Math.min(lineHeight, MAX_LINE_HEIGHT);
+  } else if (remainingHeightPx < 0 && numLines > 0) {
+    // We are cramped and hitting minimum font sizes, sqiush line height below minimum to fit
+    // Minimum viable line height before text overlaps is 0.85, but we allow down to 0.55 here for extreme squish
+    const neededPerLine = remainingHeightPx / numLines; // negative value
+    lineHeight = MIN_LINE_HEIGHT + neededPerLine / (fontSizePx * lineHeightRatio);
+    lineHeight = Math.max(lineHeight, 0.55); // Absolute crushing limit
   }
 
   return {
