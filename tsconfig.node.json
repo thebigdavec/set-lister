@@ -8,6 +8,7 @@
     "allowSyntheticDefaultImports": true
   },
   "include": [
-    "vite.config.ts"
+    "nuxt.config.ts",
+    "vitest.config.ts"
   ]
 }

@@ -1,4 +1,6 @@
 {
+  // Nuxt 4 extends this config with .nuxt/tsconfig.json
+  "extends": "./.nuxt/tsconfig.json",
   "compilerOptions": {
     "target": "ESNext",
     "useDefineForClassFields": true,
@@ -14,16 +16,5 @@
       "DOM"
     ],
     "skipLibCheck": true
-  },
-  "include": [
-    "src/**/*.ts",
-    "src/**/*.d.ts",
-    "src/**/*.tsx",
-    "src/**/*.vue"
-  ],
-  "references": [
-    {
-      "path": "./tsconfig.node.json"
-    }
-  ]
+  }
 }
