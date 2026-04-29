@@ -16,7 +16,7 @@ export default defineNuxtConfig({
 
   // App configuration
   app: {
-    baseURL: process.env.NODE_ENV === 'production' ? '/set-lister/' : '/',
+    baseURL: '/set-lister/',
     buildAssetsDir: '/_nuxt/',
     head: {
       title: "Dave's Lister",
@@ -33,7 +33,7 @@ export default defineNuxtConfig({
         {
           rel: 'icon',
           type: 'image/png',
-          href: process.env.NODE_ENV === 'production' ? '/set-lister/red-worf.png' : '/red-worf.png'
+          href: '/set-lister/red-worf.png'
         }
       ]
     }
