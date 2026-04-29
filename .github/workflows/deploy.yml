@@ -2,7 +2,7 @@ name: Deploy to GitHub Pages
 
 on:
   push:
-    branches: [main]
+    branches: [ main ]
 
 permissions:
   contents: write
@@ -17,7 +17,7 @@ jobs:
       - name: Install pnpm
         uses: pnpm/action-setup@v2
         with:
-          version: 8
+          version: 9
 
       - name: Setup Node
         uses: actions/setup-node@v4
@@ -28,10 +28,10 @@ jobs:
       - name: Install dependencies
         run: pnpm install
 
-      - name: Build
-        run: pnpm build
+      - name: Generate static site
+        run: pnpm generate
 
       - name: Deploy
         uses: JamesIves/github-pages-deploy-action@v4
         with:
-          folder: dist
+          folder: .output/public

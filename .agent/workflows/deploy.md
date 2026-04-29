@@ -4,7 +4,7 @@ description: How to deploy the Set Lister application
 
 # Deploying Set Lister
 
-This project is built with Vue.js and Vite, making it easy to deploy to various static hosting providers.
+This project is built with Nuxt 4, making it easy to deploy to various static hosting providers.
 
 ## Option 1: Vercel (Recommended)
 
@@ -30,9 +30,11 @@ Alternatively, you can push your code to GitHub and connect your repository to V
     npm install netlify-cli -g
     ```
 2.  **Deploy**:
+
     ```bash
     netlify deploy
     ```
+
     - **Publish directory**: `dist`
 
 ## Option 3: Manual Build
@@ -41,12 +43,12 @@ If you want to host it on any static file server:
 
 1.  **Build the project**:
     ```bash
-    pnpm build
+    pnpm generate
     ```
 2.  **Locate files**:
-    The built files will be in the `dist` directory.
+    The built files will be in the `.output/public` directory.
 3.  **Serve**:
-    Upload the contents of the `dist` folder to your web server.
+    Upload the contents of the `.output/public` folder to your web server.
 
 ## Option 4: GitHub Pages (Automated)
 
@@ -65,6 +67,12 @@ The workflow file is located at `.github/workflows/deploy.yml`.
 Before deploying, you can test the production build locally:
 
 ```bash
-pnpm build
+pnpm generate
 pnpm preview
+```
+
+Or serve the generated files directly:
+
+```bash
+npx serve .output/public
 ```

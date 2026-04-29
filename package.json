@@ -7,17 +7,20 @@
     "node": ">=20.19.0"
   },
   "scripts": {
-    "dev": "vite",
-    "build": "vite build",
-    "typecheck": "vue-tsc --noEmit",
-    "preview": "vite preview",
+    "dev": "nuxt dev",
+    "build": "nuxt build",
+    "generate": "nuxt generate",
+    "preview": "nuxt preview",
+    "postinstall": "nuxt prepare",
     "test": "vitest",
     "test:run": "vitest run",
-    "test:coverage": "vitest run --coverage"
+    "test:coverage": "vitest run --coverage",
+    "typecheck": "nuxt typecheck"
   },
   "dependencies": {
     "@vueuse/core": "^14.1.0",
     "lucide-vue-next": "^0.554.0",
+    "nuxt": "^4.4.2",
     "sortablejs": "^1.15.6",
     "vue": "^3.5.24"
   },
