@@ -1,0 +1,42 @@
+// Vitest configuration for Nuxt 4
+// This replaces your current vite.config.ts for testing
+
+import { defineConfig } from 'vitest/config'
+import vue from '@vitejs/plugin-vue'
+import { fileURLToPath } from 'node:url'
+
+export default defineConfig({
+  plugins: [vue()],
+
+  test: {
+    globals: true,
+    environment: 'happy-dom',
+
+    // Test file patterns
+    include: [
+      'app/**/__tests__/**/*.{test,spec}.{js,ts}',
+      'app/**/*.{test,spec}.{js,ts}'
+    ],
+
+    // Coverage configuration
+    coverage: {
+      provider: 'v8',
+      reporter: ['text', 'json', 'html'],
+      include: ['app/**/*.ts', 'app/**/*.vue'],
+      exclude: [
+        'app/**/*.d.ts',
+        'app/**/*.spec.ts',
+        'app/**/*.test.ts',
+        'app/**/__tests__/**'
+      ]
+    }
+  },
+
+  // Path resolution for imports in tests
+  resolve: {
+    alias: {
+      '~': fileURLToPath(new URL('./app', import.meta.url)),
+      '@': fileURLToPath(new URL('./app', import.meta.url))
+    }
+  }
+})

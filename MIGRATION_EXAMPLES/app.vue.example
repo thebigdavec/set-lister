@@ -1,0 +1,24 @@
+<!-- 
+  Root app.vue for Nuxt 4
+  This replaces index.html and src/main.ts
+  Place this file at the root of your project
+-->
+
+<template>
+  <div id="app">
+    <!-- This renders the page component -->
+    <NuxtPage />
+  </div>
+</template>
+
+<script setup lang="ts">
+// Global styles are imported via nuxt.config.ts css option
+// No need to import them here
+
+// If you need app-level setup, add it here
+// For example, global error handling, analytics, etc.
+</script>
+
+<style>
+/* Any app-level styles can go here, but prefer importing via nuxt.config.ts */
+</style>
