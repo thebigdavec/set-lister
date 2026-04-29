@@ -16,6 +16,8 @@ export default defineNuxtConfig({
 
   // App configuration
   app: {
+    baseURL: process.env.NODE_ENV === 'production' ? '/set-lister/' : '/',
+    buildAssetsDir: '/_nuxt/',
     head: {
       title: "Dave's Lister",
       titleTemplate: '%s | Set Lister',
@@ -27,7 +29,13 @@ export default defineNuxtConfig({
           content: 'A simple set lister for solo performers and bands.'
         }
       ],
-      link: [{ rel: 'icon', type: 'image/png', href: '/red-worf.png' }]
+      link: [
+        {
+          rel: 'icon',
+          type: 'image/png',
+          href: process.env.NODE_ENV === 'production' ? '/set-lister/red-worf.png' : '/red-worf.png'
+        }
+      ]
     }
   },
 
@@ -96,7 +104,11 @@ export default defineNuxtConfig({
 
   // Nitro (server) configuration
   nitro: {
-    preset: 'static' // For now, will change when adding API routes
+    preset: 'static', // For now, will change when adding API routes
+    prerender: {
+      crawlLinks: true,
+      routes: ['/']
+    }
   },
 
   // Development server
