@@ -172,7 +172,7 @@ watch(
 	<div
 		ref="triggerRef"
 		class="tooltip-trigger"
-		:style="{ anchorName: anchorName }"
+		:style="{ 'anchor-name': anchorName }"
 		@mouseenter="handleMouseEnter"
 		@mouseleave="handleMouseLeave"
 		@focusin="handleFocus"
