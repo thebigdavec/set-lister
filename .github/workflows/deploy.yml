@@ -30,6 +30,9 @@ jobs:
 
       - name: Generate static site
         run: pnpm generate
+        env:
+          NODE_ENV: production
+          NUXT_APP_BASE_URL: /set-lister/
 
       - name: Deploy
         uses: JamesIves/github-pages-deploy-action@v4
