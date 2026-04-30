@@ -2,216 +2,29 @@ import { computed, ref, watch } from 'vue'
 import { defineStore } from 'pinia'
 import { STORAGE_KEYS } from '@/constants'
 import { LIMITS } from '@/constants/limits'
-import { formatSongLabel, measureSongLabelWidth } from '@/utils/textMetrics'
-import { safeGetItem, safeSetItem } from '@/utils/storage'
-import {
-  sanitizeSongTitle,
-  sanitizeSongKey,
-  sanitizeSetName,
-  sanitizeMetadata
-} from '@/utils/sanitize'
+import { safeSetItem } from '@/utils/storage'
+import { sanitizeSongTitle, sanitizeSongKey, sanitizeSetName, sanitizeMetadata } from '@/utils/sanitize'
 import { isDataEqual, type ComparableData } from '@/utils/stateComparison'
-import { migrateToCurrentSchema, CURRENT_SCHEMA_VERSION } from '@/utils/schemaMigration'
+import { CURRENT_SCHEMA_VERSION } from '@/utils/schemaMigration'
 
-export interface Song {
-  id: string
-  title: string
-  key?: string
-  isEncoreMarker?: boolean
-}
+// Import types
+export type { Song, SetItem, SetListMetadata, StoreState, SetMetrics } from './types'
+import type { Song, SetItem, SetListMetadata, StoreState } from './types'
 
-export interface SetMetrics {
-  longestEntryId: string | null
-  longestEntryText: string
-  longestEntryWidth16px: number
-  totalRows: number
-}
+// Import utilities
+import { buildInitialState, createDefaultState, createEmptySet, normalizeSets } from './state-utils'
+import { applySongAdditionMetrics, refreshSetMetrics } from './metrics'
+import {
+  isEncoreMarkerSong,
+  hasEncoreMarker,
+  createEncoreMarker,
+  findEncoreMarkerIndex,
+  countPlayableSongs
+} from './encore'
 
-export interface SetItem {
-  id: string
-  name?: string
-  songs: Song[]
-  metrics: SetMetrics
-}
-
-export interface SetListMetadata {
-  setListName: string
-  venue: string
-  date: string
-  actName: string
-}
-
-export interface StoreState {
-  schemaVersion: number
-  metadata: SetListMetadata
-  sets: SetItem[]
-}
+export { hasEncoreMarker, isEncoreMarkerSong }
 
 
-
-const ENCORE_MARKER_TITLE = '<encore>'
-
-const EMPTY_METRICS: SetMetrics = {
-  longestEntryId: null,
-  longestEntryText: '',
-  longestEntryWidth16px: 0,
-  totalRows: 0
-}
-
-function cloneEmptyMetrics(): SetMetrics {
-  return { ...EMPTY_METRICS }
-}
-
-function isEncoreMarkerSong(song: Song | undefined): boolean {
-  if (!song) return false
-  return song.isEncoreMarker === true || song.title === ENCORE_MARKER_TITLE
-}
-
-function buildSetMetrics(songs: Song[]): SetMetrics {
-  const filtered = songs.filter(song => !isEncoreMarkerSong(song))
-  if (filtered.length === 0) {
-    return cloneEmptyMetrics()
-  }
-
-  let longestEntryId: string | null = null
-  let longestEntryText = ''
-  let longestEntryWidth16px = 0
-
-  filtered.forEach(song => {
-    const label = formatSongLabel(song.title, song.key)
-    const width = measureSongLabelWidth(song.title, song.key)
-    if (width >= longestEntryWidth16px) {
-      longestEntryWidth16px = width
-      longestEntryText = label
-      longestEntryId = song.id
-    }
-  })
-
-  return {
-    longestEntryId,
-    longestEntryText,
-    longestEntryWidth16px,
-    totalRows: filtered.length
-  }
-}
-
-function applySongAdditionMetrics(set: SetItem, song: Song): void {
-  if (isEncoreMarkerSong(song)) {
-    set.metrics = buildSetMetrics(set.songs)
-    return
-  }
-  const metrics = set.metrics ?? cloneEmptyMetrics()
-  const label = formatSongLabel(song.title, song.key)
-  const width = measureSongLabelWidth(song.title, song.key)
-  const totalRows = set.songs.length
-
-  if (!metrics.longestEntryId || width >= metrics.longestEntryWidth16px) {
-    set.metrics = {
-      longestEntryId: song.id,
-      longestEntryText: label,
-      longestEntryWidth16px: width,
-      totalRows
-    }
-  } else {
-    set.metrics = {
-      ...metrics,
-      totalRows
-    }
-  }
-}
-
-function refreshSetMetrics(set: SetItem): void {
-  set.metrics = buildSetMetrics(set.songs)
-}
-
-function createEmptySet(): SetItem {
-  return {
-    id: crypto.randomUUID(),
-    songs: [],
-    metrics: cloneEmptyMetrics()
-  }
-}
-
-function createDefaultState(): StoreState {
-  return {
-    schemaVersion: CURRENT_SCHEMA_VERSION,
-    metadata: {
-      setListName: '',
-      venue: '',
-      date: '',
-      actName: ''
-    },
-    sets: [createEmptySet()]
-  }
-}
-
-function parseSavedState(raw: string | null): Partial<StoreState> | null {
-  if (!raw) return null
-
-  try {
-    return JSON.parse(raw) as Partial<StoreState>
-  } catch (error) {
-    console.error('Failed to parse saved state', error)
-    return null
-  }
-}
-
-function normalizeSongs(songs?: Song[]): Song[] {
-  if (!Array.isArray(songs)) return []
-
-  return songs.map((song, index) => ({
-    id: typeof song?.id === 'string' ? song.id : crypto.randomUUID(),
-    title: sanitizeSongTitle(song?.title, `Song ${index + 1}`),
-    key: sanitizeSongKey(song?.key),
-    isEncoreMarker: isEncoreMarkerSong(song)
-  }))
-}
-
-function normalizeSets(sets?: SetItem[]): SetItem[] {
-  if (!Array.isArray(sets)) {
-    return createDefaultState().sets
-  }
-
-  if (sets.length === 0) {
-    return []
-  }
-
-  return sets.map(set => {
-    const songs = normalizeSongs(set?.songs)
-    return {
-      id: typeof set?.id === 'string' ? set.id : crypto.randomUUID(),
-      name: sanitizeSetName(set?.name),
-      songs,
-      metrics: buildSetMetrics(songs)
-    }
-  })
-}
-
-function createEncoreMarker(): Song {
-  return {
-    id: crypto.randomUUID(),
-    title: ENCORE_MARKER_TITLE,
-    key: undefined,
-    isEncoreMarker: true
-  }
-}
-
-function findEncoreMarkerIndex(set: SetItem): number {
-  return set.songs.findIndex(song => isEncoreMarkerSong(song))
-}
-
-function countPlayableSongs(set: SetItem): number {
-  return set.songs.reduce(
-    (acc, song) => acc + (isEncoreMarkerSong(song) ? 0 : 1),
-    0
-  )
-}
-
-export function hasEncoreMarker(set: SetItem): boolean {
-  return findEncoreMarkerIndex(set) !== -1
-}
-
-export { isEncoreMarkerSong }
 
 /**
  * Extract comparable data from the store state.
@@ -230,25 +43,6 @@ function extractComparableData(state: StoreState): ComparableData {
         isEncoreMarker: song.isEncoreMarker
       }))
     }))
-  }
-}
-
-function buildInitialState(): StoreState {
-  const rawState = parseSavedState(safeGetItem(STORAGE_KEYS.DATA))
-  const migratedState = rawState ? migrateToCurrentSchema(rawState) : null
-  const savedState = migratedState
-  const defaults = createDefaultState()
-
-  return {
-    schemaVersion: CURRENT_SCHEMA_VERSION,
-    metadata: {
-      setListName:
-        savedState?.metadata?.setListName ?? defaults.metadata.setListName,
-      venue: savedState?.metadata?.venue ?? defaults.metadata.venue,
-      date: savedState?.metadata?.date ?? defaults.metadata.date,
-      actName: savedState?.metadata?.actName ?? defaults.metadata.actName
-    },
-    sets: normalizeSets(savedState?.sets)
   }
 }
 

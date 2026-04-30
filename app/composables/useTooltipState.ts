@@ -1,4 +1,4 @@
-// import { ref } from "vue";
+import { ref } from "vue";
 
 // Global state - shared across all tooltip instances
 // This is intentionally module-level to persist across component instances

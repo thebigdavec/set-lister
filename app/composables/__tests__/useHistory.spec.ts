@@ -1,24 +1,43 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest'
+import { describe, it, expect, beforeEach } from 'vitest'
 import { nextTick } from 'vue'
+import { createPinia, setActivePinia } from 'pinia'
 import { useHistory } from '@/composables/useHistory'
-import {
-  store,
-  isDirty,
-  resetStore,
-  addSet,
-  addSongToSet,
-  updateSong,
-  removeSongFromSet,
-  removeSet,
-  renameSet,
-  updateMetadata,
-  markClean
-} from '@/stores/store'
+import { useSetlistStore } from '@/stores/store'
 
 describe('useHistory', () => {
+  let store: ReturnType<typeof useSetlistStore>
+
   beforeEach(() => {
-    // Reset store to default state before each test
-    resetStore()
+    // Clear localStorage to ensure clean state
+    localStorage.clear()
+
+    // Create a fresh Pinia instance for each test
+    setActivePinia(createPinia())
+    // Get a fresh store instance
+    store = useSetlistStore()
+
+    // Ensure we have a clean state with one empty set
+    store.state.sets = [{
+      id: crypto.randomUUID(),
+      songs: [],
+      metrics: {
+        longestEntryId: null,
+        longestEntryText: '',
+        longestEntryWidth16px: 0,
+        totalRows: 0
+      }
+    }]
+
+    // Clear metadata
+    store.state.metadata = {
+      setListName: '',
+      venue: '',
+      date: '',
+      actName: ''
+    }
+
+    // Mark as clean after setup
+    store.markClean()
   })
 
   describe('initialization', () => {
@@ -43,17 +62,17 @@ describe('useHistory', () => {
       const { undoCount } = useHistory()
 
       // First add a song so we have something to work with
-      addSongToSet(store.sets[0].id, { title: 'Test Song', key: 'A' })
+      store.addSongToSet(store.state.sets[0]!.id, { title: 'Test Song', key: 'A' })
       await nextTick()
 
       // Should have 1 undo entry from adding the song
       expect(undoCount.value).toBe(1)
 
       // Get current song title
-      const originalTitle = store.sets[0].songs[0].title
+      const originalTitle = store.state.sets[0]!.songs[0]!.title
 
       // "Update" the song with the same title (no actual change)
-      store.sets[0].songs[0].title = originalTitle
+      store.state.sets[0]!.songs[0]!.title = originalTitle
 
       await nextTick()
 
@@ -65,10 +84,10 @@ describe('useHistory', () => {
       const { undoCount } = useHistory()
 
       // Get current set name
-      const originalName = store.sets[0].name
+      const originalName = store.state.sets[0]!.name
 
       // "Update" the set with the same name (no actual change)
-      store.sets[0].name = originalName
+      store.state.sets[0]!.name = originalName
 
       await nextTick()
 
@@ -79,7 +98,7 @@ describe('useHistory', () => {
     it('should track song additions', async () => {
       const { canUndo } = useHistory()
 
-      addSongToSet(store.sets[0].id, { title: 'Test Song', key: 'C' })
+      store.addSongToSet(store.state.sets[0]!.id, { title: 'Test Song', key: 'C' })
       await nextTick()
 
       expect(canUndo.value).toBe(true)
@@ -88,7 +107,7 @@ describe('useHistory', () => {
     it('should track set additions', async () => {
       const { canUndo } = useHistory()
 
-      addSet()
+      store.addSet()
       await nextTick()
 
       expect(canUndo.value).toBe(true)
@@ -97,7 +116,7 @@ describe('useHistory', () => {
     it('should track metadata changes', async () => {
       const { canUndo } = useHistory()
 
-      updateMetadata({ setListName: 'My Set List' })
+      store.updateMetadata({ setListName: 'My Set List' })
       await nextTick()
 
       expect(canUndo.value).toBe(true)
@@ -107,7 +126,7 @@ describe('useHistory', () => {
       const { canUndo, clearHistory } = useHistory()
 
       // Add a song first
-      addSongToSet(store.sets[0].id, { title: 'Test Song', key: 'C' })
+      store.addSongToSet(store.state.sets[0]!.id, { title: 'Test Song', key: 'C' })
       await nextTick()
 
       // Clear history so we can test just the update
@@ -115,8 +134,8 @@ describe('useHistory', () => {
       expect(canUndo.value).toBe(false)
 
       // Update the song
-      const songId = store.sets[0].songs[0].id
-      updateSong(store.sets[0].id, songId, { title: 'Updated Song' })
+      const songId = store.state.sets[0]!.songs[0]!.id
+      store.updateSong(store.state.sets[0]!.id, songId, { title: 'Updated Song' })
       await nextTick()
 
       expect(canUndo.value).toBe(true)
@@ -125,7 +144,7 @@ describe('useHistory', () => {
     it('should track set renames', async () => {
       const { canUndo } = useHistory()
 
-      renameSet(store.sets[0].id, 'Renamed Set')
+      store.renameSet(store.state.sets[0]!.id, 'Renamed Set')
       await nextTick()
 
       expect(canUndo.value).toBe(true)
@@ -136,116 +155,116 @@ describe('useHistory', () => {
     it('should undo song addition', async () => {
       const { undo } = useHistory()
 
-      const setId = store.sets[0].id
-      expect(store.sets[0].songs.length).toBe(0)
+      const setId = store.state.sets[0]!.id
+      expect(store.state.sets[0]!.songs.length).toBe(0)
 
-      addSongToSet(setId, { title: 'Test Song', key: 'C' })
+      store.addSongToSet(setId, { title: 'Test Song', key: 'C' })
       await nextTick()
-      expect(store.sets[0].songs.length).toBe(1)
+      expect(store.state.sets[0]!.songs.length).toBe(1)
 
       undo()
       await nextTick()
 
-      expect(store.sets[0].songs.length).toBe(0)
+      expect(store.state.sets[0]!.songs.length).toBe(0)
     })
 
     it('should undo metadata change', async () => {
       const { undo } = useHistory()
 
-      expect(store.metadata.setListName).toBe('')
+      expect(store.state.metadata.setListName).toBe('')
 
-      updateMetadata({ setListName: 'My Set List' })
+      store.updateMetadata({ setListName: 'My Set List' })
       await nextTick()
-      expect(store.metadata.setListName).toBe('My Set List')
+      expect(store.state.metadata.setListName).toBe('My Set List')
 
       undo()
       await nextTick()
 
-      expect(store.metadata.setListName).toBe('')
+      expect(store.state.metadata.setListName).toBe('')
     })
 
     it('should undo set addition', async () => {
       const { undo } = useHistory()
 
-      expect(store.sets.length).toBe(1)
+      expect(store.state.sets.length).toBe(1)
 
-      addSet()
+      store.addSet()
       await nextTick()
-      expect(store.sets.length).toBe(2)
+      expect(store.state.sets.length).toBe(2)
 
       undo()
       await nextTick()
 
-      expect(store.sets.length).toBe(1)
+      expect(store.state.sets.length).toBe(1)
     })
 
     it('should undo song removal', async () => {
       const { undo, clearHistory } = useHistory()
 
-      const setId = store.sets[0].id
-      addSongToSet(setId, { title: 'Test Song', key: 'C' })
+      const setId = store.state.sets[0]!.id
+      store.addSongToSet(setId, { title: 'Test Song', key: 'C' })
       await nextTick()
 
       clearHistory()
-      const songId = store.sets[0].songs[0].id
+      const songId = store.state.sets[0]!.songs[0]!.id
 
-      removeSongFromSet(setId, songId)
+      store.removeSongFromSet(setId, songId)
       await nextTick()
-      expect(store.sets[0].songs.length).toBe(0)
+      expect(store.state.sets[0]!.songs.length).toBe(0)
 
       undo()
       await nextTick()
 
-      expect(store.sets[0].songs.length).toBe(1)
-      expect(store.sets[0].songs[0].title).toBe('Test Song')
+      expect(store.state.sets[0]!.songs.length).toBe(1)
+      expect(store.state.sets[0]!.songs[0]!.title).toBe('Test Song')
     })
 
     it('should do nothing when canUndo is false', async () => {
       const { undo, canUndo } = useHistory()
 
       expect(canUndo.value).toBe(false)
-      const initialSetsLength = store.sets.length
+      const initialSetsLength = store.state.sets.length
 
       undo()
       await nextTick()
 
-      expect(store.sets.length).toBe(initialSetsLength)
+      expect(store.state.sets.length).toBe(initialSetsLength)
     })
 
     it('should update isDirty based on comparison to original state', async () => {
       const { undo } = useHistory()
 
       // After reset, isDirty should be false
-      expect(isDirty.value).toBe(false)
+      expect(store.isDirty).toBe(false)
 
       // Make a change - isDirty should become true
-      addSongToSet(store.sets[0].id, { title: 'Test Song' })
+      store.addSongToSet(store.state.sets[0]!.id, { title: 'Test Song' })
       await nextTick()
-      expect(isDirty.value).toBe(true)
+      expect(store.isDirty).toBe(true)
 
       // Undo the change - isDirty should become false (back to original)
       undo()
       await nextTick()
-      expect(isDirty.value).toBe(false)
+      expect(store.isDirty).toBe(false)
     })
 
     it('should stay dirty after undo if there are still differences from original', async () => {
       const { undo } = useHistory()
 
       // Make two changes
-      addSongToSet(store.sets[0].id, { title: 'Song 1' })
+      store.addSongToSet(store.state.sets[0]!.id, { title: 'Song 1' })
       await nextTick()
-      addSongToSet(store.sets[0].id, { title: 'Song 2' })
+      store.addSongToSet(store.state.sets[0]!.id, { title: 'Song 2' })
       await nextTick()
 
-      expect(isDirty.value).toBe(true)
+      expect(store.isDirty).toBe(true)
 
       // Undo only the second change
       undo()
       await nextTick()
 
       // Should still be dirty because Song 1 is still there
-      expect(isDirty.value).toBe(true)
+      expect(store.isDirty).toBe(true)
     })
   })
 
@@ -253,41 +272,41 @@ describe('useHistory', () => {
     it('should redo undone song addition', async () => {
       const { undo, redo } = useHistory()
 
-      const setId = store.sets[0].id
-      addSongToSet(setId, { title: 'Test Song', key: 'C' })
+      const setId = store.state.sets[0]!.id
+      store.addSongToSet(setId, { title: 'Test Song', key: 'C' })
       await nextTick()
 
       undo()
       await nextTick()
-      expect(store.sets[0].songs.length).toBe(0)
+      expect(store.state.sets[0]!.songs.length).toBe(0)
 
       redo()
       await nextTick()
 
-      expect(store.sets[0].songs.length).toBe(1)
-      expect(store.sets[0].songs[0].title).toBe('Test Song')
+      expect(store.state.sets[0]!.songs.length).toBe(1)
+      expect(store.state.sets[0]!.songs[0]!.title).toBe('Test Song')
     })
 
     it('should redo undone metadata change', async () => {
       const { undo, redo } = useHistory()
 
-      updateMetadata({ venue: 'Test Venue' })
+      store.updateMetadata({ venue: 'Test Venue' })
       await nextTick()
 
       undo()
       await nextTick()
-      expect(store.metadata.venue).toBe('')
+      expect(store.state.metadata.venue).toBe('')
 
       redo()
       await nextTick()
 
-      expect(store.metadata.venue).toBe('Test Venue')
+      expect(store.state.metadata.venue).toBe('Test Venue')
     })
 
     it('should enable canRedo after undo', async () => {
       const { undo, canRedo } = useHistory()
 
-      addSongToSet(store.sets[0].id, { title: 'Test Song' })
+      store.addSongToSet(store.state.sets[0]!.id, { title: 'Test Song' })
       await nextTick()
       expect(canRedo.value).toBe(false)
 
@@ -300,7 +319,7 @@ describe('useHistory', () => {
     it('should disable canRedo after new change', async () => {
       const { undo, canRedo } = useHistory()
 
-      addSongToSet(store.sets[0].id, { title: 'Test Song' })
+      store.addSongToSet(store.state.sets[0]!.id, { title: 'Test Song' })
       await nextTick()
 
       undo()
@@ -308,7 +327,7 @@ describe('useHistory', () => {
       expect(canRedo.value).toBe(true)
 
       // Make a new change
-      addSongToSet(store.sets[0].id, { title: 'Another Song' })
+      store.addSongToSet(store.state.sets[0]!.id, { title: 'Another Song' })
       await nextTick()
 
       expect(canRedo.value).toBe(false)
@@ -318,59 +337,59 @@ describe('useHistory', () => {
       const { redo, canRedo } = useHistory()
 
       expect(canRedo.value).toBe(false)
-      const initialSetsLength = store.sets.length
+      const initialSetsLength = store.state.sets.length
 
       redo()
       await nextTick()
 
-      expect(store.sets.length).toBe(initialSetsLength)
+      expect(store.state.sets.length).toBe(initialSetsLength)
     })
 
     it('should update isDirty based on comparison to original state after redo', async () => {
       const { undo, redo } = useHistory()
 
       // Start clean
-      expect(isDirty.value).toBe(false)
+      expect(store.isDirty).toBe(false)
 
       // Make a change
-      addSongToSet(store.sets[0].id, { title: 'Test Song' })
+      store.addSongToSet(store.state.sets[0]!.id, { title: 'Test Song' })
       await nextTick()
-      expect(isDirty.value).toBe(true)
+      expect(store.isDirty).toBe(true)
 
       // Undo - should be clean again
       undo()
       await nextTick()
-      expect(isDirty.value).toBe(false)
+      expect(store.isDirty).toBe(false)
 
       // Redo - should be dirty again
       redo()
       await nextTick()
-      expect(isDirty.value).toBe(true)
+      expect(store.isDirty).toBe(true)
     })
 
     it('should become clean when redo brings state back to saved state', async () => {
       const { undo, redo } = useHistory()
 
       // Make a change and save
-      addSongToSet(store.sets[0].id, { title: 'Test Song' })
+      store.addSongToSet(store.state.sets[0]!.id, { title: 'Test Song' })
       await nextTick()
-      markClean() // Simulate saving
-      expect(isDirty.value).toBe(false)
+      store.markClean() // Simulate saving
+      expect(store.isDirty).toBe(false)
 
       // Make another change
-      updateMetadata({ setListName: 'New Name' })
+      store.updateMetadata({ setListName: 'New Name' })
       await nextTick()
-      expect(isDirty.value).toBe(true)
+      expect(store.isDirty).toBe(true)
 
       // Undo the metadata change - should be clean (back to saved state)
       undo()
       await nextTick()
-      expect(isDirty.value).toBe(false)
+      expect(store.isDirty).toBe(false)
 
       // Redo - should be dirty again
       redo()
       await nextTick()
-      expect(isDirty.value).toBe(true)
+      expect(store.isDirty).toBe(true)
     })
   })
 
@@ -378,9 +397,9 @@ describe('useHistory', () => {
     it('should clear all history', async () => {
       const { clearHistory, canUndo, canRedo, undoCount } = useHistory()
 
-      addSongToSet(store.sets[0].id, { title: 'Song 1' })
+      store.addSongToSet(store.state.sets[0]!.id, { title: 'Song 1' })
       await nextTick()
-      addSongToSet(store.sets[0].id, { title: 'Song 2' })
+      store.addSongToSet(store.state.sets[0]!.id, { title: 'Song 2' })
       await nextTick()
 
       expect(canUndo.value).toBe(true)
@@ -395,13 +414,13 @@ describe('useHistory', () => {
     it('should reset history to current state after clear', async () => {
       const { clearHistory, undo, canUndo } = useHistory()
 
-      addSongToSet(store.sets[0].id, { title: 'Song 1' })
+      store.addSongToSet(store.state.sets[0]!.id, { title: 'Song 1' })
       await nextTick()
 
       clearHistory()
 
       // New change after clear
-      addSongToSet(store.sets[0].id, { title: 'Song 2' })
+      store.addSongToSet(store.state.sets[0]!.id, { title: 'Song 2' })
       await nextTick()
 
       expect(canUndo.value).toBe(true)
@@ -410,8 +429,8 @@ describe('useHistory', () => {
       undo()
       await nextTick()
 
-      expect(store.sets[0].songs.length).toBe(1)
-      expect(store.sets[0].songs[0].title).toBe('Song 1')
+      expect(store.state.sets[0]!.songs.length).toBe(1)
+      expect(store.state.sets[0]!.songs[0]!.title).toBe('Song 1')
     })
   })
 
@@ -419,16 +438,16 @@ describe('useHistory', () => {
     it('should support multiple undos', async () => {
       const { undo, undoCount } = useHistory()
 
-      addSongToSet(store.sets[0].id, { title: 'Song 1' })
+      store.addSongToSet(store.state.sets[0]!.id, { title: 'Song 1' })
       await nextTick()
-      addSongToSet(store.sets[0].id, { title: 'Song 2' })
+      store.addSongToSet(store.state.sets[0]!.id, { title: 'Song 2' })
       await nextTick()
-      addSongToSet(store.sets[0].id, { title: 'Song 3' })
+      store.addSongToSet(store.state.sets[0]!.id, { title: 'Song 3' })
       await nextTick()
 
       expect(undoCount.value).toBe(3)
       // Account for auto-added encore marker
-      const songsWithoutEncore = store.sets[0].songs.filter(
+      const songsWithoutEncore = store.state.sets[0]!.songs.filter(
         s => !s.isEncoreMarker
       )
       expect(songsWithoutEncore.length).toBe(3)
@@ -438,17 +457,17 @@ describe('useHistory', () => {
       undo()
       await nextTick()
 
-      const songsAfterUndo = store.sets[0].songs.filter(s => !s.isEncoreMarker)
+      const songsAfterUndo = store.state.sets[0]!.songs.filter(s => !s.isEncoreMarker)
       expect(songsAfterUndo.length).toBe(1)
-      expect(songsAfterUndo[0].title).toBe('Song 1')
+      expect(songsAfterUndo[0]!.title).toBe('Song 1')
     })
 
     it('should support multiple redos after multiple undos', async () => {
       const { undo, redo } = useHistory()
 
-      addSongToSet(store.sets[0].id, { title: 'Song 1' })
+      store.addSongToSet(store.state.sets[0]!.id, { title: 'Song 1' })
       await nextTick()
-      addSongToSet(store.sets[0].id, { title: 'Song 2' })
+      store.addSongToSet(store.state.sets[0]!.id, { title: 'Song 2' })
       await nextTick()
 
       undo()
@@ -456,7 +475,7 @@ describe('useHistory', () => {
       undo()
       await nextTick()
 
-      expect(store.sets[0].songs.length).toBe(0)
+      expect(store.state.sets[0]!.songs.length).toBe(0)
 
       redo()
       await nextTick()
@@ -464,7 +483,7 @@ describe('useHistory', () => {
       await nextTick()
 
       // Account for encore marker that gets added with 2 songs
-      const songsWithoutEncore = store.sets[0].songs.filter(
+      const songsWithoutEncore = store.state.sets[0]!.songs.filter(
         s => !s.isEncoreMarker
       )
       expect(songsWithoutEncore.length).toBe(2)
@@ -475,71 +494,71 @@ describe('useHistory', () => {
     it('should handle song title and key updates correctly', async () => {
       const { undo, clearHistory } = useHistory()
 
-      addSongToSet(store.sets[0].id, { title: 'Original Title', key: 'C' })
+      store.addSongToSet(store.state.sets[0]!.id, { title: 'Original Title', key: 'C' })
       await nextTick()
 
       clearHistory()
 
-      const songId = store.sets[0].songs[0].id
-      updateSong(store.sets[0].id, songId, {
+      const songId = store.state.sets[0]!.songs[0]!.id
+      store.updateSong(store.state.sets[0]!.id, songId, {
         title: 'New Title',
         key: 'G'
       })
       await nextTick()
 
-      expect(store.sets[0].songs[0].title).toBe('New Title')
-      expect(store.sets[0].songs[0].key).toBe('G')
+      expect(store.state.sets[0]!.songs[0]!.title).toBe('New Title')
+      expect(store.state.sets[0]!.songs[0]!.key).toBe('G')
 
       undo()
       await nextTick()
 
-      expect(store.sets[0].songs[0].title).toBe('Original Title')
-      expect(store.sets[0].songs[0].key).toBe('C')
+      expect(store.state.sets[0]!.songs[0]!.title).toBe('Original Title')
+      expect(store.state.sets[0]!.songs[0]!.key).toBe('C')
     })
 
     it('should handle multiple set operations', async () => {
       const { undo } = useHistory()
 
-      addSet()
+      store.addSet()
       await nextTick()
-      addSet()
+      store.addSet()
       await nextTick()
 
-      expect(store.sets.length).toBe(3)
+      expect(store.state.sets.length).toBe(3)
 
       undo()
       await nextTick()
 
-      expect(store.sets.length).toBe(2)
+      expect(store.state.sets.length).toBe(2)
 
       undo()
       await nextTick()
 
-      expect(store.sets.length).toBe(1)
+      expect(store.state.sets.length).toBe(1)
     })
 
     it('should handle combined metadata and set changes', async () => {
       const { undo } = useHistory()
 
-      updateMetadata({ setListName: 'My Gig', venue: 'The Club' })
+      store.updateMetadata({ setListName: 'My Gig', venue: 'The Club' })
       await nextTick()
-      addSongToSet(store.sets[0].id, { title: 'Opening Song' })
+      store.addSongToSet(store.state.sets[0]!.id, { title: 'Opening Song' })
       await nextTick()
 
-      expect(store.metadata.setListName).toBe('My Gig')
-      expect(store.sets[0].songs.length).toBe(1)
+      expect(store.state.metadata.setListName).toBe('My Gig')
+      expect(store.state.sets[0]!.songs.length).toBe(1)
 
       undo()
       await nextTick()
 
-      expect(store.metadata.setListName).toBe('My Gig')
-      expect(store.sets[0].songs.length).toBe(0)
+      expect(store.state.metadata.setListName).toBe('My Gig')
+      expect(store.state.sets[0]!.songs.length).toBe(0)
 
       undo()
       await nextTick()
 
-      expect(store.metadata.setListName).toBe('')
-      expect(store.metadata.venue).toBe('')
+      expect(store.state.metadata.setListName).toBe('')
+      expect(store.state.metadata.venue).toBe('')
     })
   })
 })

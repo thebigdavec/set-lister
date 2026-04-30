@@ -1,13 +1,19 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { ref, nextTick } from 'vue'
+import { createPinia, setActivePinia } from 'pinia'
 import { useSetlistNavigation, type FocusedItem } from '@/composables/useSetlistNavigation'
-import { store, resetStore } from '@/stores/store'
+import { useSetlistStore } from '@/stores/store'
+
+let store: ReturnType<typeof useSetlistStore>
 
 // Helper to set up store with test data
 function setupTestStore() {
-  resetStore()
+  // Create a fresh Pinia instance
+  setActivePinia(createPinia())
+  store = useSetlistStore()
+
   // Clear the default set and add our test sets
-  store.sets = [
+  store.state.sets = [
     {
       id: 'set-1',
       name: 'Set 1',
@@ -41,8 +47,10 @@ function setupTestStore() {
 }
 
 function setupStoreWithEncoreMarker() {
-  resetStore()
-  store.sets = [
+  setActivePinia(createPinia())
+  store = useSetlistStore()
+
+  store.state.sets = [
     {
       id: 'set-1',
       name: 'Set 1',
@@ -62,13 +70,15 @@ function setupStoreWithEncoreMarker() {
 }
 
 function setupEmptyStore() {
-  resetStore()
-  store.sets = []
+  setActivePinia(createPinia())
+  store = useSetlistStore()
+  store.state.sets = []
 }
 
 function setupStoreWithEmptySet() {
-  resetStore()
-  store.sets = [
+  setActivePinia(createPinia())
+  store = useSetlistStore()
+  store.state.sets = [
     {
       id: 'set-1',
       name: 'Set 1',
@@ -332,8 +342,9 @@ describe('useSetlistNavigation', () => {
     })
 
     it('should focus last set name when store has only empty sets', () => {
-      resetStore()
-      store.sets = [
+      setActivePinia(createPinia())
+      store = useSetlistStore()
+      store.state.sets = [
         {
           id: 'set-1',
           name: 'Empty Set',
@@ -801,7 +812,7 @@ describe('useSetlistNavigation', () => {
       // Let's test the other direction
 
       // Add a third set with only 1 song to test this properly
-      store.sets.push({
+      store.state.sets.push({
         id: 'set-3',
         name: 'Set 3',
         songs: [{ id: 'song-3-1', title: 'Only Song', key: 'F' }],
@@ -905,7 +916,7 @@ describe('useSetlistNavigation', () => {
 
     it('should move to set name when next set has no songs', () => {
       // Add an empty set after the existing sets
-      store.sets.push({
+      store.state.sets.push({
         id: 'set-3',
         name: 'Empty Set 3',
         songs: [],
@@ -940,7 +951,7 @@ describe('useSetlistNavigation', () => {
     it('should skip encore markers when finding matching position', () => {
       setupStoreWithEncoreMarker()
       // Add a second set with songs
-      store.sets.push({
+      store.state.sets.push({
         id: 'set-2',
         name: 'Set 2',
         songs: [

@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach } from 'vitest'
+import { describe, it, expect } from 'vitest'
 import { ref, computed } from 'vue'
 import { useEncoreHelpers } from '@/composables/useEncoreHelpers'
 import type { SetItem, Song } from '@/stores/store'
@@ -275,8 +275,8 @@ describe('useEncoreHelpers', () => {
       })
 
       expect(songsWithoutMarker.value).toHaveLength(2)
-      expect(songsWithoutMarker.value[0].title).toBe('Song 1')
-      expect(songsWithoutMarker.value[1].title).toBe('Song 2')
+      expect(songsWithoutMarker.value[0]!.title).toBe('Song 1')
+      expect(songsWithoutMarker.value[1]!.title).toBe('Song 2')
     })
 
     it('should filter out encore marker', () => {
@@ -289,8 +289,8 @@ describe('useEncoreHelpers', () => {
       })
 
       expect(songsWithoutMarker.value).toHaveLength(2)
-      expect(songsWithoutMarker.value[0].title).toBe('Song 1')
-      expect(songsWithoutMarker.value[1].title).toBe('Song 2')
+      expect(songsWithoutMarker.value[0]!.title).toBe('Song 1')
+      expect(songsWithoutMarker.value[1]!.title).toBe('Song 2')
     })
 
     it('should return empty array for set with only encore marker', () => {

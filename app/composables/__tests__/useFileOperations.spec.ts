@@ -1,16 +1,11 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
+import { createPinia, setActivePinia } from 'pinia'
 import {
   useFileOperations,
   _resetFileState,
   _generateCopyFilename
 } from '@/composables/useFileOperations'
-import {
-  store,
-  isDirty,
-  resetStore,
-  addSongToSet,
-  markClean
-} from '@/stores/store'
+import { useSetlistStore } from '@/stores/store'
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const windowAny = window as any
@@ -54,8 +49,13 @@ vi.spyOn(document, 'createElement').mockImplementation((tagName: string) => {
 })
 
 describe('useFileOperations', () => {
+  let store: ReturnType<typeof useSetlistStore>
+
   beforeEach(() => {
-    resetStore()
+    // Create a fresh Pinia instance for each test
+    setActivePinia(createPinia())
+    // Get a fresh store instance
+    store = useSetlistStore()
     localStorageMock.clear()
     vi.clearAllMocks()
     // Reset the module-level file state between tests
@@ -228,7 +228,7 @@ describe('useFileOperations', () => {
 
   describe('handleBeforeUnload', () => {
     it('should not prevent unload when store is clean', () => {
-      markClean()
+      store.markClean()
       const { handleBeforeUnload } = useFileOperations()
 
       const event = new Event('beforeunload') as BeforeUnloadEvent
@@ -240,8 +240,8 @@ describe('useFileOperations', () => {
     })
 
     it('should prevent unload when store is dirty', () => {
-      addSongToSet(store.sets[0].id, { title: 'Test' })
-      expect(isDirty.value).toBe(true)
+      store.addSongToSet(store.state.sets[0]!.id, { title: 'Test' })
+      expect(store.isDirty).toBe(true)
 
       const { handleBeforeUnload } = useFileOperations()
 
@@ -303,7 +303,7 @@ describe('useFileOperations', () => {
       })
 
       it('should create download link with correct filename', async () => {
-        store.metadata.setListName = 'My Show'
+        store.state.metadata.setListName = 'My Show'
         const { saveToDisk } = useFileOperations()
 
         await saveToDisk()
@@ -312,7 +312,7 @@ describe('useFileOperations', () => {
       })
 
       it('should use default filename when setListName is empty', async () => {
-        store.metadata.setListName = ''
+        store.state.metadata.setListName = ''
         const { saveToDisk } = useFileOperations()
 
         await saveToDisk()
@@ -322,13 +322,13 @@ describe('useFileOperations', () => {
 
       it('should mark store as clean after save', async () => {
         // Make the store dirty by changing metadata
-        store.metadata.setListName = 'Dirty Test'
-        expect(isDirty.value).toBe(true)
+        store.state.metadata.setListName = 'Dirty Test'
+        expect(store.isDirty).toBe(true)
 
         const { saveToDisk } = useFileOperations()
         await saveToDisk()
 
-        expect(isDirty.value).toBe(false)
+        expect(store.isDirty).toBe(false)
       })
 
       it('should create and revoke object URL', async () => {
@@ -378,7 +378,7 @@ describe('useFileOperations', () => {
         await saveToDisk()
 
         expect(mockWritable.write).toHaveBeenCalled()
-        const writeArg = mockWritable.write.mock.calls[0][0]
+        const writeArg = mockWritable.write.mock.calls[0]![0]
         const parsed = JSON.parse(writeArg)
         expect(parsed).toHaveProperty('metadata')
         expect(parsed).toHaveProperty('sets')
@@ -392,13 +392,13 @@ describe('useFileOperations', () => {
       })
 
       it('should mark store clean after successful save', async () => {
-        addSongToSet(store.sets[0].id, { title: 'Test' })
-        expect(isDirty.value).toBe(true)
+        store.addSongToSet(store.state.sets[0]!.id, { title: 'Test' })
+        expect(store.isDirty).toBe(true)
 
         const { saveToDisk } = useFileOperations()
         await saveToDisk()
 
-        expect(isDirty.value).toBe(false)
+        expect(store.isDirty).toBe(false)
       })
 
       it('should show Save As when altKey is pressed', async () => {
@@ -535,8 +535,8 @@ describe('useFileOperations', () => {
   describe('loadFromDisk', () => {
     describe('dirty state handling', () => {
       it('should show confirm dialog when store is dirty', async () => {
-        addSongToSet(store.sets[0].id, { title: 'Test' })
-        expect(isDirty.value).toBe(true)
+        store.addSongToSet(store.state.sets[0]!.id, { title: 'Test' })
+        expect(store.isDirty).toBe(true)
 
         const showConfirm = vi.fn().mockResolvedValue(false)
         const { loadFromDisk } = useFileOperations({ showConfirm })
@@ -554,7 +554,7 @@ describe('useFileOperations', () => {
       })
 
       it('should abort if user cancels confirm dialog', async () => {
-        addSongToSet(store.sets[0].id, { title: 'Test' })
+        store.addSongToSet(store.state.sets[0]!.id, { title: 'Test' })
 
         const showConfirm = vi.fn().mockResolvedValue(false)
         const { loadFromDisk, fileInput } = useFileOperations({ showConfirm })
@@ -569,7 +569,7 @@ describe('useFileOperations', () => {
       })
 
       it('should proceed if user confirms', async () => {
-        addSongToSet(store.sets[0].id, { title: 'Test' })
+        store.addSongToSet(store.state.sets[0]!.id, { title: 'Test' })
 
         const showConfirm = vi.fn().mockResolvedValue(true)
         const { loadFromDisk, fileInput } = useFileOperations({ showConfirm })
@@ -589,7 +589,7 @@ describe('useFileOperations', () => {
       })
 
       it('should not show confirm when store is clean', async () => {
-        markClean()
+        store.markClean()
 
         const showConfirm = vi.fn()
         const { loadFromDisk, fileInput } = useFileOperations({ showConfirm })
@@ -615,7 +615,7 @@ describe('useFileOperations', () => {
       })
 
       it('should click file input when API not available', async () => {
-        markClean()
+        store.markClean()
         const { loadFromDisk, fileInput } = useFileOperations()
 
         const mockInput = { click: vi.fn() }
@@ -629,7 +629,7 @@ describe('useFileOperations', () => {
 
     describe('with File System Access API', () => {
       beforeEach(() => {
-        markClean()
+        store.markClean()
       })
 
       afterEach(() => {
@@ -665,8 +665,8 @@ describe('useFileOperations', () => {
         const { loadFromDisk, currentFileHandle } = useFileOperations()
         await loadFromDisk()
 
-        expect(store.metadata.setListName).toBe('Loaded Show')
-        expect(store.sets[0].songs[0].title).toBe('Song 1')
+        expect(store.state.metadata.setListName).toBe('Loaded Show')
+        expect(store.state.sets[0]!.songs[0]!.title).toBe('Song 1')
         expect(currentFileHandle.value).toStrictEqual(mockHandle)
       })
 
@@ -755,10 +755,10 @@ describe('useFileOperations', () => {
         await loadFromDisk()
 
         // Data should be loaded successfully
-        expect(store.metadata.setListName).toBe('Legacy Show')
-        expect(store.sets[0].songs[0].title).toBe('Legacy Song')
+        expect(store.state.metadata.setListName).toBe('Legacy Show')
+        expect(store.state.sets[0]!.songs[0]!.title).toBe('Legacy Song')
         // Schema version should be added
-        expect(store.schemaVersion).toBe(1)
+        expect(store.state.schemaVersion).toBe(1)
       })
 
       it('should handle data that already has schemaVersion', async () => {
@@ -797,9 +797,9 @@ describe('useFileOperations', () => {
         const { loadFromDisk } = useFileOperations()
         await loadFromDisk()
 
-        expect(store.metadata.setListName).toBe('Current Show')
-        expect(store.sets[0].songs[0].title).toBe('Current Song')
-        expect(store.schemaVersion).toBe(1)
+        expect(store.state.metadata.setListName).toBe('Current Show')
+        expect(store.state.sets[0]!.songs[0]!.title).toBe('Current Song')
+        expect(store.state.schemaVersion).toBe(1)
       })
     })
   })
@@ -815,7 +815,7 @@ describe('useFileOperations', () => {
       await handleFileInputChange(event)
 
       // Store should remain unchanged
-      expect(store.sets.length).toBe(1)
+      expect(store.state.sets.length).toBe(1)
     })
 
     it('should load valid file from input', async () => {
@@ -835,8 +835,8 @@ describe('useFileOperations', () => {
 
       await handleFileInputChange(event)
 
-      expect(store.metadata.setListName).toBe('Input Show')
-      expect(store.sets[0].songs[0].title).toBe('Input Song')
+      expect(store.state.metadata.setListName).toBe('Input Show')
+      expect(store.state.sets[0]!.songs[0]!.title).toBe('Input Song')
     })
 
     it('should reset input value after loading', async () => {
@@ -968,9 +968,9 @@ describe('useFileOperations', () => {
 
       await handleFileInputChange(event)
 
-      expect(store.metadata.setListName).toBe('Legacy Fallback Show')
-      expect(store.sets[0].songs[0].title).toBe('Legacy Song')
-      expect(store.schemaVersion).toBe(1)
+      expect(store.state.metadata.setListName).toBe('Legacy Fallback Show')
+      expect(store.state.sets[0]!.songs[0]!.title).toBe('Legacy Song')
+      expect(store.state.schemaVersion).toBe(1)
     })
 
     it('should handle data that already has schemaVersion (fallback)', async () => {
@@ -1008,9 +1008,9 @@ describe('useFileOperations', () => {
 
       await handleFileInputChange(event)
 
-      expect(store.metadata.setListName).toBe('Current Fallback Show')
-      expect(store.sets[0].songs[0].title).toBe('Current Song')
-      expect(store.schemaVersion).toBe(1)
+      expect(store.state.metadata.setListName).toBe('Current Fallback Show')
+      expect(store.state.sets[0]!.songs[0]!.title).toBe('Current Song')
+      expect(store.state.schemaVersion).toBe(1)
     })
   })
 
@@ -1037,7 +1037,7 @@ describe('useFileOperations', () => {
     it('should work without callbacks (fallback to native)', async () => {
       ;(window.confirm as ReturnType<typeof vi.fn>).mockReturnValue(false)
       // Make the store dirty by changing metadata
-      store.metadata.setListName = 'Dirty Test'
+      store.state.metadata.setListName = 'Dirty Test'
 
       const { loadFromDisk } = useFileOperations()
       await loadFromDisk()
