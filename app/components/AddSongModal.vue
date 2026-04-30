@@ -291,10 +291,4 @@ onUnmounted(() => {
 	gap: 1rem;
 	margin-top: 0.5rem;
 }
-
-/* Icon sizing */
-.icon {
-	width: 1em;
-	height: 1em;
-}
 </style>
