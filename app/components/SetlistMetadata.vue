@@ -274,8 +274,4 @@ onMounted(() => {
 	align-items: center;
 	color: var(--text-color-muted);
 }
-
-.icon {
-	color: var(--accent-color);
-}
 </style>
