@@ -12,7 +12,8 @@ import {
 	watch,
 } from "vue";
 import { Plus, Trash } from "lucide-vue-next";
-import Sortable, { MoveEvent, SortableEvent } from "sortablejs";
+import Sortable from "sortablejs";
+import type { MoveEvent, SortableEvent } from "sortablejs";
 import WysiwygSongItem from "./WysiwygSongItem.vue";
 import AddSongModal from "./AddSongModal.vue";
 import {
