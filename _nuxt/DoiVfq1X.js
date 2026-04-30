@@ -1,0 +1,1 @@
+import{_ as c,B as n,a7 as s,A as t}from"./BXnUCko8.js";const a={},_={class:"card"};function o(e,r){return t(),n("div",_,[s(e.$slots,"default",{},void 0)])}const f=Object.assign(c(a,[["render",o],["__scopeId","data-v-99367cbc"]]),{__name:"Card"});export{f as default};
