@@ -1,5 +1,5 @@
 import { ref, computed, type Ref, nextTick } from 'vue'
-import { useSetlistStore, isEncoreMarkerSong } from '../stores/store'
+import { useSetlistStore, isEncoreMarkerSong } from '@/stores/store'
 
 /**
  * Represents a focusable item in the setlist

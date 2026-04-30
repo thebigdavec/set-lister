@@ -1,8 +1,8 @@
 import { computed, nextTick, ref, watch } from 'vue'
 import { useRefHistory } from '@vueuse/core'
-import { useSetlistStore, type SetItem, type SetListMetadata } from '../stores/store'
-import { LIMITS } from '../constants/limits'
-import { isDataEqual, type ComparableData } from '../utils/stateComparison'
+import { useSetlistStore, type SetItem, type SetListMetadata } from '@/stores/store'
+import { LIMITS } from '@/constants/limits'
+import { isDataEqual, type ComparableData } from '@/utils/stateComparison'
 
 /**
  * Represents the trackable state for undo/redo operations.

@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { nextTick } from 'vue'
-import { useHistory } from '../useHistory'
+import { useHistory } from '@/useHistory'
 import {
   store,
   isDirty,
@@ -13,7 +13,7 @@ import {
   renameSet,
   updateMetadata,
   markClean
-} from '../../stores/store'
+} from '@/../stores/store'
 
 describe('useHistory', () => {
   beforeEach(() => {

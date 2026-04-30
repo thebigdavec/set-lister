@@ -1,4 +1,4 @@
-import type { StoreState, SetItem, Song, SetListMetadata } from '../stores/store'
+import type { StoreState, SetItem, Song, SetListMetadata } from '@/stores/store'
 
 export const CURRENT_SCHEMA_VERSION = 1
 

@@ -1,7 +1,7 @@
 import { ref, computed } from 'vue'
-import { useSetlistStore } from '../stores/store'
-import { generateSlugFromArray } from '../utils/generateSlugFromArray'
-import { migrateToCurrentSchema } from '../utils/schemaMigration'
+import { useSetlistStore } from '@/stores/store'
+import { generateSlugFromArray } from '@/utils/generateSlugFromArray'
+import { migrateToCurrentSchema } from '@/utils/schemaMigration'
 
 /**
  * LocalStorage key for persisting the current filename

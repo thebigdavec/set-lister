@@ -3,7 +3,7 @@ import type {
   Song,
   SetItem,
   StoreState
-} from '../stores/store'
+} from '@/stores/store'
 
 /**
  * Validation result

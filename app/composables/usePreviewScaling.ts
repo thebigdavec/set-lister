@@ -1,14 +1,14 @@
 import { computed, nextTick, type Ref } from 'vue'
-import { fitStringsToBox } from '../utils/fitStringsToBox'
-import { formatSongLabel } from '../utils/textMetrics'
+import { fitStringsToBox } from '@/utils/fitStringsToBox'
+import { formatSongLabel } from '@/utils/textMetrics'
 import {
   BOX_HEIGHT_CM,
   BOX_WIDTH_CM,
   CM_TO_PX,
   TARGET_HEIGHT_PX,
   TARGET_WIDTH_PX
-} from '../constants'
-import type { SetItem } from '../stores/store'
+} from '@/constants'
+import type { SetItem } from '@/stores/store'
 
 /**
  * Options for usePreviewScaling

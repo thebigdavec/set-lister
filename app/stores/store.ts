@@ -1,17 +1,17 @@
 import { computed, ref, watch } from 'vue'
 import { defineStore } from 'pinia'
-import { STORAGE_KEYS } from '../constants'
-import { LIMITS } from '../constants/limits'
-import { formatSongLabel, measureSongLabelWidth } from '../utils/textMetrics'
-import { safeGetItem, safeSetItem } from '../utils/storage'
+import { STORAGE_KEYS } from '@/constants'
+import { LIMITS } from '@/constants/limits'
+import { formatSongLabel, measureSongLabelWidth } from '@/utils/textMetrics'
+import { safeGetItem, safeSetItem } from '@/utils/storage'
 import {
   sanitizeSongTitle,
   sanitizeSongKey,
   sanitizeSetName,
   sanitizeMetadata
-} from '../utils/sanitize'
-import { isDataEqual, type ComparableData } from '../utils/stateComparison'
-import { migrateToCurrentSchema } from '../utils/schemaMigration'
+} from '@/utils/sanitize'
+import { isDataEqual, type ComparableData } from '@/utils/stateComparison'
+import { migrateToCurrentSchema } from '@/utils/schemaMigration'
 
 export const CURRENT_SCHEMA_VERSION = 1
 
@@ -50,7 +50,7 @@ export interface StoreState {
 }
 
 // Re-export types from stateComparison for backward compatibility
-export type { ComparableData } from '../utils/stateComparison'
+export type { ComparableData } from '@/utils/stateComparison'
 
 const ENCORE_MARKER_TITLE = '<encore>'
 

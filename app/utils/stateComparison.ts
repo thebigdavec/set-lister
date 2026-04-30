@@ -1,4 +1,4 @@
-import type { SetListMetadata } from '../stores/store'
+import type { SetListMetadata } from '@/stores/store'
 
 /**
  * Comparable song data - excludes computed/derived fields

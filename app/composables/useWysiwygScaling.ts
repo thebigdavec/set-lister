@@ -1,8 +1,8 @@
-import { computed, nextTick, ref, type Ref } from 'vue'
-import { fitStringsToBox } from '../utils/fitStringsToBox'
-import { formatSongLabel } from '../utils/textMetrics'
-import { BOX_HEIGHT_CM, BOX_WIDTH_CM, CM_TO_PX } from '../constants'
-import { type SetItem, useSetlistStore } from '../stores/store'
+// import { computed, nextTick, ref, type Ref } from 'vue'
+import { fitStringsToBox } from '@/utils/fitStringsToBox'
+import { formatSongLabel } from '@/utils/textMetrics'
+import { BOX_HEIGHT_CM, BOX_WIDTH_CM, CM_TO_PX } from '@/constants'
+import { type SetItem, useSetlistStore } from '@/stores/store'
 
 export function useWysiwygScaling(
   setRef: Ref<SetItem>,

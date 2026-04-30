@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { migrateToCurrentSchema, CURRENT_SCHEMA_VERSION } from '../schemaMigration';
+import { migrateToCurrentSchema, CURRENT_SCHEMA_VERSION } from '@/schemaMigration';
 describe('schemaMigration', () => {
     let consoleErrorSpy;
     beforeEach(() => {

@@ -1,5 +1,5 @@
 import { computed, type Ref, type ComputedRef } from 'vue'
-import { isEncoreMarkerSong, type SetItem, type Song } from '../stores/store'
+import { isEncoreMarkerSong, type SetItem, type Song } from '@/stores/store'
 
 /**
  * Options for useEncoreHelpers
