@@ -21,10 +21,8 @@ import {
 	type SetItem,
 	isEncoreMarkerSong,
 } from "../stores/store";
-import {
-	useEncoreHelpers,
-	type UseSetlistNavigationReturn,
-} from "../composables";
+import { useEncoreHelpers } from "../composables/useEncoreHelpers";
+import type { UseSetlistNavigationReturn } from "../composables/useSetlistNavigation";
 import { LIMITS } from "../constants/limits";
 
 const props = defineProps<{

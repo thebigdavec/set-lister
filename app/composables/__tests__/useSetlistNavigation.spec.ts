@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { ref, nextTick } from 'vue'
-import { useSetlistNavigation, type FocusedItem } from '@/useSetlistNavigation'
-import { store, resetStore } from '@/../stores/store'
+import { useSetlistNavigation, type FocusedItem } from '@/composables/useSetlistNavigation'
+import { store, resetStore } from '@/stores/store'
 
 // Helper to set up store with test data
 function setupTestStore() {

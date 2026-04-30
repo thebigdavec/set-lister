@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import {
   migrateToCurrentSchema,
   CURRENT_SCHEMA_VERSION
-} from '@/schemaMigration'
+} from '@/utils/schemaMigration'
 
 describe('schemaMigration', () => {
   let consoleErrorSpy: ReturnType<typeof vi.spyOn>

@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, toRef, toRefs } from "vue";
 import { type SetItem, type SetListMetadata } from "../stores/store";
-import { useEncoreHelpers } from "../composables";
+import { useEncoreHelpers } from "../composables/useEncoreHelpers";
 
 const props = withDefaults(
 	defineProps<{

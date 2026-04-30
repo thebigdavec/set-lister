@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach } from 'vitest'
 import { ref, computed } from 'vue'
-import { useEncoreHelpers } from '@/useEncoreHelpers'
-import type { SetItem, Song } from '@/../stores/store'
+import { useEncoreHelpers } from '@/composables/useEncoreHelpers'
+import type { SetItem, Song } from '@/stores/store'
 
 // Helper to create a mock set
 function createMockSet(songs: Song[] = []): SetItem {

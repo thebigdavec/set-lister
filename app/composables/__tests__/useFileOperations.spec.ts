@@ -3,14 +3,14 @@ import {
   useFileOperations,
   _resetFileState,
   _generateCopyFilename
-} from '@/useFileOperations'
+} from '@/composables/useFileOperations'
 import {
   store,
   isDirty,
   resetStore,
   addSongToSet,
   markClean
-} from '@/../store'
+} from '@/stores/store'
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const windowAny = window as any

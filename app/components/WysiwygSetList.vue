@@ -2,7 +2,7 @@
 import { onMounted, onUnmounted, provide, ref, watch } from "vue";
 import { useSetlistStore } from "../stores/store";
 import WysiwygSet from "./WysiwygSet.vue";
-import { useSetlistNavigation } from "../composables";
+import { useSetlistNavigation } from "../composables/useSetlistNavigation";
 
 defineProps<{
 	showSongNumbers?: boolean;

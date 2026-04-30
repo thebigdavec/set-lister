@@ -11,7 +11,7 @@ import {
 	type Ref,
 } from "vue";
 import type { Song } from "../stores/store";
-import type { UseSetlistNavigationReturn } from "../composables";
+import type { UseSetlistNavigationReturn } from "../composables/useSetlistNavigation";
 import EncoreMarker from "./SongItem/EncoreMarker.vue";
 import WysiwygSongItemDisplay from "./SongItem/WysiwygSongItemDisplay.vue";
 import WysiwygSongItemEdit from "./SongItem/WysiwygSongItemEdit.vue";

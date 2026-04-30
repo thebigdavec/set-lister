@@ -5,15 +5,11 @@ import { useSetlistStore, type SetItem } from '~/stores/store'
 import { STORAGE_KEYS } from '~/constants'
 import { safeGetItem, safeSetItem } from '~/utils/storage'
 import { formatDuration } from '~/utils/utils'
-import {
-  useFileOperations,
-  useHistory,
-  useKeyboardShortcuts,
-  usePreviewScaling,
-  useDialogs,
-  createEditShortcuts,
-  createPreviewShortcuts
-} from '~/composables'
+import { useFileOperations } from '~/composables/useFileOperations'
+import { useHistory } from '~/composables/useHistory'
+import { useKeyboardShortcuts, createEditShortcuts, createPreviewShortcuts } from '~/composables/useKeyboardShortcuts'
+import { usePreviewScaling } from '~/composables/usePreviewScaling'
+import { useDialogs } from '~/composables/useDialogs'
 
 // =============================================================================
 // Store
