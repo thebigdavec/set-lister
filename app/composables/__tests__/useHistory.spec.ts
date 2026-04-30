@@ -19,6 +19,7 @@ describe('useHistory', () => {
     // Ensure we have a clean state with one empty set
     store.state.sets = [{
       id: crypto.randomUUID(),
+      name: '',
       songs: [],
       metrics: {
         longestEntryId: null,

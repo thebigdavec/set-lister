@@ -55,7 +55,7 @@ export function applySongAdditionMetrics(set: SetItem, song: Song): void {
   const metrics = set.metrics ?? cloneEmptyMetrics()
   const label = formatSongLabel(song.title, song.key)
   const width = measureSongLabelWidth(song.title, song.key)
-  const totalRows = set.songs.length
+  const totalRows = set.songs.filter(s => !isEncoreMarkerSong(s)).length
 
   if (!metrics.longestEntryId || width >= metrics.longestEntryWidth16px) {
     set.metrics = {
