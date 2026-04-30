@@ -292,22 +292,22 @@ watch(editorMode, (value) => {
         <input type="checkbox" v-model="showPreviewNumbers" />
         Song numbers
       </label>
-      <Button
+      <BaseButton
         @click="printSets"
         class="primary"
         tooltip="Print the setlist"
         aria-label="Print setlist"
       >
         <Printer class="icon" /> Print
-      </Button>
-      <Button
+      </BaseButton>
+      <BaseButton
         @click="closePreview"
         class="danger"
         tooltip="Close preview and return to editor"
         aria-label="Close preview"
       >
         <X class="icon" /> Close
-      </Button>
+      </BaseButton>
     </div>
 
     <div ref="previewRef" class="preview-content">
@@ -333,7 +333,7 @@ watch(editorMode, (value) => {
     </div>
   </div>
   <!-- New Set List Confirmation Dialog -->
-  <ConfirmDialog
+  <BaseConfirmDialog
     :show="showNewDialog"
     title="Start New Set List?"
     message="Are you sure you want to start a new set list? All current changes will be lost if not saved."
@@ -345,7 +345,7 @@ watch(editorMode, (value) => {
   />
 
   <!-- Generic Confirmation Dialog (for file operations) -->
-  <ConfirmDialog
+  <BaseConfirmDialog
     :show="confirmDialog.show"
     :title="confirmDialog.title"
     :message="confirmDialog.message"
@@ -357,7 +357,7 @@ watch(editorMode, (value) => {
   />
 
   <!-- Alert Dialog (for errors and notifications) -->
-  <ConfirmDialog
+  <BaseConfirmDialog
     :show="alertDialog.show"
     :title="alertDialog.title"
     :message="alertDialog.message"

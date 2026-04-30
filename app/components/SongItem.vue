@@ -465,7 +465,7 @@ function handlePointerCancel(): void {
 			/>
 		</template>
 
-		<ConfirmDialog
+		<BaseConfirmDialog
 			:show="showDeleteConfirm"
 			title="Delete Song"
 			:message="`Are you sure you want to delete &quot;${song.title}&quot;?`"

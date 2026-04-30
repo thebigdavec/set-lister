@@ -69,7 +69,7 @@ onUnmounted(() => {
 	<div class="menu-container no-print">
 		<!-- Undo/Redo buttons - always visible -->
 		<div class="undo-redo-buttons">
-			<Button
+			<BaseButton
 				@click="handleAction('undo')"
 				nowrap
 				:disabled="!canUndo"
@@ -78,8 +78,8 @@ onUnmounted(() => {
 				aria-describedby="tooltip-undo"
 			>
 				<Undo2 class="icon" /> <span class="button-label">Undo</span>
-			</Button>
-			<Button
+			</BaseButton>
+			<BaseButton
 				@click="handleAction('redo')"
 				nowrap
 				:disabled="!canRedo"
@@ -88,11 +88,11 @@ onUnmounted(() => {
 				aria-label="Redo"
 			>
 				<Redo2 class="icon" /> <span class="button-label">Redo</span>
-			</Button>
+			</BaseButton>
 		</div>
 
 		<!-- Burger menu button (mobile only) -->
-		<Button
+		<BaseButton
 			class="burger-menu-button"
 			:class="{ 'mobile-open': isMobileMenuOpen }"
 			@click="toggleMobileMenu"
@@ -101,7 +101,7 @@ onUnmounted(() => {
 		>
 			<Menu v-if="!isMobileMenuOpen" class="icon" />
 			<X v-else class="icon" />
-		</Button>
+		</BaseButton>
 
 		<!-- Mobile menu overlay -->
 		<div
@@ -114,25 +114,25 @@ onUnmounted(() => {
 		<!-- Menu content (desktop always visible, mobile slide-in) -->
 		<div class="menu-bar" :class="{ 'mobile-open': isMobileMenuOpen }">
 			<div class="menu-items">
-				<Button
+				<BaseButton
 					@click="handleAction('new')"
 					nowrap
 					:tooltip="`New Set List (${shortcuts.newDocument})`"
 					aria-describedby="tooltip-new"
 				>
 					<FilePlus class="icon" /> New Set List
-				</Button>
-				<Button
+				</BaseButton>
+				<BaseButton
 					@click="handleAction('load')"
 					nowrap
 					:tooltip="`Open Set List (${shortcuts.open})`"
 					aria-describedby="tooltip-load"
 				>
 					<FolderOpen class="icon" /> Open Set List
-				</Button>
+				</BaseButton>
 			</div>
 			<div class="menu-items">
-				<Button
+				<BaseButton
 					@click="handleAction('save')"
 					nowrap
 					:disabled="!isDirty"
@@ -142,15 +142,15 @@ onUnmounted(() => {
 				>
 					<Save class="icon" /> Save Set List
 					<span v-if="isDirty" class="dirty-indicator">*</span>
-				</Button>
-				<Button
+				</BaseButton>
+				<BaseButton
 					@click="handleAction('save-as')"
 					nowrap
 					:tooltip="`Save Set List As (${shortcuts.saveAs})`"
 					aria-describedby="tooltip-save-as"
 				>
 					<SaveAll class="icon" /> Save A Copy
-				</Button>
+				</BaseButton>
 			</div>
 		</div>
 	</div>

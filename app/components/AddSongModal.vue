@@ -145,7 +145,7 @@ onUnmounted(() => {
 		<div class="dialog-content">
 			<div class="dialog-header">
 				<h3>Add Song</h3>
-				<Button
+				<BaseButton
 					type="button"
 					class="danger"
 					size="sm"
@@ -154,7 +154,7 @@ onUnmounted(() => {
 					tooltip="Close"
 				>
 					<X class="icon" />
-				</Button>
+				</BaseButton>
 			</div>
 
 			<form @submit.prevent="handleSubmit" class="dialog-form">
@@ -197,16 +197,16 @@ onUnmounted(() => {
 				</div>
 
 				<div class="dialog-actions">
-					<Button type="button" @click="handleSubmitAndClose">
+					<BaseButton type="button" @click="handleSubmitAndClose">
 						{{ songTitle.trim() ? "Add and " : "" }}Close
-					</Button>
-					<Button
+					</BaseButton>
+					<BaseButton
 						v-if="songTitle.trim()"
 						type="submit"
 						:class="{ success: songTitle.trim() }"
 					>
 						<Check class="icon" /> Add
-					</Button>
+					</BaseButton>
 				</div>
 			</form>
 		</div>

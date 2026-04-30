@@ -56,11 +56,11 @@ onMounted(() => {
 			role="status"
 			aria-live="polite"
 		>
-			<Tooltip text="Here's a little tip for you!" position="bottom">
+			<BaseTooltip text="Here's a little tip for you!" position="bottom">
 				<Lightbulb class="icon hint-icon" aria-hidden="true" />
-			</Tooltip>
+			</BaseTooltip>
 			<span class="hint-text">{{ text }}</span>
-			<Button
+			<BaseButton
 				type="button"
 				aria-label="Dismiss tip"
 				tooltip="Dismiss tip"
@@ -68,7 +68,7 @@ onMounted(() => {
 				@click="dismiss"
 			>
 				<X class="icon" aria-hidden="true" />
-			</Button>
+			</BaseButton>
 		</div>
 	</Transition>
 </template>

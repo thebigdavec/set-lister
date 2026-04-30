@@ -60,14 +60,14 @@ onMounted(() => {
 </script>
 
 <template>
-	<Card class="metadata">
+	<BaseCard class="metadata">
 		<div class="metadata-title">
 			<h2 v-if="noDetailsExist">Enter Setlist Details</h2>
 			<h2 v-else-if="store.state.metadata.setListName">
 				{{ store.state.metadata.setListName }}
 			</h2>
 			<h2 v-else>Untitled Setlist</h2>
-			<Button
+			<BaseButton
 				v-if="isEditingMetadata"
 				@click="toggleEditingMetadata"
 				tooltip="Finish editing details"
@@ -75,8 +75,8 @@ onMounted(() => {
 				class="success"
 			>
 				<Check class="icon" /> Done
-			</Button>
-			<Button
+			</BaseButton>
+			<BaseButton
 				v-else
 				@click="toggleEditingMetadata"
 				tooltip="Start editing details"
@@ -84,7 +84,7 @@ onMounted(() => {
 				nowrap
 			>
 				<Pencil class="icon" /> Edit Set Details
-			</Button>
+			</BaseButton>
 		</div>
 		<div v-if="isEditingMetadata" class="metadata-grid">
 			<div class="input-group">
@@ -166,7 +166,7 @@ onMounted(() => {
 				<span>Show song numbers</span>
 			</label>
 			<div class="set-list-actions">
-				<Button
+				<BaseButton
 					@click="emit('export')"
 					class="action-item"
 					:disabled="!hasSets"
@@ -176,8 +176,8 @@ onMounted(() => {
 				>
 					<Share class="icon" style="color: inherit" />
 					Export/Print Set List
-				</Button>
-				<Button
+				</BaseButton>
+				<BaseButton
 					@click="emit('add-set')"
 					nowrap
 					class="action-item primary"
@@ -185,10 +185,10 @@ onMounted(() => {
 					aria-label="Add set"
 				>
 					<Plus class="icon" /> Add New Set
-				</Button>
+				</BaseButton>
 			</div>
 		</div>
-	</Card>
+	</BaseCard>
 </template>
 
 <style scoped>

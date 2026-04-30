@@ -94,21 +94,21 @@ onUnmounted(() => {
 					<div class="modal-actions">
 						<!-- Alert mode: single OK Button -->
 						<template v-if="alertMode">
-							<Button @click="handleOk" class="primary">
+							<BaseButton @click="handleOk" class="primary">
 								{{ okText }}
-							</Button>
+							</BaseButton>
 						</template>
 						<!-- Confirm mode: cancel and confirm Buttons -->
 						<template v-else>
-							<Button @click="emit('cancel')">
+							<BaseButton @click="emit('cancel')">
 								{{ cancelText }}
-							</Button>
-							<Button
+							</BaseButton>
+							<BaseButton
 								@click="emit('confirm')"
 								:class="danger ? 'danger' : 'primary'"
 							>
 								{{ confirmText }}
-							</Button>
+							</BaseButton>
 						</template>
 					</div>
 				</div>

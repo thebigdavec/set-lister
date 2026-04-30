@@ -52,9 +52,9 @@ defineExpose({
 			placeholder="Song Title" @keyup="$emit('keyup-title', $event)" />
 		<input v-model="editKey" :maxlength="LIMITS.MAX_SONG_KEY_LENGTH" placeholder="Song Key" class="key-input"
 			@keyup="$emit('keyup-key', $event)" />
-		<Button class="success" size="sm" @click="handleSave">
+		<BaseButton class="success" size="sm" @click="handleSave">
 			<Check class="icon" /> Done
-		</Button>
+		</BaseButton>
 	</div>
 </template>
 

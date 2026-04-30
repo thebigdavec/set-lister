@@ -79,11 +79,11 @@ watch(
 </script>
 
 <template>
-	<Card ref="carouselRef" class="sets-wrapper wysiwyg-carousel">
+	<BaseCard ref="carouselRef" class="sets-wrapper wysiwyg-carousel">
 		<WysiwygSet v-for="(set, setIndex) in store.state.sets" :key="set.id" :set="set" :set-index="setIndex"
 			:is-last="set.id === store.lastSetId" :show-song-numbers="showSongNumbers" :is-active="activeIndex === setIndex"
 			:data-index="setIndex" class="wysiwyg-set" @remove-set="store.removeSet(set.id)" />
-	</Card>
+	</BaseCard>
 </template>
 
 <style scoped>

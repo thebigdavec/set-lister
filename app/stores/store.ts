@@ -549,6 +549,6 @@ export const useSetlistStore = defineStore('setlist', () => {
 export function formatDuration(duration: number): string {
   const hours = Math.floor(duration / 3600)
   const minutes = Math.floor((duration % 3600) / 60)
-  const seconds = duration % 60
+  const seconds = Math.floor(duration % 60)
   return `${hours > 0 ? `${hours}:` : ''}${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`
 }

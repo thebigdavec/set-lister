@@ -434,7 +434,7 @@ function handlePointerCancel(): void {
 			" @keyup-title="handleTitleKeyUp" @keyup-key="handleKeyInputKeyUp" />
 		</template>
 
-		<ConfirmDialog :show="showDeleteConfirm" title="Delete Song"
+		<BaseConfirmDialog :show="showDeleteConfirm" title="Delete Song"
 			:message="`Are you sure you want to delete &quot;${song.title}&quot;?`" confirm-text="Delete" :danger="true"
 			@confirm="handleDeleteConfirm" @cancel="handleDeleteCancel" />
 	</div>

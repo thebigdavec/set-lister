@@ -44,9 +44,9 @@ defineExpose({
 		@keydown="$emit('keydown', $event)"
 		@keyup="$emit('keyup', $event)"
 	>
-		<Tooltip text="Grab to reorder" position="top">
+		<BaseTooltip text="Grab to reorder" position="top">
 			<GripVertical class="grip" />
-		</Tooltip>
+		</BaseTooltip>
 		<span v-if="showNumber && songNumber" class="song-number">{{
 			songNumber
 		}}</span>
@@ -57,15 +57,15 @@ defineExpose({
 		<div class="song-meta">
 			<span v-if="isEncore" class="encore-pill">Encore</span>
 			<div class="actions no-print">
-				<Button
+				<BaseButton
 					@click="$emit('edit')"
 					size="sm"
 					tooltip="Edit song"
 					aria-label="Edit song"
 				>
 					<Pencil class="icon" />
-				</Button>
-				<Button
+				</BaseButton>
+				<BaseButton
 					@click="$emit('remove')"
 					size="sm"
 					class="delete"
@@ -73,7 +73,7 @@ defineExpose({
 					aria-label="Remove song from this set"
 				>
 					<X class="icon" />
-				</Button>
+				</BaseButton>
 			</div>
 		</div>
 	</div>

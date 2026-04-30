@@ -35,7 +35,7 @@ const buttonClasses = computed(() => ({
 </script>
 
 <template>
-	<Tooltip
+	<BaseTooltip
 		v-if="disabled === false && tooltip"
 		:text="tooltip"
 		position="bottom"
@@ -49,7 +49,7 @@ const buttonClasses = computed(() => ({
 		>
 			<slot />
 		</button>
-	</Tooltip>
+	</BaseTooltip>
 	<button
 		v-else
 		v-bind="attrs"

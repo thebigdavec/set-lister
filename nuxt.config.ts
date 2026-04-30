@@ -53,17 +53,17 @@ export default defineNuxtConfig({
   },
 
   // Component auto-import configuration
-  components: [
-    {
-      path: '~/components',
-      pathPrefix: false
-    },
-    {
-      path: '~/components/base',
-      global: true, // Make base components globally available
-      pathPrefix: false
-    }
-  ],
+  // components: [
+  //   {
+  //     path: '~/components',
+  //     pathPrefix: false
+  //   },
+  //   {
+  //     path: '~/components/base',
+  //     global: true, // Make base components globally available
+  //     pathPrefix: false
+  //   }
+  // ],
 
   // Composables and utils auto-import
   imports: {

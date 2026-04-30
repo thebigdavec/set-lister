@@ -29,7 +29,7 @@ export interface AlertDialogState {
  */
 export function useDialogs() {
   // Confirm dialog state
-  const confirmDialogState = ref<ConfirmDialogState>({
+  const confirmDialogState = ref<BaseConfirmDialogState>({
     show: false,
     title: "",
     message: "",

@@ -313,7 +313,7 @@ function cancelDelete(): void {
 				/>
 			</div>
 			<div class="set-header-actions no-print">
-				<Button
+				<BaseButton
 					ref="addSongButtonRef"
 					@click="openAddSongModal"
 					class="primary"
@@ -323,8 +323,8 @@ function cancelDelete(): void {
 				>
 					<Plus class="icon" />
 					Add Song
-				</Button>
-				<Button
+				</BaseButton>
+				<BaseButton
 					@click="handleDeleteClick"
 					class="danger"
 					aria-label="Delete set"
@@ -333,11 +333,11 @@ function cancelDelete(): void {
 				>
 					<Trash class="icon" />
 					Delete Set
-				</Button>
+				</BaseButton>
 			</div>
 		</div>
 
-		<FirstTimeHint
+		<BaseFirstTimeHint
 			v-if="setIndex === 0 && set.songs.length > 0"
 			hint-id="reorder-songs"
 			text="Tip: Use the grip icon to reorder songs and move the encore marker."
@@ -377,7 +377,7 @@ function cancelDelete(): void {
 			@add="handleAddSong"
 		/>
 
-		<ConfirmDialog
+		<BaseConfirmDialog
 			:show="showDeleteConfirm"
 			title="Delete Set"
 			:message="`Are you sure you want to delete '${displayName}'? This action cannot be undone.`"

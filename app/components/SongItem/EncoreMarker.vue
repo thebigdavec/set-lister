@@ -11,11 +11,11 @@ defineEmits<{
 </script>
 
 <template>
-	<Tooltip text="Grab to reorder" position="top">
+	<BaseTooltip text="Grab to reorder" position="top">
 		<GripVertical class="grip" />
-	</Tooltip>
+	</BaseTooltip>
 	<div class="marker-pill">Start of Encore section</div>
-	<Button
+	<BaseButton
 		v-if="!isLast"
 		size="sm"
 		class="icon-btn no-print marker-reset-btn"
@@ -25,7 +25,7 @@ defineEmits<{
 		@click.stop.prevent="$emit('reset')"
 	>
 		<RotateCcw class="icon" />
-	</Button>
+	</BaseButton>
 </template>
 
 <style scoped>

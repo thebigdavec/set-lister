@@ -43,7 +43,7 @@ watch(
 </script>
 
 <template>
-	<Card class="sets-wrapper">
+	<BaseCard class="sets-wrapper">
 		<Set
 			v-for="(set, setIndex) in store.state.sets"
 			:key="set.id"
@@ -53,7 +53,7 @@ watch(
 			:show-song-numbers="showSongNumbers"
 			@remove-set="store.removeSet(set.id)"
 		/>
-	</Card>
+	</BaseCard>
 </template>
 
 <style scoped>

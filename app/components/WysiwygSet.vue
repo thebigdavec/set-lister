@@ -336,16 +336,16 @@ function cancelDelete(): void {
 					@keydown="handleTitleKeyDown" />
 			</div>
 			<div class="set-header-actions no-print">
-				<Button ref="addSongButtonRef" @click="openAddSongModal" class="primary" aria-label="Add song" size="sm"
+				<BaseButton ref="addSongButtonRef" @click="openAddSongModal" class="primary" aria-label="Add song" size="sm"
 					tooltip="Add a new song to this set">
 					<Plus class="icon" />
 					Add Song
-				</Button>
-				<Button @click="handleDeleteClick" class="danger" aria-label="Delete set" size="sm"
+				</BaseButton>
+				<BaseButton @click="handleDeleteClick" class="danger" aria-label="Delete set" size="sm"
 					tooltip="Delete this set and all its songs">
 					<Trash class="icon" />
 					Delete Set
-				</Button>
+				</BaseButton>
 			</div>
 		</div>
 
@@ -357,7 +357,7 @@ function cancelDelete(): void {
 			}">
 				<div class="set-content" ref="contentRef"
 					:style="{ fontSize: `${scaleFactor}px`, lineHeight: lineHeight }">
-					<FirstTimeHint v-if="setIndex === 0 && set.songs.length > 0" hint-id="reorder-songs"
+					<BaseFirstTimeHint v-if="setIndex === 0 && set.songs.length > 0" hint-id="reorder-songs"
 						text="Tip: Use the grip icon to reorder songs and move the encore marker." position="above" />
 
 					<div ref="songListRef" class="song-list" :data-set-id="set.id">
@@ -381,7 +381,7 @@ function cancelDelete(): void {
 						@add="handleAddSong" />
 				</div>
 			</div>
-			<ConfirmDialog :show="showDeleteConfirm" title="Delete Set"
+			<BaseConfirmDialog :show="showDeleteConfirm" title="Delete Set"
 				:message="`Are you sure you want to delete '${displayName}'? This action cannot be undone.`"
 				confirm-text="Delete" :danger="true" @confirm="confirmDelete" @cancel="cancelDelete" />
 		</div>
