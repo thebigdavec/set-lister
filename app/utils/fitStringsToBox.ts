@@ -154,6 +154,3 @@ export function fitStringsToBox(
     lineHeight,
   };
 }
-
-// Re-export formatSongLabel for convenience
-export { formatSongLabel };

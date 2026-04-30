@@ -11,9 +11,7 @@ import {
   sanitizeMetadata
 } from '@/utils/sanitize'
 import { isDataEqual, type ComparableData } from '@/utils/stateComparison'
-import { migrateToCurrentSchema } from '@/utils/schemaMigration'
-
-export const CURRENT_SCHEMA_VERSION = 1
+import { migrateToCurrentSchema, CURRENT_SCHEMA_VERSION } from '@/utils/schemaMigration'
 
 export interface Song {
   id: string
@@ -49,8 +47,7 @@ export interface StoreState {
   sets: SetItem[]
 }
 
-// Re-export types from stateComparison for backward compatibility
-export type { ComparableData } from '@/utils/stateComparison'
+
 
 const ENCORE_MARKER_TITLE = '<encore>'
 
@@ -544,11 +541,3 @@ export const useSetlistStore = defineStore('setlist', () => {
     isLastSet
   }
 })
-
-// Export utility functions that don't need the store instance
-export function formatDuration(duration: number): string {
-  const hours = Math.floor(duration / 3600)
-  const minutes = Math.floor((duration % 3600) / 60)
-  const seconds = Math.floor(duration % 60)
-  return `${hours > 0 ? `${hours}:` : ''}${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`
-}
