@@ -1,13 +1,15 @@
 <script setup lang="ts">
 import { computed, nextTick, onMounted, onUnmounted, ref, watch } from "vue";
 import { Check, X } from "lucide-vue-next";
-import { store, getSetDisplayName } from "../stores/store";
+import { useSetlistStore } from "../stores/store";
 import { LIMITS } from "../constants/limits";
 
 const props = defineProps<{
 	show: boolean;
 	defaultSetId?: string;
 }>();
+
+const store = useSetlistStore();
 
 const emit = defineEmits<{
 	(e: "close"): void;
@@ -23,14 +25,14 @@ const selectedSetId = ref("");
 
 // Compute available sets for the dropdown
 const availableSets = computed(() =>
-	store.sets.map((set, index) => ({
+	store.state.sets.map((set, index) => ({
 		id: set.id,
-		displayName: `${index + 1}. ${getSetDisplayName(set.id)}`,
+		displayName: `${index + 1}. ${store.getSetDisplayName(set.id)}`,
 	})),
 );
 
 // Show set selector only when there's more than one set
-const showSetSelector = computed(() => store.sets.length > 1);
+const showSetSelector = computed(() => store.state.sets.length > 1);
 
 // Watch for show prop changes to open/close dialog
 watch(

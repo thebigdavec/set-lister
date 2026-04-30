@@ -1,12 +1,14 @@
 <script setup lang="ts">
 import { onMounted, onUnmounted, provide, ref, watch } from "vue";
-import { lastSetId, removeSet, store } from "../stores/store";
+import { useSetlistStore } from "../stores/store";
 import WysiwygSet from "./WysiwygSet.vue";
 import { useSetlistNavigation } from "../composables";
 
 defineProps<{
 	showSongNumbers?: boolean;
 }>();
+
+const store = useSetlistStore();
 
 // Navigation state
 const navigationEnabled = ref(true);
@@ -51,7 +53,7 @@ onMounted(() => {
 	}
 
 	watch(
-		() => store.sets,
+		() => store.state.sets,
 		() => {
 			setTimeout(setupObserver, 200);
 		},
@@ -78,9 +80,9 @@ watch(
 
 <template>
 	<Card ref="carouselRef" class="sets-wrapper wysiwyg-carousel">
-		<WysiwygSet v-for="(set, setIndex) in store.sets" :key="set.id" :set="set" :set-index="setIndex"
-			:is-last="set.id === lastSetId" :show-song-numbers="showSongNumbers" :is-active="activeIndex === setIndex"
-			:data-index="setIndex" class="wysiwyg-set" @remove-set="removeSet(set.id)" />
+		<WysiwygSet v-for="(set, setIndex) in store.state.sets" :key="set.id" :set="set" :set-index="setIndex"
+			:is-last="set.id === store.lastSetId" :show-song-numbers="showSongNumbers" :is-active="activeIndex === setIndex"
+			:data-index="setIndex" class="wysiwyg-set" @remove-set="store.removeSet(set.id)" />
 	</Card>
 </template>
 

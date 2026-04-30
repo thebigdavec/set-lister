@@ -9,9 +9,11 @@ import {
 	Check,
 	Plus,
 } from "lucide-vue-next";
-import { store, updateMetadata } from "../stores/store";
+import { useSetlistStore } from "../stores/store";
 import { shortcuts } from "../utils/keyboardShortcuts";
 import { LIMITS } from "../constants/limits";
+
+const store = useSetlistStore();
 
 const isEditingMetadata = ref(false);
 
@@ -43,10 +45,10 @@ function blurInputOnEnter(e: KeyboardEvent) {
 
 const noDetailsExist = computed(() => {
 	return (
-		!store.metadata.setListName &&
-		!store.metadata.venue &&
-		!store.metadata.actName &&
-		!store.metadata.date
+		!store.state.metadata.setListName &&
+		!store.state.metadata.venue &&
+		!store.state.metadata.actName &&
+		!store.state.metadata.date
 	);
 });
 
@@ -61,8 +63,8 @@ onMounted(() => {
 	<Card class="metadata">
 		<div class="metadata-title">
 			<h2 v-if="noDetailsExist">Enter Setlist Details</h2>
-			<h2 v-else-if="store.metadata.setListName">
-				{{ store.metadata.setListName }}
+			<h2 v-else-if="store.state.metadata.setListName">
+				{{ store.state.metadata.setListName }}
 			</h2>
 			<h2 v-else>Untitled Setlist</h2>
 			<Button
@@ -89,12 +91,12 @@ onMounted(() => {
 				<label for="setListName">Set List Name</label>
 				<input
 					id="setListName"
-					v-model="store.metadata.setListName"
+					v-model="store.state.metadata.setListName"
 					:maxlength="LIMITS.MAX_METADATA_FIELD_LENGTH"
 					placeholder="e.g. Summer Tour 2024"
 					@blur="
-						updateMetadata({
-							setListName: store.metadata.setListName,
+						store.updateMetadata({
+							setListName: store.state.metadata.setListName,
 						})
 					"
 					@keyup.enter="blurInputOnEnter"
@@ -104,12 +106,12 @@ onMounted(() => {
 				<label for="actName">Act Name</label>
 				<input
 					id="actName"
-					v-model="store.metadata.actName"
+					v-model="store.state.metadata.actName"
 					:maxlength="LIMITS.MAX_METADATA_FIELD_LENGTH"
 					placeholder="e.g. The Beatles"
 					@blur="
-						updateMetadata({
-							actName: store.metadata.actName,
+						store.updateMetadata({
+							actName: store.state.metadata.actName,
 						})
 					"
 					@keyup.enter="blurInputOnEnter"
@@ -120,10 +122,10 @@ onMounted(() => {
 				<label for="venue">Venue</label>
 				<input
 					id="venue"
-					v-model="store.metadata.venue"
+					v-model="store.state.metadata.venue"
 					:maxlength="LIMITS.MAX_METADATA_FIELD_LENGTH"
 					placeholder="e.g. The O2 Arena"
-					@blur="updateMetadata({ venue: store.metadata.venue })"
+					@blur="store.updateMetadata({ venue: store.state.metadata.venue })"
 					@keyup.enter="blurInputOnEnter"
 				/>
 			</div>
@@ -132,26 +134,26 @@ onMounted(() => {
 				<label for="date">Date</label>
 				<input
 					id="date"
-					v-model="store.metadata.date"
+					v-model="store.state.metadata.date"
 					:maxlength="LIMITS.MAX_METADATA_FIELD_LENGTH"
 					type="date"
-					@blur="updateMetadata({ date: store.metadata.date })"
+					@blur="store.updateMetadata({ date: store.state.metadata.date })"
 					@keyup.enter="blurInputOnEnter"
 				/>
 			</div>
 		</div>
 		<div v-else class="metadata-details">
-			<div v-if="store.metadata.actName" class="metadata-detail">
+			<div v-if="store.state.metadata.actName" class="metadata-detail">
 				<Users class="icon" />
-				{{ store.metadata.actName }}
+				{{ store.state.metadata.actName }}
 			</div>
-			<div v-if="store.metadata.venue" class="metadata-detail">
+			<div v-if="store.state.metadata.venue" class="metadata-detail">
 				<MapPin class="icon" />
-				{{ store.metadata.venue }}
+				{{ store.state.metadata.venue }}
 			</div>
-			<div v-if="store.metadata.date" class="metadata-detail">
+			<div v-if="store.state.metadata.date" class="metadata-detail">
 				<Calendar class="icon" />
-				{{ store.metadata.date }}
+				{{ store.state.metadata.date }}
 			</div>
 		</div>
 		<div class="set-list-footer">

@@ -1,4 +1,5 @@
-import { computed, reactive, ref, watch } from 'vue'
+import { computed, ref, watch } from 'vue'
+import { defineStore } from 'pinia'
 import { STORAGE_KEYS } from '../constants'
 import { LIMITS } from '../constants/limits'
 import { formatSongLabel, measureSongLabelWidth } from '../utils/textMetrics'
@@ -49,7 +50,7 @@ export interface StoreState {
 }
 
 // Re-export types from stateComparison for backward compatibility
-export type { ComparableData } from './utils/stateComparison'
+export type { ComparableData } from '../utils/stateComparison'
 
 const ENCORE_MARKER_TITLE = '<encore>'
 
@@ -254,270 +255,300 @@ function buildInitialState(): StoreState {
   }
 }
 
-export const store = reactive<StoreState>(buildInitialState())
+export const useSetlistStore = defineStore('setlist', () => {
+  // State
+  const state = ref<StoreState>(buildInitialState())
 
-/**
- * The "original" state - snapshot from last save/load/new operation.
- * This is compared against the current store to determine if there are unsaved changes.
- * Using a ref so that the computed isDirty properly reacts to changes.
- */
-const originalState = ref<ComparableData | null>(extractComparableData(store))
+  /**
+   * The "original" state - snapshot from last save/load/new operation.
+   * This is compared against the current store to determine if there are unsaved changes.
+   */
+  const originalState = ref<ComparableData | null>(extractComparableData(state.value))
 
-/**
- * Computed property that determines if there are unsaved changes.
- * Compares the current store state against the original state.
- */
-export const isDirty = computed(() => {
-  if (originalState.value === null) return true
-  const currentData = extractComparableData(store)
-  return !isDataEqual(originalState.value, currentData)
+  // Computed properties
+  /**
+   * Computed property that determines if there are unsaved changes.
+   * Compares the current store state against the original state.
+   */
+  const isDirty = computed(() => {
+    if (originalState.value === null) return true
+    const currentData = extractComparableData(state.value)
+    return !isDataEqual(originalState.value, currentData)
+  })
+
+  /**
+   * Computed property for the ID of the last set in the list.
+   * Returns null if there are no sets.
+   */
+  const lastSetId = computed(() =>
+    state.value.sets.length ? state.value.sets[state.value.sets.length - 1]?.id ?? null : null
+  )
+
+  // Watchers
+  watch(
+    state,
+    (newState) => {
+      safeSetItem(STORAGE_KEYS.DATA, JSON.stringify(newState))
+    },
+    { deep: true }
+  )
+
+  // Actions
+  function addSet(): void {
+    state.value.sets.push(createEmptySet())
+    sanitizeEncoreMarkers()
+  }
+
+  function removeSet(setId: string): void {
+    const index = state.value.sets.findIndex(set => set.id === setId)
+    if (index !== -1) {
+      state.value.sets.splice(index, 1)
+      sanitizeEncoreMarkers()
+    }
+  }
+
+  function renameSet(setId: string, newName: string | undefined): void {
+    const set = state.value.sets.find(s => s.id === setId)
+    if (set) {
+      set.name = sanitizeSetName(newName)
+    }
+  }
+
+  function getSetDisplayName(setId: string): string {
+    const index = state.value.sets.findIndex(s => s.id === setId)
+    if (index === -1) return ''
+    const set = state.value.sets[index]
+    return set?.name || `Set ${index + 1}`
+  }
+
+  function addSongToSet(
+    setId: string,
+    song: {
+      title: string
+      key?: string
+    }
+  ): void {
+    const set = state.value.sets.find(s => s.id === setId)
+    if (set) {
+      const newSong: Song = {
+        id: crypto.randomUUID(),
+        title: sanitizeSongTitle(song.title),
+        key: sanitizeSongKey(song.key)
+      }
+      const markerIndex = findEncoreMarkerIndex(set)
+      const markerIsLast =
+        markerIndex !== -1 && markerIndex === set.songs.length - 1
+
+      if (markerIsLast) {
+        set.songs.splice(markerIndex, 0, newSong)
+        refreshSetMetrics(set)
+      } else {
+        set.songs.push(newSong)
+        applySongAdditionMetrics(set, newSong)
+      }
+      sanitizeEncoreMarkers()
+    }
+  }
+
+  function removeSongFromSet(setId: string, songId: string): void {
+    const set = state.value.sets.find(s => s.id === setId)
+    if (set) {
+      const index = set.songs.findIndex(s => s.id === songId)
+      if (index !== -1) {
+        set.songs.splice(index, 1)
+        refreshSetMetrics(set)
+        sanitizeEncoreMarkers()
+      }
+    }
+  }
+
+  function reorderSong(
+    setId: string,
+    fromIndex: number,
+    toIndex: number
+  ): void {
+    const set = state.value.sets.find(s => s.id === setId)
+    if (set && fromIndex >= 0 && toIndex >= 0 && fromIndex < set.songs.length) {
+      const [movedSong] = set.songs.splice(fromIndex, 1)
+      if (movedSong) {
+        const insertIndex = Math.min(toIndex, set.songs.length)
+        set.songs.splice(insertIndex, 0, movedSong)
+        refreshSetMetrics(set)
+      }
+    }
+  }
+
+  function moveSong(
+    fromSetId: string,
+    toSetId: string,
+    fromIndex: number,
+    toIndex: number
+  ): void {
+    const fromSet = state.value.sets.find(s => s.id === fromSetId)
+    const toSet = state.value.sets.find(s => s.id === toSetId)
+
+    if (fromSet && toSet && fromIndex >= 0 && fromIndex < fromSet.songs.length) {
+      const [movedSong] = fromSet.songs.splice(fromIndex, 1)
+      if (!movedSong) return
+
+      if (movedSong.isEncoreMarker && fromSetId !== toSetId) {
+        // Encore marker stays within its original set
+        fromSet.songs.splice(fromIndex, 0, movedSong)
+        return
+      }
+      const insertIndex = Math.min(toIndex, toSet.songs.length)
+      toSet.songs.splice(insertIndex, 0, movedSong)
+      refreshSetMetrics(fromSet)
+      refreshSetMetrics(toSet)
+      sanitizeEncoreMarkers()
+    }
+  }
+
+  function updateSong(
+    setId: string,
+    songId: string,
+    updates: Partial<Omit<Song, 'id'>>
+  ): void {
+    const set = state.value.sets.find(s => s.id === setId)
+    if (set) {
+      const song = set.songs.find(s => s.id === songId)
+      if (song) {
+        // Sanitize updates before applying
+        const sanitizedUpdates = {
+          ...updates,
+          ...(updates.title !== undefined && {
+            title: sanitizeSongTitle(updates.title)
+          }),
+          ...(updates.key !== undefined && { key: sanitizeSongKey(updates.key) })
+        }
+        Object.assign(song, sanitizedUpdates)
+        refreshSetMetrics(set)
+      }
+    }
+  }
+
+  function updateMetadata(updates: Partial<SetListMetadata>): void {
+    const sanitized = sanitizeMetadata({
+      setListName: updates.setListName ?? state.value.metadata.setListName,
+      venue: updates.venue ?? state.value.metadata.venue,
+      date: updates.date ?? state.value.metadata.date,
+      actName: updates.actName ?? state.value.metadata.actName
+    })
+    Object.assign(state.value.metadata, sanitized)
+  }
+
+  /**
+   * Mark the current state as "clean" by snapshotting it as the original state.
+   * After calling this, isDirty will be false until further edits are made.
+   */
+  function markClean(): void {
+    originalState.value = extractComparableData(state.value)
+  }
+
+  /**
+   * Reset the store to default state and mark as clean.
+   */
+  function resetStore(): void {
+    const newData = createDefaultState()
+    state.value.schemaVersion = newData.schemaVersion
+    state.value.sets = newData.sets
+    state.value.metadata = newData.metadata
+    sanitizeEncoreMarkers()
+    originalState.value = extractComparableData(state.value)
+  }
+
+  function loadStore(data: unknown): boolean {
+    if (!data || typeof data !== 'object') {
+      console.error('Invalid data format')
+      return false
+    }
+
+    const candidate = data as Partial<StoreState>
+
+    if (!Array.isArray(candidate.sets)) {
+      console.error('Invalid data format: sets missing')
+      return false
+    }
+
+    state.value.schemaVersion = CURRENT_SCHEMA_VERSION
+    state.value.sets = normalizeSets(candidate.sets)
+    state.value.metadata = sanitizeMetadata({
+      setListName: candidate.metadata?.setListName,
+      venue: candidate.metadata?.venue,
+      date: candidate.metadata?.date,
+      actName: candidate.metadata?.actName
+    })
+    sanitizeEncoreMarkers()
+    originalState.value = extractComparableData(state.value)
+    return true
+  }
+
+  function sanitizeEncoreMarkers(): void {
+    if (!state.value.sets.length) return
+    const lastIndex = state.value.sets.length - 1
+
+    state.value.sets.forEach((set, index) => {
+      const markerIndex = findEncoreMarkerIndex(set)
+      const shouldHaveMarker =
+        index === lastIndex &&
+        countPlayableSongs(set) >= LIMITS.MIN_SONGS_FOR_ENCORE
+
+      if (shouldHaveMarker && markerIndex === -1) {
+        set.songs.push(createEncoreMarker())
+        refreshSetMetrics(set)
+      } else if (!shouldHaveMarker && markerIndex !== -1) {
+        set.songs.splice(markerIndex, 1)
+        refreshSetMetrics(set)
+      }
+    })
+  }
+
+  // Utility functions
+  function getTotalDuration(): number {
+    if (!state.value.sets.length) return 0
+
+    // If there are no songs in the available sets, return zero
+    if (!state.value.sets.some(set => set.songs.length)) return 0
+
+    // Return 0 until durations are implemented
+    return 0
+  }
+
+  function isLastSet(setId: string): boolean {
+    return setId === lastSetId.value
+  }
+
+  // Return store interface
+  return {
+    // State
+    state,
+    // Computed
+    isDirty,
+    lastSetId,
+    // Actions
+    addSet,
+    removeSet,
+    renameSet,
+    getSetDisplayName,
+    addSongToSet,
+    removeSongFromSet,
+    reorderSong,
+    moveSong,
+    updateSong,
+    updateMetadata,
+    markClean,
+    resetStore,
+    loadStore,
+    sanitizeEncoreMarkers,
+    getTotalDuration,
+    isLastSet
+  }
 })
 
-/**
- * Computed property for the ID of the last set in the list.
- * Returns null if there are no sets.
- */
-export const lastSetId = computed(() =>
-  store.sets.length ? store.sets[store.sets.length - 1].id : null
-)
-
-/**
- * Check if a set is the last set in the list.
- * @param setId - The ID of the set to check
- * @returns true if the set is the last one
- */
-export function isLastSet(setId: string): boolean {
-  return setId === lastSetId.value
-}
-
-export function getTotalDuration(): number {
-  if (!store.sets.length) return 0
-
-  // If there are no songs in the available sets, return zero
-  if (!store.sets.some(set => set.songs.length)) return 0
-
-  // Return -1 until durations are implemented
-  return 0
-
-  return store.sets.reduce((acc, set) => acc + set.duration, 0)
-}
-
+// Export utility functions that don't need the store instance
 export function formatDuration(duration: number): string {
   const hours = Math.floor(duration / 3600)
   const minutes = Math.floor((duration % 3600) / 60)
   const seconds = duration % 60
   return `${hours > 0 ? `${hours}:` : ''}${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`
-}
-
-watch(
-  store,
-  state => {
-    safeSetItem(STORAGE_KEYS.DATA, JSON.stringify(state))
-  },
-  { deep: true }
-)
-
-export function addSet(): void {
-  store.sets.push(createEmptySet())
-  sanitizeEncoreMarkers()
-}
-
-export function removeSet(setId: string): void {
-  const index = store.sets.findIndex(set => set.id === setId)
-  if (index !== -1) {
-    store.sets.splice(index, 1)
-    sanitizeEncoreMarkers()
-  }
-}
-
-export function renameSet(setId: string, newName: string | undefined): void {
-  const set = store.sets.find(s => s.id === setId)
-  if (set) {
-    set.name = sanitizeSetName(newName)
-  }
-}
-
-export function getSetDisplayName(setId: string): string {
-  const index = store.sets.findIndex(s => s.id === setId)
-  if (index === -1) return ''
-  const set = store.sets[index]
-  return set.name || `Set ${index + 1}`
-}
-
-export function addSongToSet(
-  setId: string,
-  song: {
-    title: string
-    key?: string
-  }
-): void {
-  const set = store.sets.find(s => s.id === setId)
-  if (set) {
-    const newSong: Song = {
-      id: crypto.randomUUID(),
-      title: sanitizeSongTitle(song.title),
-      key: sanitizeSongKey(song.key)
-    }
-    const markerIndex = findEncoreMarkerIndex(set)
-    const markerIsLast =
-      markerIndex !== -1 && markerIndex === set.songs.length - 1
-
-    if (markerIsLast) {
-      set.songs.splice(markerIndex, 0, newSong)
-      refreshSetMetrics(set)
-    } else {
-      set.songs.push(newSong)
-      applySongAdditionMetrics(set, newSong)
-    }
-    sanitizeEncoreMarkers()
-  }
-}
-
-export function removeSongFromSet(setId: string, songId: string): void {
-  const set = store.sets.find(s => s.id === setId)
-  if (set) {
-    const index = set.songs.findIndex(s => s.id === songId)
-    if (index !== -1) {
-      set.songs.splice(index, 1)
-      refreshSetMetrics(set)
-      sanitizeEncoreMarkers()
-    }
-  }
-}
-
-export function reorderSong(
-  setId: string,
-  fromIndex: number,
-  toIndex: number
-): void {
-  const set = store.sets.find(s => s.id === setId)
-  if (set && fromIndex >= 0 && toIndex >= 0 && fromIndex < set.songs.length) {
-    const [movedSong] = set.songs.splice(fromIndex, 1)
-    const insertIndex = Math.min(toIndex, set.songs.length)
-    set.songs.splice(insertIndex, 0, movedSong)
-    refreshSetMetrics(set)
-  }
-}
-
-export function moveSong(
-  fromSetId: string,
-  toSetId: string,
-  fromIndex: number,
-  toIndex: number
-): void {
-  const fromSet = store.sets.find(s => s.id === fromSetId)
-  const toSet = store.sets.find(s => s.id === toSetId)
-
-  if (fromSet && toSet && fromIndex >= 0 && fromIndex < fromSet.songs.length) {
-    const [movedSong] = fromSet.songs.splice(fromIndex, 1)
-    if (movedSong?.isEncoreMarker && fromSetId !== toSetId) {
-      // Encore marker stays within its original set
-      fromSet.songs.splice(fromIndex, 0, movedSong)
-      return
-    }
-    const insertIndex = Math.min(toIndex, toSet.songs.length)
-    toSet.songs.splice(insertIndex, 0, movedSong)
-    refreshSetMetrics(fromSet)
-    refreshSetMetrics(toSet)
-    sanitizeEncoreMarkers()
-  }
-}
-
-export function updateSong(
-  setId: string,
-  songId: string,
-  updates: Partial<Omit<Song, 'id'>>
-): void {
-  const set = store.sets.find(s => s.id === setId)
-  if (set) {
-    const song = set.songs.find(s => s.id === songId)
-    if (song) {
-      // Sanitize updates before applying
-      const sanitizedUpdates = {
-        ...updates,
-        ...(updates.title !== undefined && {
-          title: sanitizeSongTitle(updates.title)
-        }),
-        ...(updates.key !== undefined && { key: sanitizeSongKey(updates.key) })
-      }
-      Object.assign(song, sanitizedUpdates)
-      refreshSetMetrics(set)
-    }
-  }
-}
-
-export function updateMetadata(updates: Partial<SetListMetadata>): void {
-  const sanitized = sanitizeMetadata({
-    setListName: updates.setListName ?? store.metadata.setListName,
-    venue: updates.venue ?? store.metadata.venue,
-    date: updates.date ?? store.metadata.date,
-    actName: updates.actName ?? store.metadata.actName
-  })
-  Object.assign(store.metadata, sanitized)
-}
-
-/**
- * Mark the current state as "clean" by snapshotting it as the original state.
- * After calling this, isDirty will be false until further edits are made.
- */
-export function markClean(): void {
-  originalState.value = extractComparableData(store)
-}
-
-/**
- * Reset the store to default state and mark as clean.
- */
-export function resetStore(): void {
-  const newData = createDefaultState()
-  store.schemaVersion = newData.schemaVersion
-  store.sets = newData.sets
-  store.metadata = newData.metadata
-  sanitizeEncoreMarkers()
-  originalState.value = extractComparableData(store)
-}
-
-export function loadStore(data: unknown): boolean {
-  if (!data || typeof data !== 'object') {
-    console.error('Invalid data format')
-    return false
-  }
-
-  const candidate = data as Partial<StoreState>
-
-  if (!Array.isArray(candidate.sets)) {
-    console.error('Invalid data format: sets missing')
-    return false
-  }
-
-  store.schemaVersion = CURRENT_SCHEMA_VERSION
-  store.sets = normalizeSets(candidate.sets)
-  store.metadata = sanitizeMetadata({
-    setListName: candidate.metadata?.setListName,
-    venue: candidate.metadata?.venue,
-    date: candidate.metadata?.date,
-    actName: candidate.metadata?.actName
-  })
-  sanitizeEncoreMarkers()
-  originalState.value = extractComparableData(store)
-  return true
-}
-
-export function sanitizeEncoreMarkers(): void {
-  if (!store.sets.length) return
-  const lastIndex = store.sets.length - 1
-
-  store.sets.forEach((set, index) => {
-    const markerIndex = findEncoreMarkerIndex(set)
-    const shouldHaveMarker =
-      index === lastIndex &&
-      countPlayableSongs(set) >= LIMITS.MIN_SONGS_FOR_ENCORE
-
-    if (shouldHaveMarker && markerIndex === -1) {
-      set.songs.push(createEncoreMarker())
-      refreshSetMetrics(set)
-    } else if (!shouldHaveMarker && markerIndex !== -1) {
-      set.songs.splice(markerIndex, 1)
-      refreshSetMetrics(set)
-    }
-  })
 }

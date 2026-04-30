@@ -1,5 +1,5 @@
 import { ref, computed, type Ref, nextTick } from 'vue'
-import { store, isEncoreMarkerSong } from '../stores/store'
+import { useSetlistStore, isEncoreMarkerSong } from '../stores/store'
 
 /**
  * Represents a focusable item in the setlist
@@ -73,8 +73,8 @@ export interface UseSetlistNavigationReturn {
 /**
  * Get the number of playable (non-encore-marker) songs in a set
  */
-function getPlayableSongCount(setIndex: number): number {
-  const set = store.sets[setIndex]
+function getPlayableSongCount(sets: any[], setIndex: number): number {
+  const set = sets[setIndex]
   if (!set) return 0
   return set.songs.filter(song => !isEncoreMarkerSong(song)).length
 }
@@ -84,11 +84,12 @@ function getPlayableSongCount(setIndex: number): number {
  * Returns -1 if the index is out of bounds
  */
 function getNextPlayableSongIndex(
+  sets: any[],
   setIndex: number,
   currentIndex: number,
   direction: 'up' | 'down'
 ): number {
-  const set = store.sets[setIndex]
+  const set = sets[setIndex]
   if (!set) return -1
 
   const songs = set.songs
@@ -108,17 +109,17 @@ function getNextPlayableSongIndex(
 /**
  * Get the first playable song index in a set
  */
-function getFirstPlayableSongIndex(setIndex: number): number {
-  const set = store.sets[setIndex]
+function getFirstPlayableSongIndex(sets: any[], setIndex: number): number {
+  const set = sets[setIndex]
   if (!set) return -1
-  return set.songs.findIndex(song => !isEncoreMarkerSong(song))
+  return set.songs.findIndex((song: any) => !isEncoreMarkerSong(song))
 }
 
 /**
  * Get the last playable song index in a set
  */
-function getLastPlayableSongIndex(setIndex: number): number {
-  const set = store.sets[setIndex]
+function getLastPlayableSongIndex(sets: any[], setIndex: number): number {
+  const set = sets[setIndex]
   if (!set) return -1
 
   for (let i = set.songs.length - 1; i >= 0; i--) {
@@ -132,14 +133,14 @@ function getLastPlayableSongIndex(setIndex: number): number {
 /**
  * Get all playable song indices in a set
  */
-function getPlayableSongIndices(setIndex: number): number[] {
-  const set = store.sets[setIndex]
+function getPlayableSongIndices(sets: any[], setIndex: number): number[] {
+  const set = sets[setIndex]
   if (!set) return []
 
   return set.songs
-    .map((song, index) => ({ song, index }))
-    .filter(({ song }) => !isEncoreMarkerSong(song))
-    .map(({ index }) => index)
+    .map((song: any, index: number) => ({ song, index }))
+    .filter(({ song }: any) => !isEncoreMarkerSong(song))
+    .map(({ index }: any) => index)
 }
 
 /**
@@ -148,12 +149,13 @@ function getPlayableSongIndices(setIndex: number): number[] {
  * falling back to the last playable song if the position doesn't exist.
  */
 function findMatchingSongIndex(
+  sets: any[],
   sourceSetIndex: number,
   sourceSongIndex: number,
   targetSetIndex: number
 ): number {
-  const sourcePlayable = getPlayableSongIndices(sourceSetIndex)
-  const targetPlayable = getPlayableSongIndices(targetSetIndex)
+  const sourcePlayable = getPlayableSongIndices(sets, sourceSetIndex)
+  const targetPlayable = getPlayableSongIndices(sets, targetSetIndex)
 
   if (targetPlayable.length === 0) return -1
 
@@ -192,6 +194,7 @@ function getElementKey(
 export function useSetlistNavigation(
   options: UseSetlistNavigationOptions = {}
 ): UseSetlistNavigationReturn {
+  const store = useSetlistStore()
   const { enabled = ref(true) } = options
 
   const focusedItem = ref<FocusedItem | null>(null)
@@ -246,13 +249,13 @@ export function useSetlistNavigation(
     if (!enabled.value) return
 
     const current = focusedItem.value
-    const setsCount = store.sets.length
+    const setsCount = store.state.sets.length
 
     if (!current) {
       // Nothing focused, focus the last set's name or last song
       if (setsCount > 0) {
         const lastSetIndex = setsCount - 1
-        const lastSongIndex = getLastPlayableSongIndex(lastSetIndex)
+        const lastSongIndex = getLastPlayableSongIndex(store.state.sets, lastSetIndex)
         if (lastSongIndex >= 0) {
           setFocus({
             setIndex: lastSetIndex,
@@ -270,7 +273,7 @@ export function useSetlistNavigation(
       // From set name, move to the last song of the previous set
       if (current.setIndex > 0) {
         const prevSetIndex = current.setIndex - 1
-        const lastSongIndex = getLastPlayableSongIndex(prevSetIndex)
+        const lastSongIndex = getLastPlayableSongIndex(store.state.sets, prevSetIndex)
         if (lastSongIndex >= 0) {
           setFocus({
             setIndex: prevSetIndex,
@@ -286,6 +289,7 @@ export function useSetlistNavigation(
     } else if (current.type === 'song' && current.songIndex !== undefined) {
       // From a song, try to move to the previous song
       const prevSongIndex = getNextPlayableSongIndex(
+        store.state.sets,
         current.setIndex,
         current.songIndex,
         'up'
@@ -307,7 +311,7 @@ export function useSetlistNavigation(
     if (!enabled.value) return
 
     const current = focusedItem.value
-    const setsCount = store.sets.length
+    const setsCount = store.state.sets.length
 
     if (!current) {
       // Nothing focused, focus the first set's name
@@ -319,7 +323,7 @@ export function useSetlistNavigation(
 
     if (current.type === 'name') {
       // From set name, move to the first song of this set
-      const firstSongIndex = getFirstPlayableSongIndex(current.setIndex)
+      const firstSongIndex = getFirstPlayableSongIndex(store.state.sets, current.setIndex)
       if (firstSongIndex >= 0) {
         setFocus({
           setIndex: current.setIndex,
@@ -335,6 +339,7 @@ export function useSetlistNavigation(
     } else if (current.type === 'song' && current.songIndex !== undefined) {
       // From a song, try to move to the next song
       const nextSongIndex = getNextPlayableSongIndex(
+        store.state.sets,
         current.setIndex,
         current.songIndex,
         'down'
@@ -358,7 +363,7 @@ export function useSetlistNavigation(
     if (!enabled.value) return
 
     const current = focusedItem.value
-    const setsCount = store.sets.length
+    const setsCount = store.state.sets.length
 
     if (!current) {
       // Nothing focused, focus the first set's name
@@ -379,6 +384,7 @@ export function useSetlistNavigation(
     } else if (current.type === 'song' && current.songIndex !== undefined) {
       // From a song, try to find matching song in previous set
       const matchingSongIndex = findMatchingSongIndex(
+        store.state.sets,
         current.setIndex,
         current.songIndex,
         targetSetIndex
@@ -400,7 +406,7 @@ export function useSetlistNavigation(
     if (!enabled.value) return
 
     const current = focusedItem.value
-    const setsCount = store.sets.length
+    const setsCount = store.state.sets.length
 
     if (!current) {
       // Nothing focused, focus the first set's name
@@ -421,6 +427,7 @@ export function useSetlistNavigation(
     } else if (current.type === 'song' && current.songIndex !== undefined) {
       // From a song, try to find matching song in next set
       const matchingSongIndex = findMatchingSongIndex(
+        store.state.sets,
         current.setIndex,
         current.songIndex,
         targetSetIndex

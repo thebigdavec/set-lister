@@ -1,12 +1,14 @@
 <script setup lang="ts">
 import { onMounted, onUnmounted, provide, ref, watch } from "vue";
-import { lastSetId, removeSet, store } from "../stores/store";
+import { useSetlistStore } from "../stores/store";
 import Set from "./Set.vue";
 import { useSetlistNavigation } from "../composables";
 
 defineProps<{
 	showSongNumbers?: boolean;
 }>();
+
+const store = useSetlistStore();
 
 // Navigation state
 const navigationEnabled = ref(true);
@@ -43,13 +45,13 @@ watch(
 <template>
 	<Card class="sets-wrapper">
 		<Set
-			v-for="(set, setIndex) in store.sets"
+			v-for="(set, setIndex) in store.state.sets"
 			:key="set.id"
 			:set="set"
 			:set-index="setIndex"
-			:is-last="set.id === lastSetId"
+			:is-last="set.id === store.lastSetId"
 			:show-song-numbers="showSongNumbers"
-			@remove-set="removeSet(set.id)"
+			@remove-set="store.removeSet(set.id)"
 		/>
 	</Card>
 </template>

@@ -42,11 +42,8 @@ export default defineNuxtConfig({
   // CSS files
   css: ['~/assets/css/main.css'],
 
-  // Modules to install later:
-  // '@nuxtjs/tailwindcss' - if you want Tailwind
-  // 'nuxt-vuefire' - for Firebase integration
-  // '@pinia/nuxt' - for state management (optional, can keep reactive store)
-  modules: [],
+  // Modules
+  modules: ['@pinia/nuxt'],
 
   // TypeScript configuration
   typescript: {
@@ -80,6 +77,13 @@ export default defineNuxtConfig({
 
   // Vite configuration
   vite: {
+    optimizeDeps: {
+      include: [
+        'lucide-vue-next',
+        'sortablejs',
+        '@vueuse/core',
+      ]
+    },
     vue: {
       script: {
         defineModel: true,

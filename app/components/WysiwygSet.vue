@@ -17,13 +17,7 @@ import type { MoveEvent, SortableEvent } from "sortablejs";
 import WysiwygSongItem from "./WysiwygSongItem.vue";
 import AddSongModal from "./AddSongModal.vue";
 import {
-	addSongToSet,
-	getSetDisplayName,
-	moveSong,
-	removeSongFromSet,
-	renameSet,
-	reorderSong,
-	updateSong,
+	useSetlistStore,
 	type SetItem,
 	isEncoreMarkerSong,
 } from "../stores/store";
@@ -42,6 +36,8 @@ const props = defineProps<{
 	showSongNumbers?: boolean;
 	isActive?: boolean;
 }>();
+
+const store = useSetlistStore();
 
 // Use the consolidated encore helpers
 const { markerIndex, hasEncoreMarker, markerIsLast, isEncoreSongByIndex } =
@@ -63,7 +59,7 @@ watch(
 );
 
 // Compute the display name (custom name or dynamic "Set #")
-const displayName = computed(() => getSetDisplayName(props.set.id));
+const displayName = computed(() => store.getSetDisplayName(props.set.id));
 
 // State for editing the set name
 const isEditingName = ref(false);
@@ -212,12 +208,12 @@ function handleAddSong(payload: {
 	title: string;
 	key: string;
 }): void {
-	addSongToSet(payload.setId, { title: payload.title, key: payload.key });
+	store.addSongToSet(payload.setId, { title: payload.title, key: payload.key });
 }
 
 function handleTitleBlur(): void {
 	if (editingNameValue.value !== undefined) {
-		renameSet(props.set.id, editingNameValue.value);
+		store.renameSet(props.set.id, editingNameValue.value);
 	}
 	isEditingName.value = false;
 }
@@ -240,9 +236,9 @@ function handleSortEnd(evt: SortableEvent): void {
 	if (!toSetId) return;
 
 	if (evt.to === evt.from) {
-		reorderSong(fromSetId, evt.oldIndex ?? 0, evt.newIndex ?? 0);
+		store.reorderSong(fromSetId, evt.oldIndex ?? 0, evt.newIndex ?? 0);
 	} else {
-		moveSong(fromSetId, toSetId, evt.oldIndex ?? 0, evt.newIndex ?? 0);
+		store.moveSong(fromSetId, toSetId, evt.oldIndex ?? 0, evt.newIndex ?? 0);
 	}
 }
 
@@ -265,7 +261,7 @@ function resetEncoreMarker(): void {
 	if (index === -1) return;
 	const lastIndex = props.set.songs.length - 1;
 	if (index === lastIndex) return;
-	reorderSong(props.set.id, index, lastIndex);
+	store.reorderSong(props.set.id, index, lastIndex);
 }
 
 const paperWrapperRef = ref<HTMLDivElement | null>(null);
@@ -369,8 +365,8 @@ function cancelDelete(): void {
 							:set-index="setIndex" :song-index="index" :song-number="songNumbers.get(index)"
 							:show-number="showSongNumbers" :is-encore="songIsEncore(index)"
 							:is-encore-marker="song.isEncoreMarker === true"
-							@update="(updates: any) => updateSong(set.id, song.id, updates)"
-							@remove="removeSongFromSet(set.id, song.id)" @reset-encore="resetEncoreMarker" />
+							@update="(updates: any) => store.updateSong(set.id, song.id, updates)"
+							@remove="store.removeSongFromSet(set.id, song.id)" @reset-encore="resetEncoreMarker" />
 					</div>
 
 					<p v-if="set.songs.length === 0" class="empty-set-message no-print">

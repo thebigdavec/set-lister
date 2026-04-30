@@ -12,17 +12,12 @@ import {
 	watch,
 } from "vue";
 import { Plus, Trash } from "lucide-vue-next";
-import Sortable, { MoveEvent, SortableEvent } from "sortablejs";
+import Sortable from "sortablejs"
+import type { MoveEvent, SortableEvent } from "sortablejs";
 import SongItem from "./SongItem.vue";
 import AddSongModal from "./AddSongModal.vue";
 import {
-	addSongToSet,
-	getSetDisplayName,
-	moveSong,
-	removeSongFromSet,
-	renameSet,
-	reorderSong,
-	updateSong,
+	useSetlistStore,
 	type SetItem,
 	isEncoreMarkerSong,
 } from "../stores/store";
@@ -39,6 +34,8 @@ const props = defineProps<{
 	showSongNumbers?: boolean;
 }>();
 
+const store = useSetlistStore();
+
 // Use the consolidated encore helpers
 const { markerIndex, hasEncoreMarker, markerIsLast, isEncoreSongByIndex } =
 	useEncoreHelpers({
@@ -47,7 +44,7 @@ const { markerIndex, hasEncoreMarker, markerIsLast, isEncoreSongByIndex } =
 	});
 
 // Compute the display name (custom name or dynamic "Set #")
-const displayName = computed(() => getSetDisplayName(props.set.id));
+const displayName = computed(() => store.getSetDisplayName(props.set.id));
 
 // State for editing the set name
 const isEditingName = ref(false);
@@ -196,12 +193,12 @@ function handleAddSong(payload: {
 	title: string;
 	key: string;
 }): void {
-	addSongToSet(payload.setId, { title: payload.title, key: payload.key });
+	store.addSongToSet(payload.setId, { title: payload.title, key: payload.key });
 }
 
 function handleTitleBlur(): void {
 	if (editingNameValue.value !== undefined) {
-		renameSet(props.set.id, editingNameValue.value);
+		store.renameSet(props.set.id, editingNameValue.value);
 	}
 	isEditingName.value = false;
 }
@@ -224,9 +221,9 @@ function handleSortEnd(evt: SortableEvent): void {
 	if (!toSetId) return;
 
 	if (evt.to === evt.from) {
-		reorderSong(fromSetId, evt.oldIndex ?? 0, evt.newIndex ?? 0);
+		store.reorderSong(fromSetId, evt.oldIndex ?? 0, evt.newIndex ?? 0);
 	} else {
-		moveSong(fromSetId, toSetId, evt.oldIndex ?? 0, evt.newIndex ?? 0);
+		store.moveSong(fromSetId, toSetId, evt.oldIndex ?? 0, evt.newIndex ?? 0);
 	}
 }
 
@@ -249,7 +246,7 @@ function resetEncoreMarker(): void {
 	if (index === -1) return;
 	const lastIndex = props.set.songs.length - 1;
 	if (index === lastIndex) return;
-	reorderSong(props.set.id, index, lastIndex);
+	store.reorderSong(props.set.id, index, lastIndex);
 }
 
 onMounted(() => {
@@ -359,8 +356,8 @@ function cancelDelete(): void {
 				:is-encore="songIsEncore(index)"
 				:is-encore-marker="song.isEncoreMarker === true"
 				:marker-is-last="markerIsLast"
-				@update="(updates) => updateSong(set.id, song.id, updates)"
-				@remove="removeSongFromSet(set.id, song.id)"
+				@update="(updates) => store.updateSong(set.id, song.id, updates)"
+				@remove="store.removeSongFromSet(set.id, song.id)"
 				@reset-encore="resetEncoreMarker"
 			/>
 		</div>

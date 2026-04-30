@@ -6,19 +6,15 @@ export default defineConfig({
     test: {
         globals: true,
         environment: 'happy-dom',
-        include: ['app/**/*.{test,spec}.{js,ts}', 'src/**/*.{test,spec}.{js,ts}'],
+        include: ['app/**/*.{test,spec}.{js,ts}'],
         coverage: {
             provider: 'v8',
             reporter: ['text', 'json', 'html'],
-            include: ['app/**/*.ts', 'app/**/*.vue', 'src/**/*.ts', 'src/**/*.vue'],
+            include: ['app/**/*.ts', 'app/**/*.vue'],
             exclude: [
                 'app/**/*.d.ts',
                 'app/**/*.spec.ts',
-                'app/**/*.test.ts',
-                'src/**/*.d.ts',
-                'src/main.ts',
-                'src/**/*.spec.ts',
-                'src/**/*.test.ts'
+                'app/**/*.test.ts'
             ]
         }
     },

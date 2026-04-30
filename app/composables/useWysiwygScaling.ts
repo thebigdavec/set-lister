@@ -2,12 +2,13 @@ import { computed, nextTick, ref, type Ref } from 'vue'
 import { fitStringsToBox } from '../utils/fitStringsToBox'
 import { formatSongLabel } from '../utils/textMetrics'
 import { BOX_HEIGHT_CM, BOX_WIDTH_CM, CM_TO_PX } from '../constants'
-import { type SetItem, store } from '../stores/store'
+import { type SetItem, useSetlistStore } from '../stores/store'
 
 export function useWysiwygScaling(
   setRef: Ref<SetItem>,
   isLastRef: Ref<boolean>
 ) {
+  const store = useSetlistStore()
   const contentRef = ref<HTMLElement | null>(null)
   const scaleFactor = ref<number>(1)
   const lineHeight = ref<string>('1.5')
@@ -37,7 +38,7 @@ export function useWysiwygScaling(
     const songListPaddingCm = 0
     // The FirstTimeHint in Set 1 takes up approximately 2cm
     const firstTimeHintCm =
-      setRef.value.id === store.sets[0]?.id && set.songs.length > 0 ? 2.0 : 0
+      setRef.value.id === store.state.sets[0]?.id && set.songs.length > 0 ? 2.0 : 0
     const encoreHintCm = set.songs.length > 0 && isLastRef.value ? 1.5 : 0
     const usedHeightCm = songListPaddingCm + encoreHintCm + firstTimeHintCm
     const availableHeightCm = Math.max(0, BOX_HEIGHT_CM - usedHeightCm)

@@ -1,26 +1,25 @@
 <script setup lang="ts">
 // Updated imports for Nuxt structure
 import { Printer, X } from 'lucide-vue-next'
-// import {
-//   addSet,
-//   isDirty,
-//   lastSetId,
-//   resetStore,
-//   store,
-//   getTotalDuration
-// } from '~/composables/useSetlistStore'
+import { useSetlistStore, type SetItem } from '~/stores/store'
 import { STORAGE_KEYS } from '~/constants'
 import { safeGetItem, safeSetItem } from '~/utils/storage'
 import { formatDuration } from '~/utils/utils'
-// import {
-//   useFileOperations,
-//   useHistory,
-//   useKeyboardShortcuts,
-//   usePreviewScaling,
-//   useDialogs,
-//   createEditShortcuts,
-//   createPreviewShortcuts
-// } from '~/composables'
+import {
+  useFileOperations,
+  useHistory,
+  useKeyboardShortcuts,
+  usePreviewScaling,
+  useDialogs,
+  createEditShortcuts,
+  createPreviewShortcuts
+} from '~/composables'
+
+// =============================================================================
+// Store
+// =============================================================================
+
+const store = useSetlistStore()
 
 // =============================================================================
 // Refs and State
@@ -41,7 +40,7 @@ const editorMode = ref<'classic' | 'wysiwyg'>('classic')
 // =============================================================================
 
 const previewSets = computed(() =>
-  store.sets.filter((set) => set.songs.length > 0)
+  store.state.sets.filter((set: SetItem) => set.songs.length > 0)
 )
 
 // =============================================================================
@@ -87,8 +86,8 @@ const {
 // =============================================================================
 
 function startNew(): void {
-  if (!isDirty.value) {
-    resetStore()
+  if (!store.isDirty) {
+    store.resetStore()
     clearFileHandle()
     return
   }
@@ -96,7 +95,7 @@ function startNew(): void {
 }
 
 function confirmNew(): void {
-  resetStore()
+  store.resetStore()
   clearFileHandle()
   clearHistory()
   showNewDialog.value = false
@@ -127,7 +126,7 @@ useKeyboardShortcuts({
     saveAs: () => saveToDisk({ altKey: true }),
     open: loadFromDisk,
     togglePreview,
-    addSet,
+    addSet: store.addSet,
     undo,
     redo
   }),
@@ -193,11 +192,6 @@ watch(showPreview, async (value) => {
 watch(editorMode, (value) => {
   safeSetItem(STORAGE_KEYS.EDITOR_MODE, value)
 })
-
-// Handle preview toggle
-function handlePreviewToggle() {
-  togglePreview()
-}
 </script>
 
 
@@ -213,7 +207,7 @@ function handlePreviewToggle() {
       </p>
 
       <MenuBar
-        :is-dirty="isDirty"
+        :is-dirty="store.isDirty"
         :can-undo="canUndo"
         :can-redo="canRedo"
         @new="startNew"
@@ -227,7 +221,7 @@ function handlePreviewToggle() {
       <SetlistMetadata
         :has-sets="previewSets.length > 0"
         v-model:show-song-numbers="showEditorNumbers"
-        @add-set="addSet"
+        @add-set="store.addSet"
         @export="togglePreview"
       />
 
@@ -267,19 +261,19 @@ function handlePreviewToggle() {
       <!-- Area to show current set list statistics -->
 
       <!-- Display Setlist name -->
-      <p>Selist: {{ store.metadata.setListName || 'Untitled' }}</p>
+      <p>Setlist: {{ store.state.metadata.setListName || 'Untitled' }}</p>
       <p>
         Total sets: {{ previewSets.length }}
         <span v-if="previewSets.length > 0">
-          ({{ formatDuration(getTotalDuration()) }})
+          ({{ formatDuration(store.getTotalDuration()) }})
         </span>
       </p>
       <p v-if="previewSets.length > 0" v-for="(set, index) in previewSets" :key="index">
         {{ index + 1 }}: {{ set.name }} -
         {{ set.songs.length ? `${set.songs.length} songs` : 'Empty' }}
       </p>
-      <p v-if="previewSets.length > 0 && getTotalDuration() > 0">
-        Total duration: {{ formatDuration(getTotalDuration()) }}
+      <p v-if="previewSets.length > 0 && store.getTotalDuration() > 0">
+        Total duration: {{ formatDuration(store.getTotalDuration()) }}
       </p>
     </footer>
   </div>
@@ -327,11 +321,11 @@ function handlePreviewToggle() {
           <SetPreview
             :set="set"
             :set-index="index"
-            :metadata="store.metadata"
+            :metadata="store.state.metadata"
             :uppercase="uppercasePreview"
             :show-guides="showGuides"
             :show-numbers="showPreviewNumbers"
-            :is-last="set.id === lastSetId"
+            :is-last="set.id === store.lastSetId"
             :style="previewSheetStyle"
           />
         </div>

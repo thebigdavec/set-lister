@@ -1,5 +1,5 @@
 import { ref, computed } from 'vue'
-import { isDirty, loadStore, markClean, store } from '../stores/store'
+import { useSetlistStore } from '../stores/store'
 import { generateSlugFromArray } from '../utils/generateSlugFromArray'
 import { migrateToCurrentSchema } from '../utils/schemaMigration'
 
@@ -104,6 +104,7 @@ function saveFilenameToStorage(filename: string | null): void {
 export function useFileOperations(options: FileOperationsOptions = {}) {
   const { showConfirm, showAlert, onLoad } = options
   const fileInput = ref<HTMLInputElement | null>(null)
+  const store = useSetlistStore()
 
   /**
    * The display name of the current file (without path)
@@ -119,8 +120,8 @@ export function useFileOperations(options: FileOperationsOptions = {}) {
    */
   async function saveToDisk(event?: SaveEvent): Promise<void> {
     const data = {
-      metadata: store.metadata,
-      sets: store.sets
+      metadata: store.state.metadata,
+      sets: store.state.sets
     }
     const jsonString = JSON.stringify(data, null, 2)
 
@@ -147,8 +148,8 @@ export function useFileOperations(options: FileOperationsOptions = {}) {
           } else {
             // New file - use the set list name
             suggestedName = generateSlugFromArray([
-              store.metadata.setListName,
-              store.metadata.actName
+              store.state.metadata.setListName,
+              store.state.metadata.actName
             ])
           }
 
@@ -172,7 +173,7 @@ export function useFileOperations(options: FileOperationsOptions = {}) {
         await writable.write(jsonString)
         await writable.close()
 
-        markClean()
+        store.markClean()
       } else {
         // Fallback for browsers without File System Access API
         const blob = new Blob([jsonString], { type: 'application/json' })
@@ -188,7 +189,7 @@ export function useFileOperations(options: FileOperationsOptions = {}) {
             ? generateCopyFilename(currentFilename.value)
             : currentFilename.value
         } else {
-          downloadName = `${store.metadata.setListName || 'set-list'}.json`
+          downloadName = `${store.state.metadata.setListName || 'set-list'}.json`
         }
 
         anchor.download = downloadName
@@ -200,7 +201,7 @@ export function useFileOperations(options: FileOperationsOptions = {}) {
         // Update filename (user may have changed it in the save dialog, but we can't know)
         currentFilename.value = downloadName
         saveFilenameToStorage(downloadName)
-        markClean()
+        store.markClean()
       }
     } catch (err) {
       const error = err as DOMException
@@ -223,7 +224,7 @@ export function useFileOperations(options: FileOperationsOptions = {}) {
    * Uses File System Access API if available, otherwise falls back to file input.
    */
   async function loadFromDisk(): Promise<void> {
-    if (isDirty.value) {
+    if (store.isDirty) {
       let confirmed: boolean
       if (showConfirm) {
         confirmed = await showConfirm({
@@ -262,7 +263,7 @@ export function useFileOperations(options: FileOperationsOptions = {}) {
         const parsedData = JSON.parse(text)
         const data = migrateToCurrentSchema(parsedData)
 
-        if (data && loadStore(data)) {
+        if (data && store.loadStore(data)) {
           currentFileHandle.value = handle
           currentFilename.value = handle.name
           saveFilenameToStorage(handle.name)
@@ -310,7 +311,7 @@ export function useFileOperations(options: FileOperationsOptions = {}) {
       const parsedData = JSON.parse(text)
       const data = migrateToCurrentSchema(parsedData)
 
-      if (data && loadStore(data)) {
+      if (data && store.loadStore(data)) {
         // No file handle in fallback mode
         currentFileHandle.value = null
         currentFilename.value = file.name
@@ -355,7 +356,7 @@ export function useFileOperations(options: FileOperationsOptions = {}) {
    * Handle beforeunload event to warn about unsaved changes
    */
   function handleBeforeUnload(event: BeforeUnloadEvent): void {
-    if (isDirty.value) {
+    if (store.isDirty) {
       event.preventDefault()
       event.returnValue = ''
     }
